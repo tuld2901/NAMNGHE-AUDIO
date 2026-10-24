@@ -1,0 +1,6 @@
+{
+  "name": "Phú Bà Audio - Web Nghe Truyện Audio Online Miễn Phí",
+  "description": "Nền tảng nghe truyện audio phong cách Phú Bà Audio với kho truyện ma, kiếm hiệp, ngôn tình, mini player mượt mà và hệ thống quản trị bí mật.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

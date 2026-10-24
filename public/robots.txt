@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /quan-tri
+Disallow: /system-secret-admin
+
+# Googlebot specific directives
+User-agent: Googlebot
+Allow: /
+Allow: /*.js$
+Allow: /*.css$
+
+# Sitemap index
+Sitemap: /sitemap.xml
