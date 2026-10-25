@@ -22,20 +22,34 @@ git --version
 
 ## 2. Quick Start & Installation
 
-### Step 1: Clone Repository & Create Required Directories
+### Step 1: Clone Repository
 ```bash
 git clone https://github.com/<USERNAME>/<REPO_NAME>.git NAMNGHE-AUDIO
 cd NAMNGHE-AUDIO
+```
 
-# Create data, uploads and backup folders
+### Step 2: Create Required Directories
+
+The backend stores database files, uploaded audio, and backups locally. You **must create** the following directory structure inside the project root:
+
+| Directory Path | Description |
+| :--- | :--- |
+| `data/` | Stores the primary JSON database (`db.json`) containing stories, chapters, and settings. |
+| `uploads/audio/` | Stores all uploaded MP3 audio files (named by slug, e.g., `tap-1-ten-tap.mp3`). |
+| `uploads/images/` | Stores uploaded custom logos, banner graphics, and favicons. |
+| `backups/` | Stores automated system snapshots, manual `.json` exports, and `.tar.gz` archives. |
+
+Run these commands to create all required directories and set read/write permissions:
+```bash
+# 1. Create all required folders at once
 mkdir -p data uploads/audio uploads/images backups
 
-# Set permissions for write access (Linux / VPS)
+# 2. Grant full read/write permissions for Node.js and Nginx
 chmod 755 /root 2>/dev/null || true
 chmod -R 777 data uploads backups
 ```
 
-### Step 2: Install Dependencies & Build
+### Step 3: Install Dependencies & Build
 ```bash
 npm install
 npm run build
