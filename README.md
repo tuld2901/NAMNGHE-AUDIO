@@ -302,53 +302,65 @@ sudo apt install -y nodejs
 sudo npm install -g pm2
 ```
 
-#### Bước 2: Tải mã nguồn, Build và Khởi chạy PM2
+#### Bước 2: Tải mã nguồn, Phân quyền, Build và Khởi chạy PM2
 ```bash
-# 1. Tạo thư mục chứa dự án (ví dụ /root/my-web hoặc /var/www/audio-web)
-mkdir -p /root/my-web
+# 1. Tạo thư mục chứa dự án (ví dụ /root/NAMNGHE-AUDIO)
+mkdir -p /root/NAMNGHE-AUDIO
 
-# 2. Clone mã nguồn từ GitHub vào /root/my-web
-git clone https://github.com/<USERNAME>/<REPO_NAME>.git /root/my-web
-cd /root/my-web
+# 2. Clone mã nguồn từ GitHub vào /root/NAMNGHE-AUDIO
+git clone https://github.com/<USERNAME>/<REPO_NAME>.git /root/NAMNGHE-AUDIO
+cd /root/NAMNGHE-AUDIO
 
-# 3. Tạo thư mục dữ liệu data/ và thư mục tĩnh duy nhất uploads/audio/ ngay tại gốc dự án
+# 3. Tạo thư mục dữ liệu data/, thư mục tĩnh uploads/ và thư mục sao lưu backups/
 mkdir -p data uploads/audio uploads/images backups
 
-# 4. Cài đặt thư viện và Build Production
+# 4. Phân quyền truy cập để Nginx và Node.js có quyền ghi file tải lên
+chmod 755 /root
+chmod -R 777 data uploads backups
+
+# 5. Cài đặt thư viện và Build Production
 npm install
 npm run build
 
-# 5. Khởi chạy bằng PM2 và lưu cấu hình tự khởi động cùng VPS
+# 6. Khởi chạy bằng PM2 và lưu cấu hình tự khởi động cùng VPS
 pm2 start npm --name "audio-cms" -- start
 pm2 save
 pm2 startup
 ```
 
-#### Bước 3: Cấu hình Nginx Reverse Proxy & Trỏ Thẳng Thư Mục Tĩnh `uploads/`
+#### Bước 3: Cấu hình Nginx Reverse Proxy & Cho Phép Tải File MP3 / Backup Lớn
 Tạo file cấu hình Nginx:
 ```bash
 sudo nano /etc/nginx/sites-available/audio-web
 ```
 
-Dán nội dung sau vào (thay `tenmien.com` bằng tên miền thật của bạn):
+Dán nội dung sau vào (thay `tenmien.com` bằng tên miền thật hoặc IP của bạn, đường dẫn trỏ về `/root/NAMNGHE-AUDIO`):
 ```nginx
 server {
     listen 80;
     server_name tenmien.com www.tenmien.com;
 
-    # Cho phép upload file MP3 dung lượng lớn tới 150MB
-    client_max_body_size 150M;
-    client_body_timeout 300s;
+    # ========================================================
+    # 1. CẤU HÌNH CHO PHÉP UPLOAD FILE MP3 / BACKUP LỚN (250MB)
+    # ========================================================
+    client_max_body_size 250M;
+    client_body_timeout 600s;
+    client_header_timeout 600s;
 
-    # Trỏ thẳng vào thư mục tĩnh duy nhất uploads/ tại thư mục gốc dự án
+    # ========================================================
+    # 2. TRỎ THẲNG THƯ MỤC TĨNH UPLOADS (TỐI ƯU TUA NHẠC, STREAMING)
+    # ========================================================
     location /uploads/ {
-        alias /root/my-web/uploads/;
+        alias /root/NAMNGHE-AUDIO/uploads/;
         expires 30d;
         add_header Cache-Control "public, no-transform";
         add_header Accept-Ranges bytes;
+        client_max_body_size 250M;
     }
 
-    # Chuyển tiếp mọi đường dẫn sạch (/ten-truyen, /admin, /api/...) vào Node.js Port 3000
+    # ========================================================
+    # 3. CHUYỂN TIẾP TẤT CẢ VÀO NODE.JS (PORT 3000)
+    # ========================================================
     location / {
         proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
@@ -359,7 +371,14 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cache_bypass $http_upgrade;
-        proxy_read_timeout 300s;
+
+        # Thời gian chờ và bộ đệm chống lỗi 504 Gateway Timeout khi upload file lớn
+        proxy_connect_timeout 600s;
+        proxy_send_timeout 600s;
+        proxy_read_timeout 600s;
+        proxy_buffer_size 128k;
+        proxy_buffers 4 256k;
+        proxy_busy_buffers_size 256k;
     }
 }
 ```
@@ -494,11 +513,45 @@ curl -X POST https://tenmien.com/api/gateway \
 
 ## 8. XỬ LÝ SỰ CỐ THƯỜNG GẶP (TROUBLESHOOTING)
 
-1. **Lỗi `413 Request Entity Too Large` khi tải file MP3 lên Server:**
-   - Nguyên nhân: Nginx hoặc Apache giới hạn dung lượng upload mặc định (1MB - 2MB).
-   - Khắc phục: Thêm `client_max_body_size 150M;` vào cấu hình Nginx (hoặc `LimitRequestBody 157286400` trong `.htaccess` trên cPanel), sau đó khởi động lại Nginx (`sudo systemctl reload nginx`).
-2. **Lỗi `EADDRINUSE: address already in use :::3000`:**
-   - Nguyên nhân: Cổng `3000` đã có một tiến trình khác đang chạy.
-   - Khắc phục: Kiểm tra bằng `pm2 list` để tránh bật trùng 2 lần, hoặc tắt tiến trình cũ bằng `npx kill-port 3000`.
-3. **Lỗi `pm2: command not found` sau khi cài PM2:**
-   - Khắc phục: Thực hiện liên kết symlink vào `/usr/bin/pm2` theo hướng dẫn tại **Mục 3.2**.
+1. **Lỗi `npm error Cannot read properties of null (reading 'edgesOut')` khi chạy `npm install`:**
+   - **Nguyên nhân**: Xung đột bộ nhớ đệm (cache) hoặc file `package-lock.json` bị lỗi dependency tree khi copy/clone sang VPS.
+   - **Cách xử lý triệt để**:
+     ```bash
+     cd ~/NAMNGHE-AUDIO
+     rm -rf package-lock.json node_modules
+     npm cache clean --force
+     npm install -g npm@latest
+     npm install
+     ```
+
+2. **Lỗi `413 Request Entity Too Large` hoặc `504 Gateway Timeout` khi tải file MP3 / Backup:**
+   - **Nguyên nhân**: Nginx mặc định chỉ cho phép tải lên file tối đa `1MB` (`client_max_body_size 1m`).
+   - **Cách khắc phục**: Mở file cấu hình Nginx (`/etc/nginx/sites-available/...`), tăng giới hạn lên `250M` và tăng thời gian timeout lên `600s`:
+     ```nginx
+     client_max_body_size 250M;
+     client_body_timeout 600s;
+     proxy_connect_timeout 600s;
+     proxy_send_timeout 600s;
+     proxy_read_timeout 600s;
+     ```
+     Sau đó kiểm tra cú pháp và khởi động lại Nginx:
+     ```bash
+     sudo nginx -t && sudo systemctl restart nginx
+     ```
+
+3. **Lỗi upload không lưu được file hoặc Nginx báo `403 Forbidden` khi phát nhạc (Thư mục `/root`):**
+   - **Nguyên nhân**: Dự án đặt trong `/root/NAMNGHE-AUDIO`. Mặc định Linux chặn người dùng khác truy cập vào `/root`, khiến Nginx (user `www-data`) không đọc/ghi được file vào `uploads/`.
+   - **Cách khắc phục**: Cấp quyền đọc cho `/root` và cấp toàn quyền cho các thư mục dữ liệu:
+     ```bash
+     chmod 755 /root
+     chmod -R 777 /root/NAMNGHE-AUDIO/uploads
+     chmod -R 777 /root/NAMNGHE-AUDIO/data
+     chmod -R 777 /root/NAMNGHE-AUDIO/backups
+     ```
+
+4. **Lỗi `EADDRINUSE: address already in use :::3000`:**
+   - **Nguyên nhân**: Cổng `3000` đã có một tiến trình khác đang chạy.
+   - **Khắc phục**: Kiểm tra bằng `pm2 list` để tránh bật trùng 2 lần, hoặc tắt tiến trình cũ bằng `npx kill-port 3000`.
+
+5. **Lỗi `pm2: command not found` sau khi cài PM2:**
+   - **Khắc phục**: Thực hiện liên kết symlink vào `/usr/bin/pm2` theo hướng dẫn tại **Mục 3.2**.
