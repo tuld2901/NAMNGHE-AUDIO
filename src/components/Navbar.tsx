@@ -54,17 +54,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               )}
             </div>
           </a>
-
-          <a
-            href="/"
-            onClick={(e) => {
-              e.preventDefault();
-              onNavigateHome();
-            }}
-            className="px-3 py-1 bg-slate-800/70 hover:bg-slate-800 text-slate-300 text-xs font-medium rounded-xl border border-slate-700/60 transition cursor-pointer select-none"
-          >
-            Trang chủ
-          </a>
         </div>
 
         {/* Right Action: Chỉ hiển thị nút Về trang chủ khi đang ở trong trang Quản trị */}
