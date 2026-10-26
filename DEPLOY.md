@@ -60,8 +60,8 @@ Tại thư mục gốc của dự án trên Server:
 mkdir -p data uploads/audio uploads/images backups
 chmod -R 777 data uploads backups
 
-# 2. Cài đặt thư viện và biên dịch giao diện vào thư mục dist/
-npm install
+# 2. Cài đặt thư viện (bắt buộc dùng cờ --legacy-peer-deps) và biên dịch giao diện vào thư mục dist/
+npm install --legacy-peer-deps
 npm run build
 
 # 3. Chạy ứng dụng ngầm 24/7 bằng PM2
@@ -111,7 +111,7 @@ pm2 save
    ```bash
    mkdir -p data uploads/audio uploads/images backups
    chmod -R 777 data uploads backups
-   npm install
+   npm install --legacy-peer-deps
    npm run build
    ```
 3. Quay lại **Setup Node.js App** trên cPanel -> Nhấn nút **RESTART**.
@@ -144,7 +144,7 @@ LimitRequestBody 157286400
    cd /www/wwwroot/audio-web
    mkdir -p data uploads/audio uploads/images backups
    chmod -R 777 data uploads backups
-   npm install
+   npm install --legacy-peer-deps
    npm run build
    pm2 start npm --name "audio-cms" -- start
    pm2 save
@@ -181,7 +181,7 @@ cd /var/www/audio-web
 
 mkdir -p data uploads/audio uploads/images backups
 chmod -R 777 data uploads backups
-npm install
+npm install --legacy-peer-deps
 npm run build
 
 pm2 start npm --name "audio-cms" -- start
@@ -189,41 +189,68 @@ pm2 save
 pm2 startup
 ```
 
-### Bước 5.3: Cấu hình Nginx Tối Ưu Cho Streaming Audio & SSL
-Tạo hoặc sửa file `/etc/nginx/sites-available/audio-web` (thay `/var/www/audio-web` bằng đường dẫn thực tế trên VPS của bạn, ví dụ `/root/NAMNGHE-AUDIO`):
+### Bước 5.3: Cấu hình Nginx Tối Ưu Toàn Diện (Hoặc dùng trực tiếp file `nginx.conf`)
+
+> 💡 **Cách nhanh nhất:** Bạn có thể copy trực tiếp file cấu hình mẫu đã được tạo sẵn trong dự án:
+> ```bash
+> sudo cp /root/NAMNGHE-AUDIO/nginx.conf /etc/nginx/sites-available/audio-web
+> ```
+> Hoặc mở file `/etc/nginx/sites-available/audio-web` và dán cấu hình chuẩn dưới đây:
 
 ```nginx
+# ==============================================================================
+# CẤU HÌNH NGINX CHUẨN CHO DỰ ÁN NAMNGHE-AUDIO (NGHE TRUYỆN AUDIO ONLINE)
+# ==============================================================================
+
 server {
     listen 80;
-    server_name tenmien.com www.tenmien.com;
+    listen [::]:80;
+    server_name tenmien.com www.tenmien.com; # Thay bằng domain của bạn
 
-    # Cho phép upload file MP3 và backup dung lượng lớn (lên tới 250MB)
+    # 1. CHO PHÉP UPLOAD FILE MP3 VÀ BACKUP DUNG LƯỢNG LỚN (LÊN TỚI 250MB)
     client_max_body_size 250M;
     client_body_timeout 600s;
     client_header_timeout 600s;
+    large_client_header_buffers 4 32k;
 
-    # TỐI ƯU STREAMING MP3 (LOAD ĐẾN ĐÂU NGHE ĐẾN ĐÓ - KHÔNG BUFFER TOÀN BỘ FILE)
+    # 2. TỐI ƯU GZIP (Chỉ nén HTML/CSS/JS/JSON - TUYỆT ĐỐI KHÔNG NÉN MP3)
+    gzip on;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_comp_level 6;
+    gzip_types text/plain text/css text/xml application/json application/javascript application/rss+xml font/woff2 image/svg+xml;
+
+    # 3. PHỤC VỤ TRỰC TIẾP AUDIO & ẢNH (LOAD ĐẾN ĐÂU NGHE ĐẾN ĐÓ - CHUNK STREAMING)
     location /uploads/ {
-        alias /var/www/audio-web/uploads/; # Đổi thành thư mục uploads của bạn
-        expires 30d;
-        add_header Cache-Control "public, no-transform";
-        add_header Accept-Ranges bytes;
+        alias /root/NAMNGHE-AUDIO/uploads/; # Đổi thành đường dẫn thư mục uploads thực tế của bạn
         
-        # Tối ưu truyền tải file âm thanh từng đoạn (chunk 1MB)
+        # Bật Byte-Range để trình duyệt/điện thoại nhận ngay chunk nhỏ 1.5MB nghe ngay
+        add_header Accept-Ranges bytes always;
+        add_header Cache-Control "public, max-age=2592000, immutable" always;
+        expires 30d;
+
+        # Tối ưu truyền tải file âm thanh từ ổ đĩa Linux ra mạng cực nhanh
         sendfile on;
         sendfile_max_chunk 1m;
         tcp_nopush on;
         tcp_nodelay on;
 
-        # Tắt buffering để phát ngay lập tức khi người nghe bấm Play
+        # TẮT BUFFERING: Không đợi gom cả file MP3 50MB-100MB mà đẩy ngay data để phát ngay
         proxy_buffering off;
         proxy_request_buffering off;
+
+        # Chặn thực thi mã độc hại trong thư mục uploads
+        location ~* \.(php|pl|py|jsp|asp|sh|cgi)$ {
+            deny all;
+        }
     }
 
-    # Proxy toàn bộ API và giao diện Web vào Node.js (Cổng 3000)
+    # 4. CHUYỂN TOÀN BỘ API, GATEWAY VÀ GIAO DIỆN VÀO NODE.JS (PORT 3000)
+    # Khắc phục triệt để lỗi: <!doctype html> ... is not valid JSON
     location / {
         proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
+
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
         proxy_set_header Host $host;
@@ -235,6 +262,7 @@ server {
         proxy_connect_timeout 600s;
         proxy_send_timeout 600s;
         proxy_read_timeout 600s;
+
         proxy_buffer_size 128k;
         proxy_buffers 4 256k;
         proxy_busy_buffers_size 256k;

@@ -51,11 +51,12 @@ chmod -R 777 data uploads backups
 
 ### Step 3: Install Dependencies & Build
 ```bash
-npm install
+# MUST use --legacy-peer-deps to avoid React 19 peer dependency resolution conflicts:
+npm install --legacy-peer-deps
 npm run build
 ```
 
-*(If you ever encounter an `edgesOut` or npm lock conflict, run: `rm -rf package-lock.json node_modules && npm cache clean --force && npm install`)*
+*(If you ever encounter an `edgesOut` or npm lock conflict, run: `rm -rf package-lock.json node_modules && npm cache clean --force && npm install --legacy-peer-deps`)*
 
 ---
 
@@ -98,35 +99,55 @@ pm2 stop namnghe-cms      # Stop application
 
 ## 4. Nginx Reverse Proxy Configuration (Production)
 
-Create file `/etc/nginx/sites-available/namnghe-cms`:
+Create file `/etc/nginx/sites-available/namnghe-cms` (or simply copy the included `nginx.conf` template):
+```bash
+sudo cp /root/NAMNGHE-AUDIO/nginx.conf /etc/nginx/sites-available/namnghe-cms
+```
+
+Full configuration content:
 ```nginx
 server {
     listen 80;
+    listen [::]:80;
     server_name your-domain.com www.your-domain.com;
 
     # Allow large MP3 & backup file uploads (up to 250MB)
     client_max_body_size 250M;
     client_body_timeout 600s;
     client_header_timeout 600s;
+    large_client_header_buffers 4 32k;
+
+    # Gzip: Compress text/code (NEVER compress audio/MP3)
+    gzip on;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_comp_level 6;
+    gzip_types text/plain text/css text/xml application/json application/javascript application/rss+xml font/woff2 image/svg+xml;
 
     # Serve static audio & image uploads directly (fast progressive streaming: load đến đâu nghe đến đó)
     location /uploads/ {
         alias /root/NAMNGHE-AUDIO/uploads/;
         expires 30d;
-        add_header Cache-Control "public, no-transform";
-        add_header Accept-Ranges bytes;
+        add_header Accept-Ranges bytes always;
+        add_header Cache-Control "public, max-age=2592000, immutable" always;
         client_max_body_size 250M;
 
-        # Tối ưu truyền tải chunk MP3 trực tiếp, không buffer toàn bộ file
+        # Linux direct chunk transmission (1MB chunks)
         sendfile on;
         sendfile_max_chunk 1m;
         tcp_nopush on;
         tcp_nodelay on;
+
+        # Disable buffering so first chunk plays immediately
         proxy_buffering off;
         proxy_request_buffering off;
+
+        location ~* \.(php|pl|py|jsp|asp|sh|cgi)$ {
+            deny all;
+        }
     }
 
-    # Proxy all clean routes into Node.js (Port 3000)
+    # Proxy all clean routes & APIs into Node.js (Port 3000)
     location / {
         proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
@@ -151,8 +172,7 @@ server {
 Enable site and restart Nginx:
 ```bash
 sudo ln -sf /etc/nginx/sites-available/namnghe-cms /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl restart nginx
+sudo nginx -t && sudo systemctl restart nginx
 ```
 
 ---
