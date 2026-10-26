@@ -103,6 +103,14 @@ async function startServer() {
     filename: (req, file, cb) => {
       const rawExt = path.extname(file.originalname).toLowerCase();
       const ext = rawExt || '.mp3';
+
+      const rawStory =
+        (req.query?.story as string) ||
+        (req.query?.storyTitle as string) ||
+        (req.body?.story as string) ||
+        (req.body?.storyTitle as string) ||
+        '';
+
       const rawTitle =
         (req.query?.title as string) ||
         (req.query?.chapterTitle as string) ||
@@ -110,8 +118,23 @@ async function startServer() {
         (req.body?.chapterTitle as string) ||
         path.basename(file.originalname, rawExt);
 
-      const slugName = slugifyVietnamese(rawTitle) || 'tap-truyen-audio';
-      const safeName = `${slugName}${ext}`;
+      const chapterSlug = slugifyVietnamese(rawTitle) || 'tap-truyen-audio';
+      const storySlug = rawStory ? slugifyVietnamese(rawStory) : '';
+
+      let baseSlug = chapterSlug;
+      if (storySlug) {
+        if (!chapterSlug.startsWith(storySlug)) {
+          baseSlug = `${storySlug}-${chapterSlug}`;
+        }
+      }
+
+      let safeName = `${baseSlug}${ext}`;
+      const targetPath = path.join(UPLOAD_AUDIO_DIR, safeName);
+      // To strictly avoid overwriting existing audio files from other stories, append short hash/timestamp if collision
+      if (fs.existsSync(targetPath)) {
+        safeName = `${baseSlug}-${Date.now().toString(36)}${ext}`;
+      }
+
       cb(null, safeName);
     }
   });
@@ -172,9 +195,15 @@ async function startServer() {
         (req.body?.title as string) ||
         (req.body?.chapterTitle as string) ||
         '';
+      const explicitStory =
+        (req.query?.story as string) ||
+        (req.query?.storyTitle as string) ||
+        (req.body?.story as string) ||
+        (req.body?.storyTitle as string) ||
+        '';
 
       if (explicitTitle.trim()) {
-        fileUrl = normalizeLocalChapterAudioSlug(explicitTitle.trim(), fileUrl);
+        fileUrl = normalizeLocalChapterAudioSlug(explicitTitle.trim(), fileUrl, explicitStory.trim());
       }
 
       const finalFilename = fileUrl.replace('/uploads/audio/', '');

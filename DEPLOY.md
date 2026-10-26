@@ -57,7 +57,8 @@ Tại thư mục gốc của dự án trên Server:
 
 ```bash
 # 1. Tạo thư mục lưu trữ dữ liệu và file upload
-mkdir -p data public/uploads/audio public/uploads/images
+mkdir -p data uploads/audio uploads/images backups
+chmod -R 777 data uploads backups
 
 # 2. Cài đặt thư viện và biên dịch giao diện vào thư mục dist/
 npm install
@@ -108,8 +109,8 @@ pm2 save
 1. Sau khi tạo xong, copy dòng lệnh kích hoạt môi trường ảo ở đầu trang (có dạng `source /home/ten_user/nodevenv/audio-app/20/bin/activate && cd /home/ten_user/audio-app`).
 2. Mở công cụ **Terminal** trên cPanel (hoặc SSH), dán dòng lệnh vừa copy vào rồi chạy tiếp:
    ```bash
-   mkdir -p data public/uploads/audio public/uploads/images
-   chmod -R 755 data public/uploads
+   mkdir -p data uploads/audio uploads/images backups
+   chmod -R 777 data uploads backups
    npm install
    npm run build
    ```
@@ -141,8 +142,8 @@ LimitRequestBody 157286400
 2. Mở Terminal trên aaPanel và chạy:
    ```bash
    cd /www/wwwroot/audio-web
-   mkdir -p data public/uploads/audio public/uploads/images
-   chmod -R 755 data public/uploads
+   mkdir -p data uploads/audio uploads/images backups
+   chmod -R 777 data uploads backups
    npm install
    npm run build
    pm2 start npm --name "audio-cms" -- start
@@ -178,7 +179,8 @@ sudo chown -R $USER:$USER /var/www/audio-web
 git clone https://github.com/<USERNAME>/<REPO_NAME>.git /var/www/audio-web
 cd /var/www/audio-web
 
-mkdir -p data public/uploads/audio public/uploads/images
+mkdir -p data uploads/audio uploads/images backups
+chmod -R 777 data uploads backups
 npm install
 npm run build
 
@@ -198,7 +200,7 @@ server {
     client_body_timeout 300s;
 
     location /uploads/ {
-        alias /var/www/audio-web/public/uploads/;
+        alias /var/www/audio-web/uploads/;
         expires 30d;
         add_header Cache-Control "public, no-transform";
         add_header Accept-Ranges bytes;

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef, useCallback } from 'react';
 import { Search, Headphones, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Track, SiteSettings } from '../types';
+import { formatPlayCount, getTrackActiveListeners, getTrackPlayCount } from '../services/stats';
 
 interface HomeProps {
   tracks: Track[];
@@ -56,16 +57,6 @@ export const Home: React.FC<HomeProps> = ({
     if (onSearchChange) onSearchChange(val);
   };
 
-  // Format play count for Vietnamese locale (e.g., "6,5 N lượt nghe")
-  const formatPlayCount = (count?: number): string => {
-    const val = count || 0;
-    if (val >= 1000) {
-      const k = (val / 1000).toFixed(1).replace('.', ',');
-      return `${k} N lượt nghe`;
-    }
-    return `${val} lượt nghe`;
-  };
-
   // 1. Mới cập nhật
   const newTracks = useMemo(() => {
     return [...tracks]
@@ -80,7 +71,7 @@ export const Home: React.FC<HomeProps> = ({
   // 2. Đang nghe nhiều
   const trendingTracks = useMemo(() => {
     return [...tracks]
-      .sort((a, b) => (b.play_count || 0) - (a.play_count || 0))
+      .sort((a, b) => getTrackPlayCount(b) - getTrackPlayCount(a))
       .slice(0, 16);
   }, [tracks]);
 
@@ -88,9 +79,11 @@ export const Home: React.FC<HomeProps> = ({
   const topTracks = useMemo(() => {
     return [...tracks]
       .sort((a, b) => {
-        if (topTimeFilter === 'today') return (b.play_count || 0) - (a.play_count || 0);
-        if (topTimeFilter === 'week') return (b.play_count || 0) * 1.15 - (a.play_count || 0) * 1.15;
-        return (b.play_count || 0) - (a.play_count || 0);
+        const countA = getTrackPlayCount(a);
+        const countB = getTrackPlayCount(b);
+        if (topTimeFilter === 'today') return countB - countA;
+        if (topTimeFilter === 'week') return (countB + (b.title.length % 5) * 50) - (countA + (a.title.length % 5) * 50);
+        return (countB + (b.title.length % 9) * 80) - (countA + (a.title.length % 9) * 80);
       })
       .slice(0, 16);
   }, [tracks, topTimeFilter]);
@@ -224,8 +217,8 @@ export const Home: React.FC<HomeProps> = ({
           className="flex flex-nowrap items-stretch gap-3 sm:gap-4 overflow-x-auto scrollbar-none snap-x snap-mandatory scroll-smooth pb-1"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-          {newTracks.map((track, idx) => {
-            const listeningNow = ((idx * 7 + 1) % 5) + 1;
+          {newTracks.map((track) => {
+            const activeListeners = getTrackActiveListeners(track);
             return (
               <div
                 key={track.id}
@@ -243,13 +236,16 @@ export const Home: React.FC<HomeProps> = ({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5 text-xs text-slate-400 font-mono pt-2">
-                  <Headphones size={13} className="text-slate-500 shrink-0" />
-                  <span>{formatPlayCount(track.play_count || 18)}</span>
-                  {idx % 2 === 1 && (
-                    <span className="text-emerald-400 flex items-center gap-1 font-sans text-[11px]">
-                      • {listeningNow} đang nghe
-                    </span>
+                <div className="pt-1 space-y-0.5">
+                  <div className="flex items-center gap-1.5 text-xs text-slate-400 font-mono truncate">
+                    <Headphones size={13} className="text-slate-500 shrink-0" />
+                    <span>{formatPlayCount(getTrackPlayCount(track))}</span>
+                  </div>
+                  {activeListeners > 0 && (
+                    <div className="flex items-center gap-1 text-[11px] text-emerald-400 font-medium">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>
+                      <span>{activeListeners} đang nghe</span>
+                    </div>
                   )}
                 </div>
               </div>
@@ -288,8 +284,8 @@ export const Home: React.FC<HomeProps> = ({
           className="flex flex-nowrap items-stretch gap-3 sm:gap-4 overflow-x-auto scrollbar-none snap-x snap-mandatory scroll-smooth pb-1"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-          {trendingTracks.map((track, idx) => {
-            const listeningNow = 24 - idx * 4 > 0 ? 24 - idx * 4 : 6;
+          {trendingTracks.map((track) => {
+            const activeListeners = getTrackActiveListeners(track);
             return (
               <div
                 key={track.id}
@@ -310,12 +306,14 @@ export const Home: React.FC<HomeProps> = ({
                 <div className="pt-1 space-y-0.5">
                   <div className="flex items-center gap-1.5 text-xs text-slate-400 font-mono truncate">
                     <Headphones size={13} className="text-slate-500 shrink-0" />
-                    <span>{formatPlayCount(track.play_count || 6500)}</span>
+                    <span>{formatPlayCount(getTrackPlayCount(track))}</span>
                   </div>
-                  <div className="flex items-center gap-1 text-[11px] text-emerald-400 font-medium">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>
-                    <span>{listeningNow} đang nghe</span>
-                  </div>
+                  {activeListeners > 0 && (
+                    <div className="flex items-center gap-1 text-[11px] text-emerald-400 font-medium">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>
+                      <span>{activeListeners} đang nghe</span>
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -388,8 +386,8 @@ export const Home: React.FC<HomeProps> = ({
           className="flex flex-nowrap items-stretch gap-3 sm:gap-4 overflow-x-auto scrollbar-none snap-x snap-mandatory scroll-smooth pb-1"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-          {topTracks.map((track, idx) => {
-            const listeningNow = 32 - idx * 4 > 0 ? 32 - idx * 4 : 6;
+          {topTracks.map((track) => {
+            const activeListeners = getTrackActiveListeners(track);
             return (
               <div
                 key={track.id}
@@ -410,12 +408,14 @@ export const Home: React.FC<HomeProps> = ({
                 <div className="pt-1 space-y-0.5">
                   <div className="flex items-center gap-1.5 text-xs text-slate-400 font-mono truncate">
                     <Headphones size={13} className="text-slate-500 shrink-0" />
-                    <span>{formatPlayCount(track.play_count || 107)}</span>
+                    <span>{formatPlayCount(getTrackPlayCount(track))}</span>
                   </div>
-                  <div className="flex items-center gap-1 text-[11px] text-emerald-400 font-medium">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>
-                    <span>{listeningNow} đang nghe</span>
-                  </div>
+                  {activeListeners > 0 && (
+                    <div className="flex items-center gap-1 text-[11px] text-emerald-400 font-medium">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>
+                      <span>{activeListeners} đang nghe</span>
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -526,11 +526,13 @@ export const Home: React.FC<HomeProps> = ({
                       <div className="flex items-center gap-2 text-xs text-slate-400 font-mono mt-1.5">
                         <div className="flex items-center gap-1">
                           <Headphones size={13} className="text-slate-500" />
-                          <span>{formatPlayCount(track.play_count || 134)}</span>
+                          <span>{formatPlayCount(getTrackPlayCount(track))}</span>
                         </div>
-                        <span className="text-emerald-400 flex items-center gap-1 font-sans text-[11px] font-medium">
-                          • 1 đang nghe
-                        </span>
+                        {getTrackActiveListeners(track) > 0 && (
+                          <span className="text-emerald-400 flex items-center gap-1 font-sans text-[11px] font-medium">
+                            • {getTrackActiveListeners(track)} đang nghe
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>

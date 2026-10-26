@@ -79,20 +79,30 @@ export function slugifyVietnamese(text: string): string {
 }
 
 /**
- * Đảm bảo file MP3 nội bộ (/uploads/audio/...) luôn có tên file trùng khớp với slug tiêu đề tập
- * VD: Tiêu đề "Tập 1: Tiếng Gõ Cửa Đêm Khuya" -> "/uploads/audio/tap-1-tieng-go-cua-dem-khuya.mp3"
+ * Đảm bảo file MP3 nội bộ (/uploads/audio/...) luôn có tên file chuẩn hóa theo storyTitle + chapterTitle slug
+ * VD: "Truyện Ma Đêm Khuya" + "Phần 1" -> "/uploads/audio/truyen-ma-dem-khuya-phan-1.mp3"
  */
-export function normalizeLocalChapterAudioSlug(chapterTitle: string, mp3Url: string): string {
+export function normalizeLocalChapterAudioSlug(chapterTitle: string, mp3Url: string, storyTitle?: string): string {
   if (!mp3Url || !mp3Url.startsWith('/uploads/audio/')) {
     return mp3Url;
   }
-  const slug = slugifyVietnamese(chapterTitle);
-  if (!slug) return mp3Url;
+  const chapterSlug = slugifyVietnamese(chapterTitle);
+  if (!chapterSlug) return mp3Url;
+
+  const storySlug = storyTitle ? slugifyVietnamese(storyTitle) : '';
+  let baseSlug = chapterSlug;
+  if (storySlug) {
+    if (chapterSlug.startsWith(storySlug)) {
+      baseSlug = chapterSlug;
+    } else {
+      baseSlug = `${storySlug}-${chapterSlug}`;
+    }
+  }
 
   const currentFileName = decodeURIComponent(mp3Url.replace('/uploads/audio/', '').split('?')[0]);
   const rawExt = path.extname(currentFileName).toLowerCase();
   const ext = rawExt || '.mp3';
-  const targetFileName = `${slug}${ext}`;
+  const targetFileName = `${baseSlug}${ext}`;
   const targetUrl = `/uploads/audio/${targetFileName}`;
 
   if (currentFileName === targetFileName) {
@@ -106,6 +116,7 @@ export function normalizeLocalChapterAudioSlug(chapterTitle: string, mp3Url: str
     if (fs.existsSync(currentFilePath)) {
       if (!fs.existsSync(targetFilePath)) {
         fs.renameSync(currentFilePath, targetFilePath);
+        return targetUrl;
       }
       return targetUrl;
     } else if (fs.existsSync(targetFilePath)) {
@@ -260,11 +271,12 @@ export async function getTrackById(id: string): Promise<Track | null> {
 }
 
 export async function addTrack(payload: Partial<Track> & { cover_url?: string }): Promise<Track> {
+  const storyTitle = (payload.title || 'Truyện mới').trim();
   const rawChapters = Array.isArray(payload.chapters) && payload.chapters.length > 0
     ? payload.chapters.map((ch, idx) => {
         const chTitle = ch.title || `Phần ${idx + 1}`;
         const rawUrl = ch.mp3_url || payload.mp3_url || '';
-        const normalizedUrl = normalizeLocalChapterAudioSlug(chTitle, rawUrl);
+        const normalizedUrl = normalizeLocalChapterAudioSlug(chTitle, rawUrl, storyTitle);
         return {
           id: ch.id !== undefined ? ch.id : idx + 1,
           title: chTitle,
@@ -277,7 +289,7 @@ export async function addTrack(payload: Partial<Track> & { cover_url?: string })
           id: 1,
           title: 'Phần 1: Khởi đầu',
           duration: '',
-          mp3_url: normalizeLocalChapterAudioSlug('Phần 1: Khởi đầu', payload.mp3_url || '')
+          mp3_url: normalizeLocalChapterAudioSlug('Phần 1: Khởi đầu', payload.mp3_url || '', storyTitle)
         }
       ];
 
@@ -322,6 +334,8 @@ export async function addTrack(payload: Partial<Track> & { cover_url?: string })
 
 export async function updateTrack(id: string, updates: Partial<Track> & { cover_url?: string }): Promise<Track | null> {
   let updatedTrack: Track | null = null;
+  const currentStory = dbData.tracks.find(t => t.id === id);
+  const storyTitle = (updates.title || currentStory?.title || '').trim();
 
   const normalizedUpdates: Partial<Track> = { ...updates };
   if (updates.cover_url && !updates.thumb_url) {
@@ -330,7 +344,7 @@ export async function updateTrack(id: string, updates: Partial<Track> & { cover_
   if (Array.isArray(updates.chapters) && updates.chapters.length > 0) {
     normalizedUpdates.chapters = updates.chapters.map((ch, idx) => {
       const chTitle = ch.title || `Phần ${idx + 1}`;
-      const normalizedUrl = normalizeLocalChapterAudioSlug(chTitle, ch.mp3_url || '');
+      const normalizedUrl = normalizeLocalChapterAudioSlug(chTitle, ch.mp3_url || '', storyTitle);
       return {
         id: ch.id !== undefined ? ch.id : idx + 1,
         title: chTitle,

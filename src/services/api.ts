@@ -796,39 +796,89 @@ export const slugifyChapterTitle = (text: string): string => {
  * Backend automatically converts filename according to chapterTitle slug:
  * e.g. "Tập 1: Tiếng Gõ Cửa Đêm Khuya" -> "/uploads/audio/tap-1-tieng-go-cua-dem-khuya.mp3"
  */
+/**
+ * Helper an toàn phân tích phản hồi từ Server (tránh lỗi JSON parser khi Nginx trả về trang HTML)
+ */
+async function parseApiResponse<T>(res: Response, defaultErrorMsg: string): Promise<T> {
+  const text = await res.text();
+  const trimmed = text.trim();
+
+  // Kiểm tra nếu Nginx hoặc Web server trả về trang HTML (<!doctype... hoặc <html>...)
+  if (trimmed.startsWith('<') || trimmed.toLowerCase().startsWith('<!doctype')) {
+    if (res.status === 413) {
+      throw new Error(
+        'Lỗi 413 (File quá lớn): Nginx chặn tải lên. Bạn cần thêm dòng "client_max_body_size 250M;" vào file cấu hình Nginx trên VPS rồi restart lại Nginx.'
+      );
+    }
+    if (res.status === 502 || res.status === 504) {
+      throw new Error(
+        `Lỗi ${res.status} (${res.statusText || 'Bad Gateway'}): Ứng dụng Node.js chưa chạy trên Port 3000. Hãy kiểm tra lệnh "pm2 status" trên VPS xem app đã bật chưa.`
+      );
+    }
+    throw new Error(
+      'Nginx chưa chuyển tiếp vào Node.js: Đường dẫn API trả về trang HTML (index.html) thay vì dữ liệu JSON. Bạn cần cấu hình "proxy_pass http://127.0.0.1:3000;" trong Nginx trên VPS.'
+    );
+  }
+
+  try {
+    const data = JSON.parse(text);
+    if (!res.ok) {
+      throw new Error(data.error || data.message || defaultErrorMsg);
+    }
+    return data as T;
+  } catch (err: any) {
+    if (err.message && !err.message.includes('JSON')) {
+      throw err;
+    }
+    throw new Error(defaultErrorMsg + (res.status ? ` (Mã lỗi HTTP: ${res.status})` : ''));
+  }
+}
+
+/**
+ * Upload Audio file (.mp3) directly to Server (/api/upload-audio)
+ * Backend automatically converts filename according to chapterTitle slug:
+ * e.g. "Tiên Nghịch" + "Tập 1" -> "/uploads/audio/tien-nghich-tap-1.mp3"
+ */
 export const uploadAudioToServer = async (
   file: File,
-  chapterTitle?: string
+  chapterTitle?: string,
+  storyTitle?: string
 ): Promise<{ url: string; filename: string; originalName: string }> => {
   const formData = new FormData();
   if (chapterTitle && chapterTitle.trim()) {
     formData.append('title', chapterTitle.trim());
   }
+  if (storyTitle && storyTitle.trim()) {
+    formData.append('story', storyTitle.trim());
+  }
   formData.append('audio', file);
 
-  const queryParam =
-    chapterTitle && chapterTitle.trim()
-      ? `?title=${encodeURIComponent(chapterTitle.trim())}`
-      : '';
+  const queryParams = new URLSearchParams();
+  if (chapterTitle && chapterTitle.trim()) {
+    queryParams.set('title', chapterTitle.trim());
+  }
+  if (storyTitle && storyTitle.trim()) {
+    queryParams.set('story', storyTitle.trim());
+  }
+  const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
 
-  const res = await fetch(`/api/upload-audio${queryParam}`, {
+  const res = await fetch(`/api/upload-audio${queryString}`, {
     method: 'POST',
     body: formData,
   });
 
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.error || 'Lỗi khi tải file audio lên server');
-  }
-
-  const data = await res.json();
-  return data;
+  return await parseApiResponse<{ url: string; filename: string; originalName: string }>(
+    res,
+    'Lỗi khi tải file audio lên server'
+  );
 };
 
 /**
  * Upload Image file (.png, .jpg, .webp, .svg, .ico) directly to Server (/api/upload-image)
  */
-export const uploadImageToServer = async (file: File): Promise<{ url: string; filename: string; originalName: string }> => {
+export const uploadImageToServer = async (
+  file: File
+): Promise<{ url: string; filename: string; originalName: string }> => {
   const formData = new FormData();
   formData.append('image', file);
 
@@ -837,16 +887,18 @@ export const uploadImageToServer = async (file: File): Promise<{ url: string; fi
     body: formData,
   });
 
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.error || 'Lỗi khi tải file ảnh lên server');
-  }
-
-  return await res.json();
+  return await parseApiResponse<{ url: string; filename: string; originalName: string }>(
+    res,
+    'Lỗi khi tải file ảnh lên server'
+  );
 };
 
-export const uploadAudioFile = async (file: File, chapterTitle?: string): Promise<string> => {
-  const res = await uploadAudioToServer(file, chapterTitle);
+export const uploadAudioFile = async (
+  file: File,
+  chapterTitle?: string,
+  storyTitle?: string
+): Promise<string> => {
+  const res = await uploadAudioToServer(file, chapterTitle, storyTitle);
   return res.url;
 };
 

@@ -3,6 +3,7 @@ import { Play, Pause, Moon } from 'lucide-react';
 import { Track, Chapter } from '../types';
 import { useAudio } from '../context/AudioContext';
 import { BrandIcon } from './BrandIcon';
+import { formatPlayCount, getTrackActiveListeners, getTrackPlayCount } from '../services/stats';
 
 interface StoryPageProps {
   track: Track;
@@ -88,16 +89,6 @@ export const StoryPage: React.FC<StoryPageProps> = ({
     }
   };
 
-  // Format play count for Vietnamese locale
-  const formatPlayCount = (count?: number): string => {
-    const val = count || 130;
-    if (val >= 1000) {
-      const k = (val / 1000).toFixed(1).replace('.', ',');
-      return `${k} N lượt nghe`;
-    }
-    return `${val} lượt nghe`;
-  };
-
   return (
     <article 
       itemScope 
@@ -169,12 +160,14 @@ export const StoryPage: React.FC<StoryPageProps> = ({
             Audio Full
           </span>
           <span className="text-slate-400 font-mono">
-            🎧 {formatPlayCount(track.play_count)}
+            🎧 {formatPlayCount(getTrackPlayCount(track))}
           </span>
-          <span className="text-emerald-400 font-medium flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>
-            <span>1 đang nghe</span>
-          </span>
+          {getTrackActiveListeners(track) > 0 && (
+            <span className="text-emerald-400 font-medium flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>
+              <span>{getTrackActiveListeners(track)} đang nghe</span>
+            </span>
+          )}
         </div>
 
         {/* Release Date & Author */}

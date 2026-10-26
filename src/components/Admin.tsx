@@ -597,6 +597,7 @@ export const Admin: React.FC<AdminProps> = ({
   const [formDescription, setFormDescription] = useState<string>('');
   const [formIsFeatured, setFormIsFeatured] = useState<boolean>(false);
   const [formIsHot, setFormIsHot] = useState<boolean>(false);
+  const [formPlayCount, setFormPlayCount] = useState<number>(0);
   const [formChapters, setFormChapters] = useState<Chapter[]>([
     { id: 1, title: 'Phần 1: Khởi đầu', duration: '25:00', mp3_url: '' }
   ]);
@@ -1112,7 +1113,7 @@ export const Admin: React.FC<AdminProps> = ({
     try {
       const currentChapterTitle = formChapters[index]?.title || `Tập ${index + 1}`;
       const detectedDuration = await detectAudioFileDuration(file);
-      const serverUrl = await uploadAudioFile(file, currentChapterTitle);
+      const serverUrl = await uploadAudioFile(file, currentChapterTitle, formTitle);
 
       setFormChapters(prev => prev.map((ch, i) => {
         if (i === index) {
@@ -1182,6 +1183,7 @@ export const Admin: React.FC<AdminProps> = ({
       description: formDescription.trim(),
       is_featured: formIsFeatured,
       is_hot: formIsHot,
+      play_count: Math.max(0, Number(formPlayCount) || 0),
       chapters: formChapters.map(ch => ({
         ...ch,
         mp3_url: ch.mp3_url || formMp3Url || 'https://cdn.freesound.org/previews/612/612610_5674468-lq.mp3'
@@ -1221,6 +1223,7 @@ export const Admin: React.FC<AdminProps> = ({
     setFormDescription(track.description || '');
     setFormIsFeatured(Boolean(track.is_featured));
     setFormIsHot(Boolean(track.is_hot));
+    setFormPlayCount(Number(track.play_count) || 0);
     setFormChapters(track.chapters && track.chapters.length > 0 ? track.chapters : [
       { id: 1, title: 'Phần 1', duration: '25:00', mp3_url: track.mp3_url }
     ]);
@@ -1253,6 +1256,7 @@ export const Admin: React.FC<AdminProps> = ({
     setFormDescription('');
     setFormIsFeatured(false);
     setFormIsHot(false);
+    setFormPlayCount(0);
     setFormChapters([{ id: 1, title: 'Phần 1: Khởi đầu', duration: '25:00', mp3_url: '' }]);
     setFormMessage(null);
   };
@@ -1755,7 +1759,21 @@ export const Admin: React.FC<AdminProps> = ({
                   </select>
                 </div>
 
-                <div className="flex items-center gap-6 pt-5">
+                <div>
+                  <label className="text-xs text-slate-300 font-medium block mb-1">
+                    Lượt nghe (Play Count)
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={formPlayCount}
+                    onChange={(e) => setFormPlayCount(Math.max(0, parseInt(e.target.value) || 0))}
+                    placeholder="VD: 1200"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-400 font-mono"
+                  />
+                </div>
+
+                <div className="flex items-center gap-6 pt-3 sm:col-span-2">
                   <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-200">
                     <input
                       type="checkbox"
@@ -1799,7 +1817,7 @@ export const Admin: React.FC<AdminProps> = ({
                       Danh Sách Tập / Phần ({formChapters.length})
                     </h4>
                     <p className="text-[11px] text-slate-400">
-                      Khi upload file .mp3, hệ thống tự động chuẩn hóa tên file theo slug tiêu đề tập vào thư mục gốc <code className="text-amber-300 font-mono">uploads/audio/</code>
+                      Khi upload file .mp3, hệ thống tự động ghép <strong className="text-amber-300">Tên truyện + Tên tập</strong> vào thư mục <code className="text-amber-300 font-mono">uploads/audio/</code> (VD: <code className="text-emerald-300 font-mono">ten-truyen-phan-1.mp3</code>). Bạn có thể thoải mái đặt tên tập là <code className="text-amber-300">phan_1</code>, <code className="text-amber-300">phan_2</code> ở mọi truyện mà không lo bị trùng hay ghi đè mất file!
                     </p>
                   </div>
                   <button
@@ -1815,7 +1833,9 @@ export const Admin: React.FC<AdminProps> = ({
                   {formChapters.map((ch, idx) => {
                     const isUploadingThis = uploadingChapterIdx === idx;
                     const hasMp3 = Boolean(ch.mp3_url && ch.mp3_url.trim());
-                    const expectedSlug = slugifyChapterTitle(ch.title || `Tập ${idx + 1}`) || `tap-${idx + 1}`;
+                    const storySlug = slugifyChapterTitle(formTitle);
+                    const chapterSlug = slugifyChapterTitle(ch.title || `Tập ${idx + 1}`) || `tap-${idx + 1}`;
+                    const expectedSlug = storySlug ? (chapterSlug.startsWith(storySlug) ? chapterSlug : `${storySlug}-${chapterSlug}`) : chapterSlug;
                     const expectedDiskFile = `${expectedSlug}.mp3`;
                     const expectedDbUrl = `/uploads/audio/${expectedDiskFile}`;
                     const displayFileName = hasMp3
