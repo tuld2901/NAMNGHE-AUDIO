@@ -3,6 +3,7 @@ import { createServer as createViteServer } from 'vite';
 import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
+import zlib from 'zlib';
 import { spawn } from 'child_process';
 import {
   UPLOAD_ROOT_DIR,
@@ -12,6 +13,7 @@ import {
   slugifyVietnamese,
   normalizeLocalChapterAudioSlug,
   getTracks,
+  getTracksSync,
   getTrackById,
   addTrack,
   updateTrack,
@@ -50,7 +52,8 @@ import {
   restoreFromServerSnapshot,
   deleteServerSnapshot,
   normalizeAllAudioFilesToSlug,
-  detectAudioDurationSync
+  detectAudioDurationSync,
+  detectAudioDurationSecondsFast
 } from './server-db';
 
 async function startServer() {
@@ -196,28 +199,10 @@ async function startServer() {
 
   const audioDurationSecCache = new Map<string, number>();
 
-  const parseDurationStrToSec = (str: string): number => {
-    if (!str) return 0;
-    const parts = str.trim().split(':').map((n) => parseFloat(n));
-    if (parts.some((n) => isNaN(n))) return 0;
-    if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
-    if (parts.length === 2) return parts[0] * 60 + parts[1];
-    if (parts.length === 1) return parts[0];
-    return 0;
-  };
-
   const getCachedAudioDurationSec = (filePath: string, fallbackDurSec: number): number => {
     const cached = audioDurationSecCache.get(filePath);
     if (cached && cached > 0) return cached;
-    const durStr = detectAudioDurationSync(`/uploads/audio/${path.basename(filePath)}`);
-    const detected = parseDurationStrToSec(durStr);
-    // Prefer exact duration from browser decoder if detected fell back to default 25:00 (1500s)
-    const finalDur =
-      fallbackDurSec > 1 && fallbackDurSec < 86400 && (detected === 1500 || detected <= 0)
-        ? fallbackDurSec
-        : detected > 0
-        ? detected
-        : fallbackDurSec;
+    const finalDur = detectAudioDurationSecondsFast(filePath, fallbackDurSec);
     if (finalDur > 0) {
       audioDurationSecCache.set(filePath, finalDur);
     }
@@ -312,7 +297,6 @@ async function startServer() {
       const fileSize = stat.size;
       const seekSeconds = parseFloat(String(req.query.t || req.query.seek || '0')) || 0;
       const fallbackDurSec = parseFloat(String(req.query.dur || '0')) || 0;
-      const isApiStreamRoute = req.path.includes('/api/stream-audio');
 
       let baseStartByte = 0;
       if (seekSeconds > 0.5) {
@@ -328,13 +312,17 @@ async function startServer() {
       res.setHeader('Last-Modified', stat.mtime.toUTCString());
       res.setHeader('ETag', `W/"${slicedFileSize.toString(16)}-${Math.floor(stat.mtimeMs).toString(16)}-${Math.floor(seekSeconds)}"`);
 
-      // Crucial for VPS + Cloudflare: prevent Cloudflare from buffering/caching sliced seek streams or stripping byte ranges
-      if (seekSeconds > 0.5 || isApiStreamRoute) {
+      // Crucial for VPS + Cloudflare:
+      // - When seekSeconds > 0.5 (server-sliced seek): prevent any caching of sliced range
+      // - When seekSeconds <= 0.5 (normal playback): allow browser private cache (max-age=3600) for fast buffering, while instructing Cloudflare CDN not to buffer/transform
+      if (seekSeconds > 0.5) {
         res.setHeader('Cache-Control', 'private, no-store, no-cache, must-revalidate, no-transform');
         res.setHeader('CDN-Cache-Control', 'no-store');
         res.setHeader('Cloudflare-CDN-Cache-Control', 'no-store');
       } else {
-        res.setHeader('Cache-Control', 'public, max-age=2592000, immutable, no-transform');
+        res.setHeader('Cache-Control', 'private, max-age=3600, no-transform');
+        res.setHeader('CDN-Cache-Control', 'no-store');
+        res.setHeader('Cloudflare-CDN-Cache-Control', 'no-store');
       }
 
       if (range) {
@@ -364,7 +352,11 @@ async function startServer() {
           return;
         }
 
-        const fileStream = fs.createReadStream(filePath, { start: diskStart, end: diskEnd });
+        const fileStream = fs.createReadStream(filePath, {
+          start: diskStart,
+          end: diskEnd,
+          highWaterMark: 128 * 1024,
+        });
         req.on('close', () => {
           fileStream.destroy();
         });
@@ -384,7 +376,11 @@ async function startServer() {
           return;
         }
 
-        const fileStream = fs.createReadStream(filePath, { start: baseStartByte, end: fileSize - 1 });
+        const fileStream = fs.createReadStream(filePath, {
+          start: baseStartByte,
+          end: fileSize - 1,
+          highWaterMark: 128 * 1024,
+        });
         req.on('close', () => {
           fileStream.destroy();
         });
@@ -685,16 +681,26 @@ async function startServer() {
   app.get('/api/gateway', handleStoryGateway);
 
   // --- FAST SINGLE-REQUEST BOOTSTRAP ENDPOINT FOR INITIAL PAGE LOAD ---
-  app.get('/api/bootstrap', async (_req, res) => {
+  app.get('/api/bootstrap', async (req, res) => {
     try {
-      const [tracks, siteSettings, categories, links] = await Promise.all([
-        getTracks(),
-        Promise.resolve(getSiteSettings()),
-        Promise.resolve(getCategories()),
-        Promise.resolve(getAffiliateLinks()),
-      ]);
+      const tracks = await getTracks();
+      const siteSettings = getSiteSettings();
+      const includeAdminData = req.query.full === '1';
+      const payloadObj = includeAdminData
+        ? { tracks, siteSettings, categories: getCategories(), links: getAffiliateLinks() }
+        : { tracks, siteSettings };
+
+      const jsonStr = JSON.stringify(payloadObj);
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
       res.setHeader('Cache-Control', 'no-cache');
-      res.json({ tracks, siteSettings, categories, links });
+
+      const acceptEncoding = String(req.headers['accept-encoding'] || '');
+      if (acceptEncoding.includes('gzip') && jsonStr.length > 1024) {
+        res.setHeader('Content-Encoding', 'gzip');
+        res.send(zlib.gzipSync(Buffer.from(jsonStr, 'utf-8')));
+        return;
+      }
+      res.send(jsonStr);
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
@@ -1320,6 +1326,11 @@ ${urlsXml}
         const escapeHtml = (str: string) =>
           str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
+        const bootstrapJson = JSON.stringify({
+          tracks: getTracksSync(),
+          siteSettings: settings,
+        }).replace(/</g, '\\u003c');
+
         html = html
           .replace(/<title>.*?<\/title>/i, `<title>${escapeHtml(pageTitle)}</title>`)
           .replace(
@@ -1360,10 +1371,16 @@ ${urlsXml}
           )
           .replace(
             /<script id="seo-jsonld-schema" type="application\/ld\+json">[\s\S]*?<\/script>/i,
-            `<script id="seo-jsonld-schema" type="application/ld+json">\n${JSON.stringify(jsonLdObj, null, 2)}\n    </script>`
+            `<script id="seo-jsonld-schema" type="application/ld+json">\n${JSON.stringify(jsonLdObj, null, 2)}\n    </script>\n    <script>window.__INITIAL_BOOTSTRAP__=${bootstrapJson};</script>`
           );
 
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        const acceptEncoding = String(req.headers['accept-encoding'] || '');
+        if (acceptEncoding.includes('gzip')) {
+          res.setHeader('Content-Encoding', 'gzip');
+          res.send(zlib.gzipSync(Buffer.from(html, 'utf-8')));
+          return;
+        }
         res.send(html);
       } catch {
         res.sendFile(path.join(distPath, 'index.html'));

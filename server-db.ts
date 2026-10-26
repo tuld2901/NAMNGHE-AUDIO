@@ -331,6 +331,39 @@ function parseMp3DurationFromHeader(localPath: string, fileSize: number): number
   }
 }
 
+const audioDurationStrCache = new Map<string, string>();
+const audioDurationSecFastCache = new Map<string, number>();
+
+export function detectAudioDurationSecondsFast(localPath: string, fallbackSecs = 0): number {
+  try {
+    if (!localPath || !fs.existsSync(localPath)) return fallbackSecs;
+    const stat = fs.statSync(localPath);
+    const cacheKey = `${localPath}:${stat.size}:${Math.floor(stat.mtimeMs)}`;
+    const cached = audioDurationSecFastCache.get(cacheKey);
+    if (cached && cached > 0) return cached;
+
+    // 1. Đọc trực tiếp MP3 Frame Header (< 0.1ms, không mở tiến trình con)
+    const headerSecs = parseMp3DurationFromHeader(localPath, stat.size);
+    if (headerSecs > 0) {
+      audioDurationSecFastCache.set(cacheKey, headerSecs);
+      return headerSecs;
+    }
+
+    // 2. Nếu trình duyệt đã gửi sẵn fallbackSecs hợp lệ thì ưu tiên dùng luôn để không block luồng
+    if (fallbackSecs > 1 && fallbackSecs < 86400) {
+      audioDurationSecFastCache.set(cacheKey, fallbackSecs);
+      return fallbackSecs;
+    }
+
+    // 3. Dự phòng tính theo dung lượng file (128kbps = 16,000 bytes/giây)
+    const estSecs = Math.max(1, Math.round(stat.size / 16000));
+    audioDurationSecFastCache.set(cacheKey, estSecs);
+    return estSecs;
+  } catch {
+    return fallbackSecs;
+  }
+}
+
 export function detectAudioDurationSync(mp3Url: string): string {
   try {
     if (!mp3Url) return '25:00';
@@ -348,6 +381,11 @@ export function detectAudioDurationSync(mp3Url: string): string {
       if (!fs.existsSync(localPath)) return '25:00';
     }
 
+    const stat = fs.statSync(localPath);
+    const cacheKey = `${localPath}:${stat.size}:${Math.floor(stat.mtimeMs)}`;
+    const cachedStr = audioDurationStrCache.get(cacheKey);
+    if (cachedStr) return cachedStr;
+
     const formatSecs = (secs: number): string => {
       const s = Math.max(1, Math.floor(secs));
       const hrs = Math.floor(s / 3600);
@@ -358,28 +396,36 @@ export function detectAudioDurationSync(mp3Url: string): string {
         : `${mins < 10 ? '0' : ''}${mins}:${rem < 10 ? '0' : ''}${rem}`;
     };
 
-    // 1. Thử dùng ffprobe để lấy độ dài chính xác từng giây
+    // 1. Ưu tiên đọc trực tiếp MP3 Frame Header (CBR Bitrate / VBR Xing Header) cực nhanh (< 0.1ms)
+    const headerSecs = parseMp3DurationFromHeader(localPath, stat.size);
+    if (headerSecs > 0) {
+      const res = formatSecs(headerSecs);
+      audioDurationStrCache.set(cacheKey, res);
+      audioDurationSecFastCache.set(cacheKey, headerSecs);
+      return res;
+    }
+
+    // 2. Dự phòng gọi ffprobe nếu file có header đặc biệt
     try {
       const out = execSync(
         `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${localPath}"`,
-        { timeout: 2500, stdio: ['ignore', 'pipe', 'ignore'] }
+        { timeout: 1500, stdio: ['ignore', 'pipe', 'ignore'] }
       ).toString();
       const secs = parseFloat(out.trim());
       if (!isNaN(secs) && secs > 0) {
-        return formatSecs(secs);
+        const res = formatSecs(secs);
+        audioDurationStrCache.set(cacheKey, res);
+        audioDurationSecFastCache.set(cacheKey, Math.round(secs));
+        return res;
       }
     } catch {}
 
-    const stat = fs.statSync(localPath);
-    // 2. Đọc trực tiếp MP3 Frame Header (CBR Bitrate / VBR Xing Header) không cần ffprobe
-    const headerSecs = parseMp3DurationFromHeader(localPath, stat.size);
-    if (headerSecs > 0) {
-      return formatSecs(headerSecs);
-    }
-
     // 3. Dự phòng cuối: Tính theo dung lượng file (128kbps = 16,000 bytes/giây)
     const estSecs = Math.max(1, Math.round(stat.size / 16000));
-    return formatSecs(estSecs);
+    const res = formatSecs(estSecs);
+    audioDurationStrCache.set(cacheKey, res);
+    audioDurationSecFastCache.set(cacheKey, estSecs);
+    return res;
   } catch {
     return '25:00';
   }
@@ -450,24 +496,14 @@ export function autoFixMissingChapterDurations(): void {
             changed = true;
           }
           const mp3Url = cleanChMp3;
-          let hasPhysicalFile = false;
-          if (mp3Url.includes('/uploads/')) {
-            const fname = path.basename(mp3Url.split('?')[0]);
-            if (
-              fs.existsSync(path.join(UPLOAD_AUDIO_DIR, fname)) ||
-              fs.existsSync(path.join(UPLOAD_ROOT_DIR, fname))
-            ) {
-              hasPhysicalFile = true;
-            }
-          }
+          const curDur = (ch.duration || '').trim();
+          const needsDurationCalc =
+            !curDur ||
+            curDur === 'Audio Full' ||
+            curDur === 'Chưa gắn' ||
+            (curDur === '25:00' && mp3Url.includes('/uploads/'));
 
-          if (
-            hasPhysicalFile ||
-            !ch.duration ||
-            ch.duration.trim() === '' ||
-            ch.duration === 'Audio Full' ||
-            ch.duration === 'Chưa gắn'
-          ) {
+          if (needsDurationCalc) {
             const calcDuration = detectAudioDurationSync(mp3Url);
             if (ch.duration !== calcDuration) {
               ch.duration = calcDuration;
@@ -512,26 +548,36 @@ if (dbData.supabaseConfig?.url && dbData.supabaseConfig?.anonKey) {
 }
 
 // --- TRACKS API ---
+let lastSupabaseSyncMs = 0;
+let isSupabaseSyncing = false;
+
+export function getTracksSync(): Track[] {
+  return dbData.tracks;
+}
+
 export async function getTracks(): Promise<Track[]> {
-  if (serverSupabase) {
-    try {
-      const { data, error } = await serverSupabase
+  if (serverSupabase && !isSupabaseSyncing && Date.now() - lastSupabaseSyncMs > 30000) {
+    isSupabaseSyncing = true;
+    lastSupabaseSyncMs = Date.now();
+    Promise.resolve(
+      serverSupabase
         .from('tracks')
         .select('*')
-        .order('created_at', { ascending: false });
-
-      if (!error && data && data.length > 0) {
-        // Sync to local json
-        dbData.tracks = data.map((t: any) => ({
-          ...t,
-          chapters: t.chapters || [{ id: 1, title: 'Phần 1', duration: '25:00', mp3_url: t.mp3_url }]
-        }));
-        saveDatabase(dbData);
-        return dbData.tracks;
-      }
-    } catch (err) {
-      console.warn('Supabase fetch failed on server, using disk DB:', err);
-    }
+        .order('created_at', { ascending: false })
+    )
+      .then(({ data, error }) => {
+        if (!error && data && data.length > 0) {
+          dbData.tracks = data.map((t: any) => ({
+            ...t,
+            chapters: t.chapters || [{ id: 1, title: 'Phần 1', duration: '25:00', mp3_url: t.mp3_url }]
+          }));
+          scheduleSaveDatabase();
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        isSupabaseSyncing = false;
+      });
   }
   return dbData.tracks;
 }

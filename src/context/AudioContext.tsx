@@ -161,11 +161,6 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({
   const loadedChapterUrlRef = useRef<string>('');
   const currentTimeRef = useRef<number>(0);
 
-  // Full-file in-memory Blob preloader for 0ms seeking immune to Cloudflare Range resets
-  const blobUrlRef = useRef<string | null>(null);
-  const isBlobReadyRef = useRef<boolean>(false);
-  const preloadAbortRef = useRef<AbortController | null>(null);
-
   useEffect(() => {
     isScrubbingRef.current = isScrubbing;
   }, [isScrubbing]);
@@ -173,59 +168,6 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({
   useEffect(() => {
     currentTimeRef.current = currentTime;
   }, [currentTime]);
-
-  const cleanupPreloadedBlob = useCallback(() => {
-    if (preloadAbortRef.current) {
-      preloadAbortRef.current.abort();
-      preloadAbortRef.current = null;
-    }
-    isBlobReadyRef.current = false;
-    if (blobUrlRef.current) {
-      try {
-        URL.revokeObjectURL(blobUrlRef.current);
-      } catch {}
-      blobUrlRef.current = null;
-    }
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      cleanupPreloadedBlob();
-    };
-  }, [cleanupPreloadedBlob]);
-
-  const startBackgroundBlobPreload = useCallback(
-    (rawUrl: string) => {
-      cleanupPreloadedBlob();
-      if (!isLocalServerAudioUrl(rawUrl)) return;
-
-      const cleanPath = extractCleanUploadPath(rawUrl);
-      const controller = new AbortController();
-      preloadAbortRef.current = controller;
-
-      const preloadUrl = `/api/stream-audio?src=${encodeURIComponent(cleanPath)}&t=0`;
-      fetch(preloadUrl, { signal: controller.signal })
-        .then((res) => {
-          if (!res.ok) throw new Error('Preload failed');
-          return res.blob();
-        })
-        .then((blob) => {
-          if (controller.signal.aborted) return;
-          if (blob.size < 1024) return;
-          const mp3Blob = blob.type === 'audio/mpeg' ? blob : new Blob([blob], { type: 'audio/mpeg' });
-          const objectUrl = URL.createObjectURL(mp3Blob);
-          blobUrlRef.current = objectUrl;
-          isBlobReadyRef.current = true;
-          if (fullDurationRef.current > 0) {
-            setBufferedTime(fullDurationRef.current);
-          }
-        })
-        .catch(() => {
-          // Silently ignore abort or network preload error; server-side seek remains active
-        });
-    },
-    [cleanupPreloadedBlob]
-  );
 
   const activeMp3Url = currentChapter?.mp3_url || currentTrack?.mp3_url || '';
 
@@ -255,11 +197,11 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({
       if (targetSec <= 0.5) {
         streamOffsetRef.current = 0;
         lastTargetSeekRef.current = 0;
-        audio.src = `/api/stream-audio?src=${encodeURIComponent(cleanPath)}&t=0&_cb=${Date.now()}`;
+        audio.src = `/api/stream-audio?src=${encodeURIComponent(cleanPath)}&t=0`;
       } else {
         streamOffsetRef.current = targetSec;
         lastTargetSeekRef.current = targetSec;
-        audio.src = `/api/stream-audio?src=${encodeURIComponent(cleanPath)}&t=${targetSec.toFixed(1)}&dur=${durParam}&_cb=${Date.now()}`;
+        audio.src = `/api/stream-audio?src=${encodeURIComponent(cleanPath)}&t=${targetSec.toFixed(1)}&dur=${durParam}`;
       }
 
       audio.playbackRate = playbackSpeed;
@@ -297,7 +239,6 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({
         setDuration(0);
       }
       audio.src = buildInitialPlaybackUrl(activeMp3Url);
-      startBackgroundBlobPreload(activeMp3Url);
     }
     audio.playbackRate = playbackSpeed;
     audio.volume = isMuted ? 0 : volume;
@@ -318,7 +259,7 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({
         audio.pause();
       }
     }
-  }, [activeMp3Url, isPlaying, playbackSpeed, isMuted, volume, currentChapter, buildInitialPlaybackUrl, startBackgroundBlobPreload]);
+  }, [activeMp3Url, isPlaying, playbackSpeed, isMuted, volume, currentChapter, buildInitialPlaybackUrl]);
 
   // Synchronize playback speed
   const setPlaybackSpeed = useCallback((speed: number) => {
@@ -352,7 +293,7 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({
     }
   }, [isMuted, volume]);
 
-  // Handle seeking with finger/scrubber (Dual-Engine RAM Blob + Server Byte-Slice Seeking)
+  // Handle seeking with finger/scrubber (Buffered 0ms Seek + Server Byte-Slice Seeking)
   const seekTo = useCallback(
     (time: number) => {
       const audio = audioRef.current;
@@ -375,7 +316,7 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({
       seekTimeoutRef.current = setTimeout(() => {
         isSeekingRef.current = false;
         lastTargetSeekRef.current = null;
-      }, 2800);
+      }, 2500);
 
       setCurrentTime(validTime);
 
@@ -383,35 +324,7 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({
 
       const isLocalUpload = isLocalServerAudioUrl(activeMp3Url);
 
-      // TRƯỜNG HỢP 1A: Nếu file MP3 đã tải trọn bộ vào RAM (Blob URL) -> Tua tức thì 0ms trong RAM, bất tử trước Cloudflare!
-      if (isBlobReadyRef.current && blobUrlRef.current) {
-        streamOffsetRef.current = 0;
-        if (audio.src !== blobUrlRef.current) {
-          pendingSeekRef.current = validTime;
-          audio.src = blobUrlRef.current;
-          audio.playbackRate = playbackSpeed;
-          audio.volume = isMuted ? 0 : volume;
-          try {
-            audio.currentTime = validTime;
-          } catch {}
-          if (isPlaying) {
-            const p = audio.play();
-            if (p !== undefined) p.catch(() => {});
-          }
-        } else {
-          pendingSeekRef.current = null;
-          try {
-            audio.currentTime = validTime;
-          } catch {}
-          if (isPlaying && audio.paused) {
-            const p = audio.play();
-            if (p !== undefined) p.catch(() => {});
-          }
-        }
-        return;
-      }
-
-      // TRƯỜNG HỢP 1B: Nếu đoạn cần tua đã nằm sẵn trong cả buffered và seekable của trình duyệt
+      // TRƯỜNG HỢP 1: Nếu đoạn cần tua đã nằm sẵn trong bộ đệm (buffered & seekable) của trình duyệt -> Tua mượt tức thì 0ms
       const relativeTarget = validTime - streamOffsetRef.current;
       const canSeekNatively = isTimeInBufferedAndSeekableRange(audio, relativeTarget);
 
@@ -419,14 +332,14 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({
         try {
           audio.currentTime = Math.max(0, relativeTarget);
 
-          // Hậu kiểm sau 90ms: Nếu trình duyệt/Cloudflare ép reset currentTime về 0 thì lập tức chuyển sang cắt luồng từ Server!
+          // Hậu kiểm sau 100ms: Nếu trình duyệt/Cloudflare ép reset currentTime về 0 thì lập tức chuyển sang cắt luồng từ Server!
           if (isLocalUpload && relativeTarget > 2) {
             verifySeekTimerRef.current = setTimeout(() => {
               if (!audioRef.current) return;
               if (audioRef.current.currentTime < 1 && relativeTarget > 2) {
                 triggerServerSlicedStream(validTime, activeMp3Url);
               }
-            }, 90);
+            }, 100);
           }
           return;
         } catch {
@@ -434,7 +347,7 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({
         }
       }
 
-      // TRƯỜNG HỢP 2: File dài chưa tải xong đến điểm kéo -> Gửi request lên Server cắt MP3 bắt đầu ngay từ giây vừa kéo
+      // TRƯỜNG HỢP 2: File chưa tải đến điểm kéo -> Gửi request lên Server cắt MP3 bắt đầu ngay từ giây vừa kéo
       if (isLocalUpload) {
         triggerServerSlicedStream(validTime, activeMp3Url);
         return;
@@ -449,7 +362,7 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({
         }
       } catch {}
     },
-    [duration, activeMp3Url, playbackSpeed, isMuted, volume, isPlaying, triggerServerSlicedStream]
+    [duration, activeMp3Url, triggerServerSlicedStream]
   );
 
   // Skip relative seconds
@@ -536,7 +449,6 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({
             setDuration(0);
           }
           audio.src = buildInitialPlaybackUrl(nextUrl);
-          startBackgroundBlobPreload(nextUrl);
         }
         audio.playbackRate = playbackSpeed;
         audio.volume = isMuted ? 0 : volume;
@@ -551,7 +463,7 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({
       setIsPlaying(true);
       incrementPlayCount(track.id);
     },
-    [onRequireUnlock, playbackSpeed, isMuted, volume, buildInitialPlaybackUrl, startBackgroundBlobPreload]
+    [onRequireUnlock, playbackSpeed, isMuted, volume, buildInitialPlaybackUrl]
   );
 
   // Next Chapter
@@ -633,10 +545,6 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({
   }, [isPlaying, currentTrack, currentChapter, allTracks, playTrackChapter, onRequireUnlock]);
 
   const updateBufferedProgress = useCallback(() => {
-    if (isBlobReadyRef.current && fullDurationRef.current > 0) {
-      setBufferedTime(fullDurationRef.current);
-      return;
-    }
     const audio = audioRef.current;
     if (!audio) return;
     try {

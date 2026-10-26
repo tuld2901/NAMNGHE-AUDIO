@@ -63,10 +63,19 @@ export const supabase: SupabaseClient | null = isSupabaseConfigured()
 // ===========================================================================
 // IN-MEMORY CACHES (Synchronized continuously with Server backend)
 // ===========================================================================
-let cachedTracks: Track[] = [...DEFAULT_TRACKS];
+const ssrBootstrap =
+  typeof window !== 'undefined' ? (window as any).__INITIAL_BOOTSTRAP__ : null;
+
+let cachedTracks: Track[] =
+  ssrBootstrap && Array.isArray(ssrBootstrap.tracks) && ssrBootstrap.tracks.length > 0
+    ? ssrBootstrap.tracks
+    : [...DEFAULT_TRACKS];
 let cachedCategories: AffiliateCategory[] = [...DEFAULT_AFFILIATE_CATEGORIES];
 let cachedLinks: AffiliateItem[] = [...DEFAULT_AFFILIATE_LINKS];
-let cachedSettings: SiteSettings = { ...DEFAULT_SITE_SETTINGS };
+let cachedSettings: SiteSettings =
+  ssrBootstrap && ssrBootstrap.siteSettings
+    ? { ...DEFAULT_SITE_SETTINGS, ...ssrBootstrap.siteSettings }
+    : { ...DEFAULT_SITE_SETTINGS };
 
 // Synchronous getters (read from in-memory cache for instant UI rendering)
 export const getLocalTracks = (): Track[] => cachedTracks;
@@ -88,6 +97,14 @@ export const fetchBootstrapData = async (): Promise<{
   tracks: Track[];
   siteSettings: SiteSettings;
 }> => {
+  // If SSR already injected __INITIAL_BOOTSTRAP__ into index.html, return immediately in 0ms!
+  if (ssrBootstrap && Array.isArray(ssrBootstrap.tracks) && ssrBootstrap.tracks.length > 0) {
+    return {
+      tracks: cachedTracks,
+      siteSettings: cachedSettings,
+    };
+  }
+
   try {
     const res = await fetch('/api/bootstrap');
     if (res.ok) {

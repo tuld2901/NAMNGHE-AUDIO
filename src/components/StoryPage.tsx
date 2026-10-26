@@ -50,7 +50,8 @@ export const StoryPage: React.FC<StoryPageProps> = React.memo(({
       if (ch.duration && ch.duration.trim() && ch.duration !== 'Audio Full' && ch.duration !== 'Chưa gắn') {
         return;
       }
-      if (!ch.mp3_url || probeCount >= 3) return;
+      // File trên server (/uploads/) đã được server tính sẵn thời lượng, không tạo Audio ngầm gây tốn băng thông
+      if (!ch.mp3_url || ch.mp3_url.includes('/uploads/') || probeCount >= 2) return;
       probeCount++;
 
       const audio = new Audio();
