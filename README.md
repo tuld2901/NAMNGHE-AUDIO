@@ -9,6 +9,15 @@ A modern Audio Story CMS & Streaming Web Application powered by Node.js, Express
 - **Node.js**: v18.x or v20.x LTS (Recommended: Node.js 20 LTS)
 - **NPM**: v9+ or v10+
 - **Git**
+- **FFmpeg & FFprobe**: (Recommended) Tự động đo thời lượng chính xác từng giây khi upload MP3:
+  - **Ubuntu / Debian**:
+    ```bash
+    sudo apt update && sudo apt install -y ffmpeg
+    ```
+  - **CentOS / AlmaLinux / Rocky Linux**:
+    ```bash
+    sudo dnf install -y epel-release && sudo dnf install -y ffmpeg
+    ```
 - **Default Port**: `3000` (configurable via `PORT` environment variable)
 
 Check your environment:
@@ -16,6 +25,7 @@ Check your environment:
 node -v
 npm -v
 git --version
+ffprobe -version
 ```
 
 ---

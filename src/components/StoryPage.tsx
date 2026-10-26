@@ -34,9 +34,39 @@ export const StoryPage: React.FC<StoryPageProps> = ({
     () =>
       track.chapters && track.chapters.length > 0
         ? track.chapters
-        : [{ id: 1, title: track.title, duration: '', mp3_url: track.mp3_url }],
+        : [{ id: 1, title: track.title, duration: '25:00', mp3_url: track.mp3_url }],
     [track.chapters, track.title, track.mp3_url]
   );
+
+  // Tự động nhận diện thời lượng các tập nếu dữ liệu chưa có sẵn
+  const [probedDurations, setProbedDurations] = useState<Record<string | number, string>>({});
+
+  useEffect(() => {
+    chapters.forEach((ch, idx) => {
+      const key = ch.id ?? idx;
+      if (ch.duration && ch.duration.trim() && ch.duration !== 'Audio Full' && ch.duration !== 'Chưa gắn') {
+        return;
+      }
+      if (!ch.mp3_url) return;
+
+      const audio = new Audio();
+      audio.preload = 'metadata';
+      audio.onloadedmetadata = () => {
+        const secs = audio.duration;
+        if (secs > 0 && isFinite(secs)) {
+          const s = Math.floor(secs);
+          const hrs = Math.floor(s / 3600);
+          const mins = Math.floor((s % 3600) / 60);
+          const rem = s % 60;
+          const formatted = hrs > 0
+            ? `${hrs}:${mins < 10 ? '0' : ''}${mins}:${rem < 10 ? '0' : ''}${rem}`
+            : `${mins < 10 ? '0' : ''}${mins}:${rem < 10 ? '0' : ''}${rem}`;
+          setProbedDurations((prev) => ({ ...prev, [key]: formatted }));
+        }
+      };
+      audio.src = ch.mp3_url;
+    });
+  }, [chapters]);
 
   const isCurrentStoryActive = currentTrack?.id === track.id;
 
@@ -250,7 +280,9 @@ export const StoryPage: React.FC<StoryPageProps> = ({
                     >
                       {isThisActive && duration > 0
                         ? formatTime(duration)
-                        : (ch.duration && ch.duration.trim() ? ch.duration : 'Audio Full')}
+                        : (ch.duration && ch.duration.trim() && ch.duration !== 'Audio Full' && ch.duration !== 'Chưa gắn'
+                            ? ch.duration.trim()
+                            : (probedDurations[ch.id ?? idx] || '25:00'))}
                     </span>
                   </div>
                 </div>

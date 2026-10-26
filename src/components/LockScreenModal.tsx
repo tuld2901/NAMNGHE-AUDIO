@@ -81,32 +81,24 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
     isActive: true,
   };
 
-  const handleUnlockClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    const targetUrl =
-      currentAffiliate.url && currentAffiliate.url.startsWith('http')
-        ? currentAffiliate.url
-        : 'https://shopee.vn';
+  const targetUrl =
+    currentAffiliate.url && currentAffiliate.url.startsWith('http')
+      ? currentAffiliate.url
+      : 'https://shopee.vn';
 
-    // 1. Mở link affiliate ngẫu nhiên vừa bốc được trong tab mới
-    try {
-      window.open(targetUrl, '_blank', 'noopener,noreferrer');
-    } catch (err) {
-      console.warn('Popup blocked:', err);
-    }
-
-    // 2. Ghi nhận lượt click
+  const handleUnlockClick = () => {
+    // 1. Ghi nhận lượt click thống kê
     incrementAffiliateClick(currentAffiliate.id);
 
-    // 3. Đánh dấu đã mở khóa trong ngày hôm nay
+    // 2. Đánh dấu đã mở khóa trong ngày hôm nay
     markDailyUnlockedToday();
 
-    // 4. Bật phát audio tập truyện
+    // 3. Kích hoạt phát audio tập truyện
     if (targetChapter) {
       onUnlockSuccess(targetTrack, targetChapter);
     }
 
-    // 5. Đóng modal
+    // 4. Đóng modal
     onClose();
   };
 
@@ -162,14 +154,16 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
           )}
         </div>
 
-        {/* Nút bấm cam cố định: Đồng Ý mở Shopee và tham khảo sản phẩm */}
-        <button
-          type="button"
+        {/* Nút bấm mở Shopee dạng thẻ <a> chuẩn: Trình duyệt mở tab mới tự nhiên, không bị tính là popup ẩn và không bao giờ hỏi quyền */}
+        <a
+          href={targetUrl}
+          target="_blank"
+          rel="noopener noreferrer"
           onClick={handleUnlockClick}
           className="w-full py-3.5 px-5 rounded-2xl font-bold text-sm sm:text-base text-slate-950 bg-gradient-to-r from-[#ff6b3d] to-[#ffaa48] hover:from-[#ff5c2a] hover:to-[#ff9f3a] transition-all duration-200 shadow-lg shadow-orange-500/25 flex items-center justify-center text-center cursor-pointer no-underline select-none active:scale-[0.99]"
         >
           Đồng Ý mở Shopee và tham khảo sản phẩm
-        </button>
+        </a>
 
         {/* Lưu ý cố định dưới cùng */}
         <p className="mt-3.5 text-[11px] sm:text-xs text-slate-500 leading-relaxed font-normal">

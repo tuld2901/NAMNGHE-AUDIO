@@ -19,9 +19,31 @@ git push -u origin main
 
 ---
 
-## 2. CÀI ĐẶT PM2 TOÀN HỆ THỐNG (GLOBAL PM2)
+## 2. CÀI ĐẶT PM2 & FFMPEG TOÀN HỆ THỐNG
 
-### 2.1. Cài đặt PM2 Global
+### 2.1. Cài đặt FFmpeg & FFprobe (Đo thời lượng Audio chuẩn xác khi Upload)
+Server sử dụng tiện ích `ffprobe` (nằm trong bộ công cụ FFmpeg) để đọc chính xác từng giây thời lượng của file MP3 khi upload:
+
+- **Trên Ubuntu / Debian:**
+  ```bash
+  sudo apt update && sudo apt install -y ffmpeg
+  ```
+- **Trên CentOS / RHEL / AlmaLinux / Rocky Linux:**
+  ```bash
+  sudo dnf install -y epel-release
+  sudo dnf install -y ffmpeg
+  ```
+- **Trên macOS:**
+  ```bash
+  brew install ffmpeg
+  ```
+- **Kiểm tra sau khi cài:**
+  ```bash
+  ffprobe -version
+  ```
+*(Lưu ý: Nếu chưa cài ffmpeg, hệ thống có cơ chế dự phòng tự động tính thời lượng theo dung lượng byte file MP3 128kbps mà không bị gián đoạn).*
+
+### 2.2. Cài đặt PM2 Global
 - **Trên Linux (Ubuntu / Debian / CentOS / AlmaLinux):**
   ```bash
   sudo npm install -g pm2
@@ -31,7 +53,7 @@ git push -u origin main
   npm install -g pm2
   ```
 
-### 2.2. Gắn PM2 vào biến môi trường toàn hệ thống (`/usr/bin`)
+### 2.3. Gắn PM2 vào biến môi trường toàn hệ thống (`/usr/bin`)
 Nếu cài Node.js qua **NVM** hoặc **aaPanel**, đôi khi gõ `pm2` ở thư mục khác hoặc qua `sudo` sẽ báo `pm2: command not found`. Chạy lệnh dưới đây để gắn PM2 cho toàn hệ thống:
 
 - **Khi dùng NVM hoặc Node chuẩn:**
@@ -163,13 +185,14 @@ LimitRequestBody 157286400
 
 ## 5. HƯỚNG DẪN CÀI ĐẶT TRÊN VPS LINUX THUẦN (UBUNTU / DEBIAN + NGINX)
 
-### Bước 5.1: Cài đặt Node.js 20, Git, Nginx và PM2
+### Bước 5.1: Cài đặt Node.js 20, Git, Nginx, FFmpeg và PM2
 ```bash
 sudo apt update && sudo apt upgrade -y
-sudo apt install -y curl git nginx build-essential
+sudo apt install -y curl git nginx build-essential ffmpeg
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt install -y nodejs
 sudo npm install -g pm2
+ffprobe -version
 ```
 
 ### Bước 5.2: Tải code, Build và chạy PM2

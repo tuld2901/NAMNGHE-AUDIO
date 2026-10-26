@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { execSync } from 'child_process';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { Track, AffiliateCategory, AffiliateItem, SiteSettings, AdminAccount } from './src/types';
 import { 
@@ -216,8 +217,82 @@ function scheduleSaveDatabase() {
   }, 1500);
 }
 
+// --- TỰ ĐỘNG TÍNH TOÁN ĐỘ DÀI AUDIO TỪ FILE DISK (FFPROBE / FILE SIZE) ---
+export function detectAudioDurationSync(mp3Url: string): string {
+  try {
+    if (!mp3Url) return '25:00';
+    let filename = '';
+    if (mp3Url.includes('/uploads/audio/')) {
+      filename = mp3Url.split('/uploads/audio/')[1]?.split('?')[0];
+    } else if (mp3Url.includes('/uploads/')) {
+      filename = mp3Url.split('/uploads/')[1]?.split('?')[0];
+    }
+    if (!filename) return '25:00';
+
+    let localPath = path.join(UPLOAD_AUDIO_DIR, filename);
+    if (!fs.existsSync(localPath)) {
+      localPath = path.join(UPLOAD_ROOT_DIR, filename);
+      if (!fs.existsSync(localPath)) return '25:00';
+    }
+
+    // 1. Thử dùng ffprobe để lấy độ dài chính xác từng giây
+    try {
+      const out = execSync(
+        `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${localPath}"`,
+        { timeout: 2500 }
+      ).toString();
+      const secs = parseFloat(out.trim());
+      if (!isNaN(secs) && secs > 0) {
+        const s = Math.floor(secs);
+        const hrs = Math.floor(s / 3600);
+        const mins = Math.floor((s % 3600) / 60);
+        const rem = s % 60;
+        return hrs > 0
+          ? `${hrs}:${mins < 10 ? '0' : ''}${mins}:${rem < 10 ? '0' : ''}${rem}`
+          : `${mins < 10 ? '0' : ''}${mins}:${rem < 10 ? '0' : ''}${rem}`;
+      }
+    } catch {}
+
+    // 2. Dự phòng: Tính toán theo dung lượng file (chuẩn bitrate 128kbps = 16,000 bytes/giây)
+    const stat = fs.statSync(localPath);
+    const estSecs = Math.max(60, Math.round(stat.size / 16000));
+    const hrs = Math.floor(estSecs / 3600);
+    const mins = Math.floor((estSecs % 3600) / 60);
+    const rem = estSecs % 60;
+    return hrs > 0
+      ? `${hrs}:${mins < 10 ? '0' : ''}${mins}:${rem < 10 ? '0' : ''}${rem}`
+      : `${mins < 10 ? '0' : ''}${mins}:${rem < 10 ? '0' : ''}${rem}`;
+  } catch {
+    return '25:00';
+  }
+}
+
+export function autoFixMissingChapterDurations(): void {
+  try {
+    let changed = false;
+    for (const track of dbData.tracks) {
+      if (Array.isArray(track.chapters)) {
+        for (const ch of track.chapters) {
+          if (!ch.duration || ch.duration.trim() === '' || ch.duration === 'Audio Full' || ch.duration === 'Chưa gắn') {
+            const calcDuration = detectAudioDurationSync(ch.mp3_url || track.mp3_url);
+            ch.duration = calcDuration;
+            changed = true;
+          }
+        }
+      }
+    }
+    if (changed) {
+      saveDatabase(dbData);
+      console.log('[Database] Đã tự động tính toán và gắn thời lượng cho tất cả các tập truyện còn thiếu.');
+    }
+  } catch (err) {
+    console.warn('[Database] Lỗi khi tự động gắn thời lượng tập:', err);
+  }
+}
+
 // Initialize on server start
 dbData = loadDatabase();
+autoFixMissingChapterDurations();
 
 // Supabase client instance on server if configured
 let serverSupabase: SupabaseClient | null = null;
@@ -277,10 +352,14 @@ export async function addTrack(payload: Partial<Track> & { cover_url?: string })
         const chTitle = ch.title || `Phần ${idx + 1}`;
         const rawUrl = ch.mp3_url || payload.mp3_url || '';
         const normalizedUrl = normalizeLocalChapterAudioSlug(chTitle, rawUrl, storyTitle);
+        const resolvedDuration =
+          ch.duration && ch.duration.trim() && ch.duration !== 'Audio Full' && ch.duration !== 'Chưa gắn'
+            ? ch.duration.trim()
+            : detectAudioDurationSync(normalizedUrl);
         return {
           id: ch.id !== undefined ? ch.id : idx + 1,
           title: chTitle,
-          duration: ch.duration || '',
+          duration: resolvedDuration,
           mp3_url: normalizedUrl
         };
       })
@@ -288,7 +367,7 @@ export async function addTrack(payload: Partial<Track> & { cover_url?: string })
         {
           id: 1,
           title: 'Phần 1: Khởi đầu',
-          duration: '',
+          duration: detectAudioDurationSync(payload.mp3_url || ''),
           mp3_url: normalizeLocalChapterAudioSlug('Phần 1: Khởi đầu', payload.mp3_url || '', storyTitle)
         }
       ];
@@ -345,10 +424,14 @@ export async function updateTrack(id: string, updates: Partial<Track> & { cover_
     normalizedUpdates.chapters = updates.chapters.map((ch, idx) => {
       const chTitle = ch.title || `Phần ${idx + 1}`;
       const normalizedUrl = normalizeLocalChapterAudioSlug(chTitle, ch.mp3_url || '', storyTitle);
+      const resolvedDuration =
+        ch.duration && ch.duration.trim() && ch.duration !== 'Audio Full' && ch.duration !== 'Chưa gắn'
+          ? ch.duration.trim()
+          : detectAudioDurationSync(normalizedUrl);
       return {
         id: ch.id !== undefined ? ch.id : idx + 1,
         title: chTitle,
-        duration: ch.duration || '',
+        duration: resolvedDuration,
         mp3_url: normalizedUrl
       };
     });
@@ -388,10 +471,18 @@ export async function addChapterToTrack(
 
   const currentChapters = Array.isArray(existing.chapters) ? [...existing.chapters] : [];
   const nextIndex = currentChapters.length + 1;
+  const resolvedDuration =
+    chapterPayload.duration &&
+    chapterPayload.duration.trim() &&
+    chapterPayload.duration !== 'Audio Full' &&
+    chapterPayload.duration !== 'Chưa gắn'
+      ? chapterPayload.duration.trim()
+      : detectAudioDurationSync(chapterPayload.mp3_url);
+
   const newChapter = {
     id: chapterPayload.id !== undefined ? chapterPayload.id : nextIndex,
     title: chapterPayload.title || `Phần ${nextIndex}: Tập mới`,
-    duration: chapterPayload.duration || '',
+    duration: resolvedDuration,
     mp3_url: chapterPayload.mp3_url || ''
   };
 

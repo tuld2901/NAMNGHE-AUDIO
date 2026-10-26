@@ -23,11 +23,13 @@ export const AudioScrubber: React.FC<AudioScrubberProps> = ({
 }) => {
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [dragTime, setDragTime] = useState<number>(currentTime);
+  const dragTimeRef = useRef<number>(currentTime);
   const trackRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!isDragging) {
       setDragTime(currentTime);
+      dragTimeRef.current = currentTime;
     }
   }, [currentTime, isDragging]);
 
@@ -35,93 +37,104 @@ export const AudioScrubber: React.FC<AudioScrubberProps> = ({
   const displayTime = isDragging ? dragTime : currentTime;
   const progressPercent = Math.min(100, Math.max(0, (displayTime / activeDuration) * 100));
 
-  const getTimeFromEvent = useCallback(
+  const getTimeFromClientX = useCallback(
     (clientX: number): number => {
       if (!trackRef.current) return 0;
       const rect = trackRef.current.getBoundingClientRect();
+      if (rect.width <= 0) return 0;
       const clickX = clientX - rect.left;
       const ratio = Math.max(0, Math.min(1, clickX / rect.width));
-      return ratio * (duration || 0);
+      const targetDur = duration > 0 ? duration : 0;
+      return ratio * targetDur;
     },
     [duration]
   );
 
-  const handleStart = (clientX: number) => {
+  // Pointer Down (Mouse click or Touch start)
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return; // Only main click
+    e.preventDefault();
+    e.stopPropagation();
+
+    const newTime = getTimeFromClientX(e.clientX);
+    dragTimeRef.current = newTime;
+    setDragTime(newTime);
     setIsDragging(true);
     if (onScrubbingChange) onScrubbingChange(true);
-    const newTime = getTimeFromEvent(clientX);
-    setDragTime(newTime);
+
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {}
   };
 
-  const handleMove = (clientX: number) => {
-    if (!isDragging && !trackRef.current) return;
-    const newTime = getTimeFromEvent(clientX);
-    setDragTime(newTime);
-  };
-
-  const handleEnd = () => {
-    if (isDragging) {
-      setIsDragging(false);
-      if (onScrubbingChange) onScrubbingChange(false);
-      onSeek(dragTime);
-    }
-  };
-
-  useEffect(() => {
+  // Pointer Move (Dragging with mouse or finger)
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!isDragging) return;
+    const newTime = getTimeFromClientX(e.clientX);
+    dragTimeRef.current = newTime;
+    setDragTime(newTime);
+  };
 
-    const onPointerMove = (e: MouseEvent | TouchEvent) => {
-      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-      handleMove(clientX);
-    };
+  // Pointer Up (Mouse release or Finger lifted)
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    if (onScrubbingChange) onScrubbingChange(false);
 
-    const onPointerUp = () => {
-      handleEnd();
-    };
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {}
 
-    window.addEventListener('mousemove', onPointerMove);
-    window.addEventListener('mouseup', onPointerUp);
-    window.addEventListener('touchmove', onPointerMove, { passive: true });
-    window.addEventListener('touchend', onPointerUp);
-    window.addEventListener('touchcancel', onPointerUp);
+    const finalTime = getTimeFromClientX(e.clientX);
+    dragTimeRef.current = finalTime;
+    setDragTime(finalTime);
+    onSeek(finalTime);
+  };
 
-    return () => {
-      window.removeEventListener('mousemove', onPointerMove);
-      window.removeEventListener('mouseup', onPointerUp);
-      window.removeEventListener('touchmove', onPointerMove);
-      window.removeEventListener('touchend', onPointerUp);
-      window.removeEventListener('touchcancel', onPointerUp);
-    };
-  }, [isDragging, dragTime, duration]);
+  const handlePointerCancel = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    if (onScrubbingChange) onScrubbingChange(false);
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {}
+  };
 
-  const trackHeightClass = size === 'lg' ? 'h-2' : size === 'sm' ? 'h-[3px]' : 'h-1.5';
+  // Direct Click Handler as bulletproof fallback
+  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const newTime = getTimeFromClientX(e.clientX);
+    dragTimeRef.current = newTime;
+    setDragTime(newTime);
+    onSeek(newTime);
+  };
+
+  const trackHeightClass = size === 'lg' ? 'h-2.5' : size === 'sm' ? 'h-[3px]' : 'h-2';
   const thumbSizeClass = size === 'lg' ? 'w-4 h-4' : size === 'sm' ? 'w-2.5 h-2.5' : 'w-3.5 h-3.5';
 
   return (
     <div className={`w-full flex items-center gap-2 select-none ${className}`}>
       {showTimeLabels && (
-        <span className="text-[10px] text-slate-400 font-mono shrink-0 w-7 text-right">
+        <span className="text-[10px] text-slate-400 font-mono shrink-0 w-8 text-right tabular-nums">
           {formatTime(displayTime)}
         </span>
       )}
 
-      {/* Interactive Hit Area */}
+      {/* Interactive Hit Area: Supports Pointer Capture & Direct Click */}
       <div
         ref={trackRef}
-        onMouseDown={(e) => {
-          e.preventDefault();
-          handleStart(e.clientX);
-        }}
-        onTouchStart={(e) => {
-          handleStart(e.touches[0].clientX);
-        }}
-        className="relative py-1.5 cursor-pointer touch-none flex items-center flex-1 group"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
+        onClick={handleClick}
+        className="relative py-2.5 cursor-pointer touch-none flex items-center flex-1 group"
+        title="Nhấp hoặc kéo thanh để tua đến đoạn bạn muốn nghe"
       >
         {/* Background Track */}
         <div className={`w-full ${trackHeightClass} bg-slate-800/90 rounded-full overflow-hidden`}>
           {/* Active Progress Fill */}
           <div
-            className="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-full"
+            className="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-full transition-[width] duration-75"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
@@ -136,7 +149,7 @@ export const AudioScrubber: React.FC<AudioScrubberProps> = ({
       </div>
 
       {showTimeLabels && (
-        <span className="text-[10px] text-slate-400 font-mono shrink-0 w-8 text-left">
+        <span className="text-[10px] text-slate-400 font-mono shrink-0 w-8 text-left tabular-nums">
           {duration > 0 ? formatTime(duration) : '--:--'}
         </span>
       )}

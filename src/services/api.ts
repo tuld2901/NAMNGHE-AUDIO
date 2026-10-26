@@ -843,7 +843,7 @@ export const uploadAudioToServer = async (
   file: File,
   chapterTitle?: string,
   storyTitle?: string
-): Promise<{ url: string; filename: string; originalName: string }> => {
+): Promise<{ url: string; filename: string; originalName: string; duration?: string }> => {
   const formData = new FormData();
   if (chapterTitle && chapterTitle.trim()) {
     formData.append('title', chapterTitle.trim());
@@ -867,7 +867,7 @@ export const uploadAudioToServer = async (
     body: formData,
   });
 
-  return await parseApiResponse<{ url: string; filename: string; originalName: string }>(
+  return await parseApiResponse<{ url: string; filename: string; originalName: string; duration?: string }>(
     res,
     'Lỗi khi tải file audio lên server'
   );
@@ -897,9 +897,9 @@ export const uploadAudioFile = async (
   file: File,
   chapterTitle?: string,
   storyTitle?: string
-): Promise<string> => {
+): Promise<{ url: string; duration?: string }> => {
   const res = await uploadAudioToServer(file, chapterTitle, storyTitle);
-  return res.url;
+  return { url: res.url, duration: res.duration };
 };
 
 export const uploadCoverImage = async (file: File): Promise<string> => {

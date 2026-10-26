@@ -2,6 +2,26 @@ import React, { createContext, useContext, useState, useRef, useEffect, ReactNod
 import { Track, Chapter } from '../types';
 import { incrementPlayCount, isDailyUnlockedToday } from '../services/api';
 
+// Helper to parse duration string ("28:15", "01:15:30", "120") into seconds
+export const parseDurationToSeconds = (durationStr: string | number | undefined): number => {
+  if (!durationStr) return 0;
+  if (typeof durationStr === 'number') return durationStr;
+  const str = String(durationStr).trim();
+  if (str === 'Audio Full' || !str) return 0;
+
+  const parts = str.split(':').map((p) => parseFloat(p));
+  if (parts.some((p) => isNaN(p))) return 0;
+
+  if (parts.length === 3) {
+    return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  } else if (parts.length === 2) {
+    return parts[0] * 60 + parts[1];
+  } else if (parts.length === 1) {
+    return parts[0];
+  }
+  return 0;
+};
+
 export interface AudioContextType {
   currentTrack: Track | null;
   currentChapter: Chapter | null;
@@ -60,7 +80,7 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({
 
   const activeMp3Url = currentChapter?.mp3_url || currentTrack?.mp3_url || '';
 
-  // Synchronize audio element source and play/pause state in a single coordinated effect
+  // Synchronize audio element source and play/pause state safely
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || !activeMp3Url) return;
@@ -69,26 +89,31 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({
     const currentSrc = audio.getAttribute('src') || '';
     if (currentSrc !== activeMp3Url) {
       setCurrentTime(0);
-      setDuration(0);
+      const parsedSecs = parseDurationToSeconds(currentChapter?.duration);
+      setDuration(parsedSecs > 0 ? parsedSecs : 0);
       audio.src = activeMp3Url;
     }
     audio.playbackRate = playbackSpeed;
     audio.volume = isMuted ? 0 : volume;
 
     if (isPlaying) {
-      const playPromise = audio.play();
-      if (playPromise !== undefined) {
-        playPromise.catch((err) => {
-          console.warn('Playback error or auto-play prevented:', err);
-          if (err?.name === 'NotAllowedError') {
-            setIsPlaying(false);
-          }
-        });
+      if (audio.paused) {
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          playPromise.catch((err) => {
+            console.warn('Playback error or auto-play prevented:', err);
+            if (err?.name === 'NotAllowedError') {
+              setIsPlaying(false);
+            }
+          });
+        }
       }
     } else {
-      audio.pause();
+      if (!audio.paused) {
+        audio.pause();
+      }
     }
-  }, [activeMp3Url, isPlaying]);
+  }, [activeMp3Url, isPlaying, playbackSpeed, isMuted, volume, currentChapter]);
 
   // Synchronize playback speed
   const setPlaybackSpeed = useCallback((speed: number) => {
@@ -124,18 +149,30 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({
 
   // Handle seeking with finger/scrubber
   const seekTo = useCallback((time: number) => {
-    const validTime = Math.max(0, Math.min(time, duration || 99999));
+    const audio = audioRef.current;
+    const targetDuration = duration > 0 ? duration : (audio?.duration && isFinite(audio.duration) ? audio.duration : 99999);
+    const validTime = Math.max(0, Math.min(time, targetDuration));
     setCurrentTime(validTime);
-    if (audioRef.current) {
-      audioRef.current.currentTime = validTime;
+    if (audio) {
+      try {
+        audio.currentTime = validTime;
+      } catch (err) {
+        console.warn('Seek error on audio element:', err);
+      }
     }
   }, [duration]);
 
   // Skip relative seconds (+/- 10s)
   const skip = useCallback((seconds: number) => {
-    if (audioRef.current) {
-      const nextTime = Math.max(0, Math.min(audioRef.current.currentTime + seconds, duration || 99999));
-      audioRef.current.currentTime = nextTime;
+    const audio = audioRef.current;
+    if (audio) {
+      const targetDuration = duration > 0 ? duration : (audio.duration && isFinite(audio.duration) ? audio.duration : 99999);
+      const nextTime = Math.max(0, Math.min(audio.currentTime + seconds, targetDuration));
+      try {
+        audio.currentTime = nextTime;
+      } catch (err) {
+        console.warn('Skip error on audio element:', err);
+      }
       setCurrentTime(nextTime);
     }
   }, [duration]);
@@ -228,7 +265,7 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({
     }
   }, [currentTrack, currentChapter]);
 
-  // Play track & chapter with daily lock check
+  // Play track & chapter with daily lock check - synchronously starts audio in user gesture
   const playTrackChapter = useCallback((track: Track, chapter: Chapter) => {
     const isUnlocked = isDailyUnlockedToday();
     if (!isUnlocked && onRequireUnlock) {
@@ -236,11 +273,32 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({
       return;
     }
 
+    const nextUrl = chapter?.mp3_url || track?.mp3_url || '';
+    const audio = audioRef.current;
+    if (audio && nextUrl) {
+      setAudioError(null);
+      const currentSrc = audio.getAttribute('src') || '';
+      if (currentSrc !== nextUrl) {
+        setCurrentTime(0);
+        const parsedSecs = parseDurationToSeconds(chapter?.duration);
+        setDuration(parsedSecs > 0 ? parsedSecs : 0);
+        audio.src = nextUrl;
+      }
+      audio.playbackRate = playbackSpeed;
+      audio.volume = isMuted ? 0 : volume;
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          console.warn('Direct playback attempt:', err);
+        });
+      }
+    }
+
     setCurrentTrack(track);
     setCurrentChapter(chapter);
     setIsPlaying(true);
     incrementPlayCount(track.id);
-  }, [onRequireUnlock]);
+  }, [onRequireUnlock, playbackSpeed, isMuted, volume]);
 
   const togglePlayPause = useCallback(() => {
     if (!isPlaying && !isDailyUnlockedToday()) {
@@ -259,18 +317,36 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({
       );
       return;
     }
-    setIsPlaying((prev) => !prev);
+
+    const audio = audioRef.current;
+    if (audio) {
+      if (isPlaying) {
+        audio.pause();
+        setIsPlaying(false);
+      } else {
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          playPromise.catch((err) => {
+            console.warn('Toggle play error:', err);
+          });
+        }
+        setIsPlaying(true);
+      }
+    } else {
+      setIsPlaying((prev) => !prev);
+    }
   }, [isPlaying, currentTrack, currentChapter, allTracks, playTrackChapter, onRequireUnlock]);
 
   // Audio event handlers
   const handleTimeUpdate = () => {
-    if (!audioRef.current) return;
+    const audio = audioRef.current;
+    if (!audio) return;
     // When user is scrubbing with hand/finger, do not overwrite the visual scrub position!
     if (!isScrubbing) {
-      setCurrentTime(audioRef.current.currentTime);
+      setCurrentTime(audio.currentTime);
     }
-    if (audioRef.current.duration && !isNaN(audioRef.current.duration)) {
-      setDuration(audioRef.current.duration);
+    if (audio.duration && !isNaN(audio.duration) && isFinite(audio.duration) && audio.duration > 0) {
+      setDuration(audio.duration);
     }
   };
 
@@ -310,6 +386,9 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({
         playsInline
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleTimeUpdate}
+        onDurationChange={handleTimeUpdate}
+        onCanPlay={handleTimeUpdate}
+        onLoadedData={handleTimeUpdate}
         onEnded={nextChapter}
         onError={() => setAudioError('Không thể tải file âm thanh. Vui lòng kiểm tra lại đường dẫn MP3.')}
       />

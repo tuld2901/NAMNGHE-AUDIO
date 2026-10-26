@@ -49,7 +49,8 @@ import {
   restoreDatabaseFromJson,
   restoreFromServerSnapshot,
   deleteServerSnapshot,
-  normalizeAllAudioFilesToSlug
+  normalizeAllAudioFilesToSlug,
+  detectAudioDurationSync
 } from './server-db';
 
 async function startServer() {
@@ -195,8 +196,8 @@ async function startServer() {
       if (range) {
         const parts = range.replace(/bytes=/, '').split('-');
         const start = parseInt(parts[0], 10);
-        const CHUNK_SIZE = 1.5 * 1024 * 1024; // 1.5MB chunks: instant start, smooth progressive buffering
-        const end = parts[1] ? parseInt(parts[1], 10) : Math.min(start + CHUNK_SIZE - 1, fileSize - 1);
+        // Hỗ trợ chuẩn RFC 7233 Byte-Range: Trình duyệt gửi bytes=X- để tua đến bất kỳ đoạn nào trong bài
+        const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
 
         if (start >= fileSize) {
           res.status(416).setHeader('Content-Range', `bytes */${fileSize}`).end();
@@ -272,13 +273,15 @@ async function startServer() {
       }
 
       const finalFilename = fileUrl.replace('/uploads/audio/', '');
+      const detectedDuration = detectAudioDurationSync(fileUrl);
 
       res.json({
         success: true,
         url: fileUrl,
         filename: finalFilename,
         originalName: req.file.originalname,
-        size: req.file.size
+        size: req.file.size,
+        duration: detectedDuration
       });
     } catch (err: any) {
       res.status(500).json({ error: err.message });

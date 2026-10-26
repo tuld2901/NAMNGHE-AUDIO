@@ -1140,14 +1140,17 @@ export const Admin: React.FC<AdminProps> = ({
       const currentChapterTitle = formChapters[index]?.title || `Tập ${index + 1}`;
       // Compute duration immediately from the file
       const detectedDuration = await detectAudioFileDuration(file);
-      const serverUrl = await uploadAudioFile(file, currentChapterTitle, formTitle);
+      const uploadRes = await uploadAudioFile(file, currentChapterTitle, formTitle);
+      const serverUrl = typeof uploadRes === 'string' ? uploadRes : uploadRes.url;
+      const serverDuration = typeof uploadRes === 'object' ? uploadRes.duration : null;
+      const finalDuration = serverDuration || detectedDuration || '25:00';
 
       setFormChapters(prev => prev.map((ch, i) => {
         if (i === index) {
           return {
             ...ch,
             mp3_url: serverUrl,
-            duration: detectedDuration || ch.duration || '25:00'
+            duration: finalDuration
           };
         }
         return ch;
@@ -1170,7 +1173,7 @@ export const Admin: React.FC<AdminProps> = ({
       {
         id: nextIdx,
         title: `Phần ${nextIdx}: Tập mới`,
-        duration: '',
+        duration: '25:00',
         mp3_url: '',
       }
     ]);
