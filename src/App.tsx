@@ -260,7 +260,9 @@ function AppContent({
             /* TRANG PHÁT NHẠC VÀ NGHE TRUYỆN ĐẦY ĐỦ CÁC TẬP */
             <StoryPage
               track={currentViewingStory}
+              allTracks={tracks}
               onSelectChapter={handleSelectOrPlayChapter}
+              onSelectStory={handleNavigateToStory}
               onBackToHome={handleBackToHome}
             />
           ) : (

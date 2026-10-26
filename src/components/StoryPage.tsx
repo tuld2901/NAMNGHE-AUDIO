@@ -7,13 +7,17 @@ import { formatPlayCount, getTrackActiveListeners, getTrackPlayCount } from '../
 
 interface StoryPageProps {
   track: Track;
+  allTracks?: Track[];
   onSelectChapter: (track: Track, chapter: Chapter) => void;
+  onSelectStory?: (track: Track) => void;
   onBackToHome: () => void;
 }
 
 export const StoryPage: React.FC<StoryPageProps> = React.memo(({
   track,
+  allTracks = [],
   onSelectChapter,
+  onSelectStory,
   onBackToHome,
 }) => {
   const [isSleepOpen, setIsSleepOpen] = useState<boolean>(false);
@@ -37,6 +41,21 @@ export const StoryPage: React.FC<StoryPageProps> = React.memo(({
         : [{ id: 1, title: track.title, duration: '25:00', mp3_url: track.mp3_url }],
     [track.chapters, track.title, track.mp3_url]
   );
+
+  // Danh sách "Có lẽ bạn sẽ thích": Loại bỏ trang audio đang mở (track.id) và audio đang phát (currentTrack?.id)
+  const recommendedTracks = React.useMemo(() => {
+    const filtered = allTracks.filter(
+      (item) => item.id !== track.id && (!currentTrack || item.id !== currentTrack.id)
+    );
+    // Ưu tiên cùng thể loại lên trước, sau đó sắp xếp theo độ hot / lượt nghe
+    return [...filtered].sort((a, b) => {
+      const aSameCat = a.category === track.category ? 1 : 0;
+      const bSameCat = b.category === track.category ? 1 : 0;
+      if (aSameCat !== bSameCat) return bSameCat - aSameCat;
+      if (Boolean(a.is_hot) !== Boolean(b.is_hot)) return a.is_hot ? -1 : 1;
+      return (b.play_count || 0) - (a.play_count || 0);
+    });
+  }, [allTracks, track.id, track.category, currentTrack]);
 
   // Tự động nhận diện thời lượng các tập nếu dữ liệu chưa có sẵn (giới hạn tối đa 3 probe và dọn dẹp bộ nhớ khi unmount)
   const [probedDurations, setProbedDurations] = useState<Record<string | number, string>>({});
@@ -340,7 +359,81 @@ export const StoryPage: React.FC<StoryPageProps> = React.memo(({
           <span>Thể loại: <strong className="text-amber-400">{track.category || 'Truyện Audio'}</strong></span>
         </div>
       </div>
+
+      {/* Section: Có lẽ bạn sẽ thích (Không bao gồm audio đang phát hoặc trang audio đang mở) */}
+      {recommendedTracks.length > 0 && (
+        <section className="space-y-3 pt-2">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-bold text-white">
+              Có lẽ bạn sẽ thích
+            </h2>
+            <span className="text-xs text-slate-400">
+              {recommendedTracks.length} bộ truyện
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {recommendedTracks.map((item) => {
+              const epCount = item.chapters?.length || 1;
+              const firstDur = item.chapters?.[0]?.duration || '25:00';
+              const activeCount = getTrackActiveListeners(item);
+
+              return (
+                <div
+                  key={item.id}
+                  onClick={() => onSelectStory?.(item)}
+                  className="group p-3.5 rounded-2xl border border-slate-800/90 bg-[#101726]/80 hover:bg-slate-800/80 hover:border-amber-500/40 transition flex items-center gap-3.5 cursor-pointer select-none"
+                >
+                  {/* Left Emblem */}
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#1c2742] via-[#101728] to-[#090e18] border border-slate-700/60 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                    <BrandIcon size={32} />
+                  </div>
+
+                  {/* Story Details */}
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="px-1.5 py-0.5 rounded bg-slate-800 text-amber-400 text-[10px] font-medium border border-slate-700/70 shrink-0">
+                        {item.category || 'Audio'}
+                      </span>
+                      {item.is_hot && (
+                        <span className="px-1.5 py-0.5 rounded bg-rose-500/15 text-rose-400 text-[10px] font-bold border border-rose-500/30 shrink-0">
+                          Hot
+                        </span>
+                      )}
+                      <span className="text-[11px] text-slate-400 font-mono truncate">
+                        {epCount > 1 ? `${epCount} tập` : firstDur}
+                      </span>
+                    </div>
+
+                    <h3 className="text-sm font-bold text-slate-100 group-hover:text-amber-400 transition truncate">
+                      {item.title}
+                    </h3>
+
+                    <div className="flex items-center gap-2.5 text-[11px] text-slate-400 font-mono">
+                      <span className="truncate max-w-[120px] font-sans">{item.author || 'Phú Bà Audio'}</span>
+                      <span>•</span>
+                      <span>🎧 {formatPlayCount(getTrackPlayCount(item))}</span>
+                      {activeCount > 0 && (
+                        <span className="text-emerald-400 font-sans font-medium flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>
+                          <span>{activeCount}</span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right Play Icon */}
+                  <div className="w-8 h-8 rounded-full bg-slate-800/90 group-hover:bg-amber-400 text-slate-300 group-hover:text-slate-950 flex items-center justify-center shrink-0 transition">
+                    <Play size={14} className="fill-current ml-0.5" />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
     </article>
   );
 });
+
 
