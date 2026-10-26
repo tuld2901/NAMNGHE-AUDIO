@@ -1145,13 +1145,20 @@ export interface BackupStatusResponse {
     audioPath: string;
     imagesPath: string;
     audioFilesCount: number;
+    usedAudioFilesCount?: number;
+    orphanAudioFilesCount?: number;
+    orphanAudioSizeBytes?: number;
     imageFilesCount: number;
+    orphanImageFilesCount?: number;
+    orphanImageSizeBytes?: number;
     totalSizeBytes: number;
     audioFiles: Array<{
       filename: string;
       url: string;
       sizeBytes: number;
       updatedAt: string;
+      isUsedInDb?: boolean;
+      usedBy?: string[];
     }>;
   };
   snapshots: Array<{
@@ -1264,6 +1271,64 @@ export const normalizeAllAudioSlugsOnServer = async (): Promise<{
     return data;
   } catch (err: any) {
     return { success: false, updatedChaptersCount: 0, message: err.message };
+  }
+};
+
+export const cleanupOrphanedFilesOnServer = async (options?: {
+  includeImages?: boolean;
+  targetFilenames?: string[];
+}): Promise<{
+  success: boolean;
+  deletedCount: number;
+  deletedAudioFiles: string[];
+  deletedImageFiles: string[];
+  freedBytes: number;
+  message: string;
+  info?: BackupStatusResponse;
+}> => {
+  try {
+    const res = await fetch('/api/backup/cleanup-orphans', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getApiAuthHeaders()
+      },
+      body: JSON.stringify(options || {})
+    });
+    return await res.json();
+  } catch (err: any) {
+    return {
+      success: false,
+      deletedCount: 0,
+      deletedAudioFiles: [],
+      deletedImageFiles: [],
+      freedBytes: 0,
+      message: err.message || 'Lỗi khi dọn dẹp file rác trên Server'
+    };
+  }
+};
+
+export const deleteSingleAudioFileOnServer = async (
+  filename: string
+): Promise<{
+  success: boolean;
+  deletedFile?: string;
+  freedBytes: number;
+  message: string;
+  info?: BackupStatusResponse;
+}> => {
+  try {
+    const res = await fetch(`/api/backup/audio-file/${encodeURIComponent(filename)}`, {
+      method: 'DELETE',
+      headers: getApiAuthHeaders()
+    });
+    return await res.json();
+  } catch (err: any) {
+    return {
+      success: false,
+      freedBytes: 0,
+      message: err.message || 'Lỗi khi xóa file audio trên Server'
+    };
   }
 };
 

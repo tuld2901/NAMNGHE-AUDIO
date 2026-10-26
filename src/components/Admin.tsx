@@ -59,7 +59,9 @@ import {
   restoreDatabaseOnServer,
   restoreFromServerSnapshotApi,
   deleteServerSnapshotApi,
-  normalizeAllAudioSlugsOnServer
+  normalizeAllAudioSlugsOnServer,
+  cleanupOrphanedFilesOnServer,
+  deleteSingleAudioFileOnServer
 } from '../services/api';
 
 interface AdminProps {
@@ -107,8 +109,10 @@ export const Admin: React.FC<AdminProps> = ({
   const [backupInfo, setBackupInfo] = useState<BackupStatusResponse | null>(null);
   const [isLoadingBackup, setIsLoadingBackup] = useState<boolean>(false);
   const [backupMsg, setBackupMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [manageCleanupMsg, setManageCleanupMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [snapshotLabelInput, setSnapshotLabelInput] = useState<string>('');
   const [isRestoringDb, setIsRestoringDb] = useState<boolean>(false);
+  const [audioFilesFilter, setAudioFilesFilter] = useState<'all' | 'orphan' | 'used'>('all');
 
   const loadBackupInfo = async () => {
     setIsLoadingBackup(true);
@@ -120,11 +124,92 @@ export const Admin: React.FC<AdminProps> = ({
     }
   };
 
+  useEffect(() => {
+    loadBackupInfo();
+  }, [tracks.length]);
+
   const formatBytes = (bytes: number): string => {
     if (!bytes || bytes <= 0) return '0 KB';
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  };
+
+  const handleCleanupOrphanedFiles = () => {
+    const orphanAudioCount = backupInfo?.uploadsDir.orphanAudioFilesCount ?? 0;
+    const orphanImageCount = backupInfo?.uploadsDir.orphanImageFilesCount ?? 0;
+    const orphanAudioBytes = backupInfo?.uploadsDir.orphanAudioSizeBytes ?? 0;
+    const orphanImageBytes = backupInfo?.uploadsDir.orphanImageSizeBytes ?? 0;
+    const totalOrphans = orphanAudioCount + orphanImageCount;
+    const totalOrphanSize = formatBytes(orphanAudioBytes + orphanImageBytes);
+
+    const orphanFileNames = (backupInfo?.uploadsDir.audioFiles || [])
+      .filter(f => f.isUsedInDb === false)
+      .map(f => `• ${f.filename} (${formatBytes(f.sizeBytes)})`)
+      .slice(0, 10)
+      .join('\n');
+
+    setConfirmModal({
+      isOpen: true,
+      title: 'Quét & Dọn Dẹp File Audio Rác (uploads/audio)',
+      message:
+        totalOrphans > 0
+          ? `Hệ thống đã đối chiếu với Database (data/db.json) và phát hiện:\n• ${orphanAudioCount} file MP3 thừa trong uploads/audio/\n• ${orphanImageCount} file ảnh thừa trong uploads/images/\n• Tổng dung lượng giải phóng: ${totalOrphanSize}\n\nDanh sách file MP3 sẽ bị xóa:\n${orphanFileNames}${orphanAudioCount > 10 ? `\n... và ${orphanAudioCount - 10} file khác` : ''}\n\nCác file đang gắn với truyện trong Database được giữ nguyên an toàn 100%. Bạn có chắc chắn muốn dọn sạch ngay không?`
+          : `Hệ thống sẽ quét toàn bộ thư mục uploads/audio/ và uploads/images/, đối chiếu trực tiếp với Database (data/db.json) và xóa toàn bộ các file MP3 / hình ảnh của những truyện hoặc tập đã bị xóa trước đó.\n\nBạn có muốn chạy quét và dọn dẹp ngay không?`,
+      confirmLabel: totalOrphans > 0 ? `Dọn Sạch ${totalOrphans} File Rác (${totalOrphanSize})` : 'Quét & Dọn Dẹp Ngay',
+      isDestructive: totalOrphans > 0,
+      onConfirm: async () => {
+        setIsLoadingBackup(true);
+        setBackupMsg(null);
+        setManageCleanupMsg(null);
+        try {
+          const res = await cleanupOrphanedFilesOnServer({ includeImages: true });
+          if (res.info) {
+            setBackupInfo(res.info);
+          } else {
+            await loadBackupInfo();
+          }
+          const msgObj = {
+            type: (res.success ? 'success' : 'error') as 'success' | 'error',
+            text: res.message
+          };
+          setBackupMsg(msgObj);
+          setManageCleanupMsg(msgObj);
+        } finally {
+          setIsLoadingBackup(false);
+        }
+      }
+    });
+  };
+
+  const handleDeleteSingleAudioFile = (filename: string, isUsedInDb?: boolean, usedBy?: string[]) => {
+    setConfirmModal({
+      isOpen: true,
+      title: `Xác Nhận Xóa File "${filename}"`,
+      message: isUsedInDb
+        ? `CẢNH BÁO: File "${filename}" hiện ĐANG ĐƯỢC SỬ DỤNG bởi truyện:\n• ${(usedBy || []).join('\n• ')}\n\nNếu xóa file vật lý này khỏi uploads/audio/, tập truyện đó sẽ không phát được âm thanh nữa. Bạn có chắc chắn vẫn muốn xóa không?`
+        : `File "${filename}" là file rác (không còn gắn với bất kỳ truyện nào trong Database).\n\nBạn có chắc chắn muốn xóa vĩnh viễn file này khỏi thư mục uploads/audio/ trên Server không?`,
+      confirmLabel: 'Xóa File Khỏi Server',
+      isDestructive: true,
+      onConfirm: async () => {
+        setIsLoadingBackup(true);
+        setBackupMsg(null);
+        try {
+          const res = await deleteSingleAudioFileOnServer(filename);
+          if (res.info) {
+            setBackupInfo(res.info);
+          } else {
+            await loadBackupInfo();
+          }
+          setBackupMsg({
+            type: res.success ? 'success' : 'error',
+            text: res.message
+          });
+        } finally {
+          setIsLoadingBackup(false);
+        }
+      }
+    });
   };
 
   const handleCreateServerSnapshot = async (e: React.FormEvent) => {
@@ -1310,6 +1395,7 @@ export const Admin: React.FC<AdminProps> = ({
       onConfirm: async () => {
         await deleteTrack(id);
         onRefreshTracks();
+        loadBackupInfo();
       }
     });
   };
@@ -1611,6 +1697,67 @@ export const Admin: React.FC<AdminProps> = ({
       {/* TAB 1: MANAGE TRACKS */}
       {activeTab === 'manage' && (
         <div className="space-y-4">
+          {/* Orphaned Audio Files Alert Banner (if any orphan files exist in uploads/audio) */}
+          {(backupInfo?.uploadsDir.orphanAudioFilesCount ?? 0) > 0 && (
+            <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in">
+              <div className="flex items-start sm:items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-400 shrink-0">
+                  <Trash2 size={18} />
+                </div>
+                <div>
+                  <h4 className="text-xs sm:text-sm font-bold text-white">
+                    Phát hiện {backupInfo?.uploadsDir.orphanAudioFilesCount} file MP3 rác ({formatBytes(backupInfo?.uploadsDir.orphanAudioSizeBytes || 0)}) trong <code className="text-amber-300 font-mono">uploads/audio/</code>
+                  </h4>
+                  <p className="text-[11px] text-slate-300 mt-0.5">
+                    Đây là các file của những truyện/tập đã xóa trước đây hoặc upload nháp nhưng không còn nằm trong <code className="text-amber-300 font-mono">data/db.json</code>.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAudioFilesFilter('orphan');
+                    setActiveTab('backup');
+                    loadBackupInfo();
+                  }}
+                  className="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer"
+                >
+                  Xem danh sách file
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCleanupOrphanedFiles}
+                  disabled={isLoadingBackup}
+                  className="px-3.5 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white flex items-center gap-1.5 shadow-md shadow-rose-600/20 transition cursor-pointer"
+                >
+                  <Trash2 size={13} />
+                  <span>Dọn Sạch Ngay ({formatBytes(backupInfo?.uploadsDir.orphanAudioSizeBytes || 0)})</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {manageCleanupMsg && (
+            <div className={`p-3.5 rounded-xl text-xs font-semibold flex items-center justify-between gap-2 ${
+              manageCleanupMsg.type === 'success'
+                ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-300'
+                : 'bg-rose-500/10 border border-rose-500/30 text-rose-300'
+            }`}>
+              <div className="flex items-center gap-2">
+                {manageCleanupMsg.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+                <span>{manageCleanupMsg.text}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setManageCleanupMsg(null)}
+                className="text-slate-400 hover:text-white text-xs cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
           {/* Action Row */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <input
@@ -1621,7 +1768,27 @@ export const Admin: React.FC<AdminProps> = ({
               className="max-w-md w-full px-4 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-400"
             />
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={handleCleanupOrphanedFiles}
+                disabled={isLoadingBackup}
+                className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer border ${
+                  (backupInfo?.uploadsDir.orphanAudioFilesCount ?? 0) > 0
+                    ? 'bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border-rose-500/30'
+                    : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                }`}
+                title="Quét dựa vào data/db.json và xóa toàn bộ file MP3 thừa trong uploads/audio/"
+              >
+                <Trash2 size={13} />
+                <span>
+                  Dọn File Audio Rác
+                  {(backupInfo?.uploadsDir.orphanAudioFilesCount ?? 0) > 0
+                    ? ` (${backupInfo?.uploadsDir.orphanAudioFilesCount} file thừa)`
+                    : ''}
+                </span>
+              </button>
+
               <button
                 onClick={handleResetSampleData}
                 className="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center gap-1.5 transition cursor-pointer"
@@ -3846,6 +4013,25 @@ https://s.lazada.vn/s.flashsale_deal`}
             <div className="flex items-center gap-2 flex-wrap shrink-0">
               <button
                 type="button"
+                onClick={handleCleanupOrphanedFiles}
+                disabled={isLoadingBackup}
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer border ${
+                  (backupInfo?.uploadsDir.orphanAudioFilesCount ?? 0) > 0
+                    ? 'bg-rose-600 hover:bg-rose-500 text-white border-rose-500 shadow-lg shadow-rose-600/20'
+                    : 'bg-rose-500/15 hover:bg-rose-500/25 border-rose-500/40 text-rose-300'
+                }`}
+                title="Đối chiếu với data/db.json và xóa sạch các file MP3/ảnh đã xóa truyện nhưng vẫn còn nằm trong uploads/"
+              >
+                <Trash2 size={15} />
+                <span>
+                  Dọn Sạch File Audio Rác
+                  {(backupInfo?.uploadsDir.orphanAudioFilesCount ?? 0) > 0
+                    ? ` (${backupInfo?.uploadsDir.orphanAudioFilesCount} file - ${formatBytes(backupInfo?.uploadsDir.orphanAudioSizeBytes || 0)})`
+                    : ''}
+                </span>
+              </button>
+              <button
+                type="button"
                 onClick={handleNormalizeAllSlugs}
                 disabled={isLoadingBackup}
                 className="px-4 py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
@@ -3907,7 +4093,9 @@ https://s.lazada.vn/s.flashsale_deal`}
               </div>
               <div className="text-lg font-black text-emerald-300 font-mono">uploads/audio/</div>
               <div className="text-xs text-slate-400 flex items-center justify-between pt-1 border-t border-slate-800/80">
-                <span>Số file MP3: <strong className="text-white">{backupInfo?.uploadsDir.audioFilesCount ?? 0} file</strong></span>
+                <span>
+                  Đang dùng: <strong className="text-emerald-400">{backupInfo?.uploadsDir.usedAudioFilesCount ?? backupInfo?.uploadsDir.audioFilesCount ?? 0}</strong> • Rác: <strong className={(backupInfo?.uploadsDir.orphanAudioFilesCount ?? 0) > 0 ? 'text-rose-400' : 'text-slate-300'}>{backupInfo?.uploadsDir.orphanAudioFilesCount ?? 0}</strong>
+                </span>
                 <span>Tổng: <strong className="text-amber-300">{formatBytes(backupInfo?.uploadsDir.totalSizeBytes || 0)}</strong></span>
               </div>
             </div>
@@ -4124,20 +4312,20 @@ https://s.lazada.vn/s.flashsale_deal`}
             </div>
           </div>
 
-          {/* Section 2: Chuẩn Hóa Quy Tắc Đặt Tên File Slug & Cấu Hình Thư Mục Tĩnh Nginx */}
+          {/* Section 2: Chuẩn Hóa Quy Tắc Đặt Tên File Slug & Quản Lý / Dọn Dẹp File Trong uploads/audio/ */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Left: Quy chuẩn đặt tên file MP3 theo Slug & Cấu hình Nginx */}
-            <div className="lg:col-span-6 p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
+            <div className="lg:col-span-5 p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
               <div className="border-b border-slate-800 pb-3">
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
                   <Sparkles size={16} className="text-amber-400" />
-                  <span>3. Chuẩn Hóa Tên File Theo Slug & Thư Mục Tĩnh Duy Nhất</span>
+                  <span>3. Chuẩn Hóa Tên File Theo Slug & Cơ Chế Tự Dọn Rác</span>
                 </h3>
               </div>
 
               <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2.5 text-xs">
                 <div className="font-bold text-amber-300 uppercase tracking-wider text-[11px]">
-                  1. Quy tắc tự động chuẩn hóa tên file khi upload MP3 qua CMS:
+                  1. Quy tắc tự động đặt tên & tự động xóa file khi xóa truyện/tập:
                 </div>
                 <div className="space-y-1.5 text-slate-300 font-mono text-[11px] bg-slate-900/90 p-3 rounded-lg border border-slate-800">
                   <div>
@@ -4149,8 +4337,8 @@ https://s.lazada.vn/s.flashsale_deal`}
                     <strong className="text-amber-300">tap-1-tieng-go-cua-dem-khuya.mp3</strong>
                   </div>
                   <div>
-                    <span className="text-slate-400">Đường dẫn lưu trong db.json: </span>
-                    <strong className="text-emerald-300">/uploads/audio/tap-1-tieng-go-cua-dem-khuya.mp3</strong>
+                    <span className="text-slate-400">Khi xóa truyện / xóa tập: </span>
+                    <strong className="text-emerald-300">Tự động xóa luôn file MP3 khỏi uploads/audio/</strong>
                   </div>
                 </div>
               </div>
@@ -4164,7 +4352,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                     type="button"
                     onClick={() =>
                       handleCopyText(
-                        `location /uploads/ {\n    alias /root/my-web/uploads/;\n    expires 30d;\n    add_header Cache-Control "public, no-transform";\n    add_header Accept-Ranges bytes;\n}`,
+                        `location /uploads/ {\n    alias /root/NAMNGHE-AUDIO/uploads/;\n    expires 30d;\n    add_header Cache-Control "public, no-transform";\n    add_header Accept-Ranges bytes;\n}`,
                         'nginx-uploads-alias'
                       )
                     }
@@ -4179,7 +4367,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                 </p>
                 <pre className="p-3 rounded-lg bg-slate-900 border border-slate-800 font-mono text-[11px] text-emerald-300 overflow-x-auto leading-relaxed">
 {`location /uploads/ {
-    alias /root/my-web/uploads/;
+    alias /root/NAMNGHE-AUDIO/uploads/;
     expires 30d;
     add_header Cache-Control "public, no-transform";
     add_header Accept-Ranges bytes;
@@ -4188,56 +4376,159 @@ https://s.lazada.vn/s.flashsale_deal`}
               </div>
             </div>
 
-            {/* Right: Danh sách file vật lý trong uploads/audio/ */}
-            <div className="lg:col-span-6 p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            {/* Right: Danh sách file vật lý trong uploads/audio/ & Công cụ dọn dẹp theo DB */}
+            <div className="lg:col-span-7 p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
                 <div>
                   <h3 className="text-sm font-bold text-white flex items-center gap-2">
                     <FileAudio size={16} className="text-emerald-400" />
-                    <span>4. Danh Sách File Trong <code className="text-emerald-300 font-mono">uploads/audio/</code> ({backupInfo?.uploadsDir.audioFiles.length ?? 0})</span>
+                    <span>4. Quản Lý & Dọn Dẹp File Trong <code className="text-emerald-300 font-mono">uploads/audio/</code> ({backupInfo?.uploadsDir.audioFiles.length ?? 0})</span>
                   </h3>
                   <p className="text-[11px] text-slate-400 mt-0.5">
-                    Kiểm tra các file âm thanh vật lý đang tồn tại trên ổ đĩa Server và đường dẫn chuẩn.
+                    Đối chiếu trực tiếp từng file vật lý trên ổ đĩa với <code className="text-amber-300 font-mono">data/db.json</code> để phát hiện và xóa các file dư thừa.
                   </p>
                 </div>
+
+                {(backupInfo?.uploadsDir.orphanAudioFilesCount ?? 0) > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleCleanupOrphanedFiles}
+                    disabled={isLoadingBackup}
+                    className="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold flex items-center gap-1.5 shrink-0 cursor-pointer shadow-md shadow-rose-600/20"
+                  >
+                    <Trash2 size={14} />
+                    <span>Xóa Tất Cả {backupInfo?.uploadsDir.orphanAudioFilesCount} File Rác</span>
+                  </button>
+                )}
               </div>
 
-              <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-                {backupInfo?.uploadsDir.audioFiles && backupInfo.uploadsDir.audioFiles.length > 0 ? (
-                  backupInfo.uploadsDir.audioFiles.map((f) => (
-                    <div
-                      key={f.filename}
-                      className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between gap-3 text-xs"
+              {/* Filter Tabs: Tất cả / Đang dùng trong DB / File rác */}
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {[
+                    {
+                      id: 'all',
+                      label: `Tất cả (${backupInfo?.uploadsDir.audioFiles.length ?? 0})`
+                    },
+                    {
+                      id: 'orphan',
+                      label: `File rác / Đã xóa khỏi DB (${backupInfo?.uploadsDir.orphanAudioFilesCount ?? 0})`
+                    },
+                    {
+                      id: 'used',
+                      label: `Đang dùng trong DB (${backupInfo?.uploadsDir.usedAudioFilesCount ?? 0})`
+                    }
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setAudioFilesFilter(tab.id as any)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                        audioFilesFilter === tab.id
+                          ? tab.id === 'orphan'
+                            ? 'bg-rose-500 text-white'
+                            : 'bg-amber-400 text-slate-950'
+                          : 'bg-slate-950 text-slate-300 hover:bg-slate-800 border border-slate-800'
+                      }`}
                     >
-                      <div className="min-w-0 flex-1">
-                        <div className="font-mono font-bold text-white truncate" title={f.filename}>
-                          {f.filename}
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                <span className="text-[11px] text-slate-400">
+                  Dung lượng file rác: <strong className={(backupInfo?.uploadsDir.orphanAudioSizeBytes ?? 0) > 0 ? 'text-rose-400' : 'text-emerald-400'}>{formatBytes(backupInfo?.uploadsDir.orphanAudioSizeBytes || 0)}</strong>
+                </span>
+              </div>
+
+              <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                {(() => {
+                  const allFiles = backupInfo?.uploadsDir.audioFiles || [];
+                  const filteredFiles = allFiles.filter((f) => {
+                    if (audioFilesFilter === 'orphan') return f.isUsedInDb === false;
+                    if (audioFilesFilter === 'used') return f.isUsedInDb !== false;
+                    return true;
+                  });
+
+                  if (filteredFiles.length === 0) {
+                    return (
+                      <div className="p-6 rounded-xl bg-slate-950/60 border border-slate-800 text-center text-xs text-slate-400">
+                        {audioFilesFilter === 'orphan'
+                          ? 'Tuyệt vời! Không có file MP3 rác nào trong thư mục uploads/audio/. Toàn bộ file trên đĩa đều khớp 100% với Database.'
+                          : 'Hiện chưa có file MP3 nào trong danh mục này.'}
+                      </div>
+                    );
+                  }
+
+                  return filteredFiles.map((f) => {
+                    const isUsed = f.isUsedInDb !== false;
+                    return (
+                      <div
+                        key={f.filename}
+                        className={`p-3 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs transition ${
+                          isUsed
+                            ? 'bg-slate-950 border-slate-800'
+                            : 'bg-rose-500/5 border-rose-500/30 hover:border-rose-500/50'
+                        }`}
+                      >
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-mono font-bold text-white truncate" title={f.filename}>
+                              {f.filename}
+                            </span>
+                            {isUsed ? (
+                              <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
+                                ✓ Đang dùng trong DB
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[10px] font-bold">
+                                ⚠️ File rác (Đã xóa khỏi DB)
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="text-[11px] font-mono text-slate-400 truncate">
+                            {f.url}
+                          </div>
+
+                          {isUsed && f.usedBy && f.usedBy.length > 0 && (
+                            <div className="text-[11px] text-emerald-400/90 truncate" title={f.usedBy.join(', ')}>
+                              Truyện sử dụng: <strong>{f.usedBy.join(', ')}</strong>
+                            </div>
+                          )}
                         </div>
-                        <div className="text-[11px] font-mono text-emerald-400 truncate mt-0.5">
-                          {f.url}
+
+                        <div className="flex items-center gap-2 shrink-0 justify-end">
+                          <span className="px-2 py-1 rounded bg-slate-900 border border-slate-800 text-[11px] font-mono text-amber-300">
+                            {formatBytes(f.sizeBytes)}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyText(f.url, `audio-url-${f.filename}`)}
+                            className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
+                            title="Copy đường dẫn /uploads/audio/..."
+                          >
+                            {apiCopiedKey === `audio-url-${f.filename}` ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                            <span>Copy</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteSingleAudioFile(f.filename, isUsed, f.usedBy)}
+                            className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1 cursor-pointer transition ${
+                              isUsed
+                                ? 'bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-300 border border-slate-700'
+                                : 'bg-rose-500/20 hover:bg-rose-500 text-rose-300 hover:text-white border border-rose-500/40'
+                            }`}
+                            title={isUsed ? 'Xóa file này khỏi ổ đĩa' : 'Xóa vĩnh viễn file rác này khỏi uploads/audio/'}
+                          >
+                            <Trash2 size={12} />
+                            <span>Xóa</span>
+                          </button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-[11px] font-mono text-amber-300">
-                          {formatBytes(f.sizeBytes)}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleCopyText(f.url, `audio-url-${f.filename}`)}
-                          className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
-                          title="Copy đường dẫn /uploads/audio/..."
-                        >
-                          {apiCopiedKey === `audio-url-${f.filename}` ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
-                          <span>Copy</span>
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="p-6 rounded-xl bg-slate-950/60 border border-slate-800 text-center text-xs text-slate-400">
-                    Hiện chưa có file MP3 nào được tải lên thư mục <code className="text-emerald-300 font-mono">uploads/audio/</code>. Khi bạn tải file MP3 ở mục Thêm/Sửa truyện, file sẽ xuất hiện tại đây với tên chuẩn slug.
-                  </div>
-                )}
+                    );
+                  });
+                })()}
               </div>
             </div>
           </div>
