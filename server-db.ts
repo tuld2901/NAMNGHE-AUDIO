@@ -273,17 +273,37 @@ export function autoFixMissingChapterDurations(): void {
     for (const track of dbData.tracks) {
       if (Array.isArray(track.chapters)) {
         for (const ch of track.chapters) {
-          if (!ch.duration || ch.duration.trim() === '' || ch.duration === 'Audio Full' || ch.duration === 'Chưa gắn') {
-            const calcDuration = detectAudioDurationSync(ch.mp3_url || track.mp3_url);
-            ch.duration = calcDuration;
-            changed = true;
+          const mp3Url = ch.mp3_url || track.mp3_url || '';
+          let hasPhysicalFile = false;
+          if (mp3Url.includes('/uploads/')) {
+            const fname = path.basename(mp3Url.split('?')[0]);
+            if (
+              fs.existsSync(path.join(UPLOAD_AUDIO_DIR, fname)) ||
+              fs.existsSync(path.join(UPLOAD_ROOT_DIR, fname))
+            ) {
+              hasPhysicalFile = true;
+            }
+          }
+
+          if (
+            hasPhysicalFile ||
+            !ch.duration ||
+            ch.duration.trim() === '' ||
+            ch.duration === 'Audio Full' ||
+            ch.duration === 'Chưa gắn'
+          ) {
+            const calcDuration = detectAudioDurationSync(mp3Url);
+            if (ch.duration !== calcDuration) {
+              ch.duration = calcDuration;
+              changed = true;
+            }
           }
         }
       }
     }
     if (changed) {
       saveDatabase(dbData);
-      console.log('[Database] Đã tự động tính toán và gắn thời lượng cho tất cả các tập truyện còn thiếu.');
+      console.log('[Database] Đã tự động đồng bộ chính xác thời lượng audio cho toàn bộ các tập truyện.');
     }
   } catch (err) {
     console.warn('[Database] Lỗi khi tự động gắn thời lượng tập:', err);

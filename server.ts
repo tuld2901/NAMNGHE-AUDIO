@@ -167,13 +167,99 @@ async function startServer() {
     limits: { fileSize: 20 * 1024 * 1024 } // 20MB image files
   });
 
-  // Dedicated progressive audio streaming endpoint with HTTP 206 Partial Content
-  // "Load đến đâu nghe đến đó": browser sends Range (bytes=0-), server immediately delivers
-  // a lightweight initial 1.5MB chunk so audio playback starts instantaneously without waiting for the full file.
-  app.get(['/uploads/audio/:filename', '/uploads/:filename'], (req, res, next) => {
-    const filename = path.basename(req.params.filename);
+  const audioDurationSecCache = new Map<string, number>();
+
+  const parseDurationStrToSec = (str: string): number => {
+    if (!str) return 0;
+    const parts = str.trim().split(':').map((n) => parseFloat(n));
+    if (parts.some((n) => isNaN(n))) return 0;
+    if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+    if (parts.length === 2) return parts[0] * 60 + parts[1];
+    if (parts.length === 1) return parts[0];
+    return 0;
+  };
+
+  const getCachedAudioDurationSec = (filePath: string, fallbackDurSec: number): number => {
+    const cached = audioDurationSecCache.get(filePath);
+    if (cached && cached > 0) return cached;
+    const durStr = detectAudioDurationSync(`/uploads/audio/${path.basename(filePath)}`);
+    const detected = parseDurationStrToSec(durStr);
+    const finalDur = detected > 0 ? detected : fallbackDurSec;
+    if (finalDur > 0) {
+      audioDurationSecCache.set(filePath, finalDur);
+    }
+    return finalDur;
+  };
+
+  const computeMp3SeekByteOffset = (filePath: string, fileSize: number, seekSeconds: number, totalDurationSec: number): number => {
+    if (seekSeconds <= 0.5 || totalDurationSec <= 0 || fileSize <= 1024) return 0;
+    let fd: number | null = null;
+    try {
+      fd = fs.openSync(filePath, 'r');
+      let id3v2Size = 0;
+      const headerBuf = Buffer.alloc(10);
+      const headerRead = fs.readSync(fd, headerBuf, 0, 10, 0);
+      if (
+        headerRead === 10 &&
+        headerBuf[0] === 0x49 &&
+        headerBuf[1] === 0x44 &&
+        headerBuf[2] === 0x33
+      ) {
+        id3v2Size =
+          10 +
+          (((headerBuf[6] & 0x7f) << 21) |
+            ((headerBuf[7] & 0x7f) << 14) |
+            ((headerBuf[8] & 0x7f) << 7) |
+            (headerBuf[9] & 0x7f));
+        if (id3v2Size >= fileSize) id3v2Size = 0;
+      }
+
+      const audioDataBytes = Math.max(0, fileSize - id3v2Size);
+      const ratio = Math.max(0, Math.min(0.995, seekSeconds / totalDurationSec));
+      const rawOffset = id3v2Size + Math.floor(ratio * audioDataBytes);
+
+      const scanBuf = Buffer.alloc(4096);
+      const scanRead = fs.readSync(fd, scanBuf, 0, 4096, rawOffset);
+      let frameOffset = 0;
+      for (let i = 0; i < scanRead - 4; i++) {
+        if (
+          scanBuf[i] === 0xff &&
+          (scanBuf[i + 1] & 0xe0) === 0xe0 &&
+          (scanBuf[i + 1] & 0x18) !== 0x08 &&
+          (scanBuf[i + 1] & 0x06) !== 0x00 &&
+          (scanBuf[i + 2] & 0xf0) !== 0xf0 &&
+          (scanBuf[i + 2] & 0x0c) !== 0x0c
+        ) {
+          frameOffset = i;
+          break;
+        }
+      }
+      return Math.min(rawOffset + frameOffset, fileSize - 1);
+    } catch {
+      return 0;
+    } finally {
+      if (fd !== null) {
+        try {
+          fs.closeSync(fd);
+        } catch {}
+      }
+    }
+  };
+
+  const handleAudioStreamRequest = (req: express.Request, res: express.Response, next: express.NextFunction, rawFilename: string) => {
+    const filename = path.basename(rawFilename.split('?')[0]);
     if (!filename.toLowerCase().endsWith('.mp3')) {
       return next();
+    }
+
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Range, Content-Type, Accept, Origin');
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Range, Accept-Ranges, Content-Length');
+    res.setHeader('X-Accel-Buffering', 'no');
+
+    if (req.method === 'OPTIONS') {
+      return res.status(200).end();
     }
 
     let filePath = path.join(UPLOAD_AUDIO_DIR, filename);
@@ -187,49 +273,115 @@ async function startServer() {
     try {
       const stat = fs.statSync(filePath);
       const fileSize = stat.size;
+      const seekSeconds = parseFloat(String(req.query.t || req.query.seek || '0')) || 0;
+      const fallbackDurSec = parseFloat(String(req.query.dur || '0')) || 0;
+
+      let baseStartByte = 0;
+      if (seekSeconds > 0.5) {
+        const totalDurSec = getCachedAudioDurationSec(filePath, fallbackDurSec);
+        baseStartByte = computeMp3SeekByteOffset(filePath, fileSize, seekSeconds, totalDurSec);
+      }
+
+      const slicedFileSize = fileSize - baseStartByte;
       const range = req.headers.range;
 
       res.setHeader('Accept-Ranges', 'bytes');
       res.setHeader('Content-Type', 'audio/mpeg');
-      res.setHeader('Cache-Control', 'public, max-age=2592000, immutable');
+      res.setHeader('Last-Modified', stat.mtime.toUTCString());
+      res.setHeader('ETag', `W/"${slicedFileSize.toString(16)}-${Math.floor(stat.mtimeMs).toString(16)}-${ Math.floor(seekSeconds)}"`);
+      res.setHeader(
+        'Cache-Control',
+        seekSeconds > 0.5 ? 'no-store' : 'public, max-age=2592000, immutable'
+      );
 
       if (range) {
         const parts = range.replace(/bytes=/, '').split('-');
-        const start = parseInt(parts[0], 10);
-        // Hỗ trợ chuẩn RFC 7233 Byte-Range: Trình duyệt gửi bytes=X- để tua đến bất kỳ đoạn nào trong bài
-        const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+        const relStart = parseInt(parts[0], 10) || 0;
+        const relEnd = parts[1] ? parseInt(parts[1], 10) : slicedFileSize - 1;
 
-        if (start >= fileSize) {
-          res.status(416).setHeader('Content-Range', `bytes */${fileSize}`).end();
+        if (relStart >= slicedFileSize || relStart < 0) {
+          res.status(416).setHeader('Content-Range', `bytes */${slicedFileSize}`).end();
           return;
         }
 
-        const chunksize = end - start + 1;
-        const fileStream = fs.createReadStream(filePath, { start, end });
+        const validRelEnd = Math.min(relEnd, slicedFileSize - 1);
+        const chunksize = validRelEnd - relStart + 1;
+        const diskStart = baseStartByte + relStart;
+        const diskEnd = baseStartByte + validRelEnd;
 
         res.writeHead(206, {
-          'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+          'Content-Range': `bytes ${relStart}-${validRelEnd}/${slicedFileSize}`,
           'Accept-Ranges': 'bytes',
           'Content-Length': chunksize,
           'Content-Type': 'audio/mpeg',
         });
+
+        if (req.method === 'HEAD') {
+          res.end();
+          return;
+        }
+
+        const fileStream = fs.createReadStream(filePath, { start: diskStart, end: diskEnd });
+        req.on('close', () => {
+          fileStream.destroy();
+        });
+        fileStream.on('error', () => {
+          if (!res.headersSent) res.status(500).end();
+        });
         fileStream.pipe(res);
       } else {
         res.writeHead(200, {
-          'Content-Length': fileSize,
+          'Content-Length': slicedFileSize,
           'Content-Type': 'audio/mpeg',
+          'Accept-Ranges': 'bytes',
         });
-        fs.createReadStream(filePath).pipe(res);
+
+        if (req.method === 'HEAD') {
+          res.end();
+          return;
+        }
+
+        const fileStream = fs.createReadStream(filePath, { start: baseStartByte, end: fileSize - 1 });
+        req.on('close', () => {
+          fileStream.destroy();
+        });
+        fileStream.on('error', () => {
+          if (!res.headersSent) res.status(500).end();
+        });
+        fileStream.pipe(res);
       }
     } catch {
       next();
     }
+  };
+
+  // Dedicated progressive audio streaming & server-side seek endpoint
+  app.all('/api/stream-audio', (req, res, next) => {
+    const rawSrc = String(req.query.src || req.query.file || '');
+    if (!rawSrc) {
+      return res.status(400).json({ error: 'Thiếu đường dẫn file audio' });
+    }
+    handleAudioStreamRequest(req, res, next, rawSrc);
+  });
+
+  app.all(['/uploads/audio/:filename', '/uploads/:filename'], (req, res, next) => {
+    handleAudioStreamRequest(req, res, next, req.params.filename);
   });
 
   // Serve unified static uploaded audio & image files from root /uploads directory
-  // Supports HTTP Byte-Range (206 Partial Content) & 30-day cache
+  // Supports HTTP Byte-Range (206 Partial Content) & 30-day cache with full CORS
   app.use(
     '/uploads',
+    (req, res, next) => {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Range, Content-Type, Accept, Origin');
+      res.setHeader('Access-Control-Expose-Headers', 'Content-Range, Accept-Ranges, Content-Length');
+      if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+      }
+      next();
+    },
     express.static(UPLOAD_ROOT_DIR, {
       maxAge: '30d',
       acceptRanges: true,

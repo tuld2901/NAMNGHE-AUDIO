@@ -25,6 +25,7 @@ export const Player: React.FC<PlayerProps> = ({ onOpenStoryDetail }) => {
     currentChapter,
     isPlaying,
     currentTime,
+    bufferedTime,
     duration,
     playbackSpeed,
     sleepTimerMinutes,
@@ -35,6 +36,7 @@ export const Player: React.FC<PlayerProps> = ({ onOpenStoryDetail }) => {
     setSleepTimer,
     nextChapter,
     prevChapter,
+    setIsScrubbing,
     formatTime,
   } = useAudio();
 
@@ -228,11 +230,13 @@ export const Player: React.FC<PlayerProps> = ({ onOpenStoryDetail }) => {
         <div className="pt-0.5">
           <AudioScrubber
             currentTime={currentTime}
+            bufferedTime={bufferedTime}
             duration={duration}
             onSeek={seekTo}
             formatTime={formatTime}
             size="sm"
             showTimeLabels={true}
+            onScrubbingChange={setIsScrubbing}
           />
         </div>
       </div>
