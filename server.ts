@@ -57,6 +57,33 @@ async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
 
+  // Chặn hoàn toàn các quyền PWA / Ứng dụng trên thiết bị (Apps on device / Local Network Access)
+  app.use((_req, res, next) => {
+    res.setHeader(
+      'Permissions-Policy',
+      'local-network-access=(), loopback-network=(), local-network=(), browsing-topics=(), interest-cohort=()'
+    );
+    next();
+  });
+
+  // Trả về 404 rõ ràng cho mọi file cấu hình PWA / Service Worker / App Links để trình duyệt hoạt động thuần túy như trang web thường
+  app.get(
+    [
+      '/manifest.json',
+      '/manifest.webmanifest',
+      '/site.webmanifest',
+      '/sw.js',
+      '/service-worker.js',
+      '/registerSW.js',
+      '/.well-known/assetlinks.json',
+      '/.well-known/apple-app-site-association',
+      '/apple-app-site-association',
+    ],
+    (_req, res) => {
+      res.status(404).type('text/plain').send('Not Found');
+    }
+  );
+
   // Enable CORS for external API clients (Postman, Python, n8n, Make, cURL, external scripts)
   app.use('/api', (req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -184,7 +211,13 @@ async function startServer() {
     if (cached && cached > 0) return cached;
     const durStr = detectAudioDurationSync(`/uploads/audio/${path.basename(filePath)}`);
     const detected = parseDurationStrToSec(durStr);
-    const finalDur = detected > 0 ? detected : fallbackDurSec;
+    // Prefer exact duration from browser decoder if detected fell back to default 25:00 (1500s)
+    const finalDur =
+      fallbackDurSec > 1 && fallbackDurSec < 86400 && (detected === 1500 || detected <= 0)
+        ? fallbackDurSec
+        : detected > 0
+        ? detected
+        : fallbackDurSec;
     if (finalDur > 0) {
       audioDurationSecCache.set(filePath, finalDur);
     }
@@ -247,7 +280,11 @@ async function startServer() {
   };
 
   const handleAudioStreamRequest = (req: express.Request, res: express.Response, next: express.NextFunction, rawFilename: string) => {
-    const filename = path.basename(rawFilename.split('?')[0]);
+    let cleanRaw = rawFilename.split('?')[0];
+    try {
+      cleanRaw = decodeURIComponent(cleanRaw);
+    } catch {}
+    const filename = path.basename(cleanRaw);
     if (!filename.toLowerCase().endsWith('.mp3')) {
       return next();
     }
@@ -275,6 +312,7 @@ async function startServer() {
       const fileSize = stat.size;
       const seekSeconds = parseFloat(String(req.query.t || req.query.seek || '0')) || 0;
       const fallbackDurSec = parseFloat(String(req.query.dur || '0')) || 0;
+      const isApiStreamRoute = req.path.includes('/api/stream-audio');
 
       let baseStartByte = 0;
       if (seekSeconds > 0.5) {
@@ -288,11 +326,16 @@ async function startServer() {
       res.setHeader('Accept-Ranges', 'bytes');
       res.setHeader('Content-Type', 'audio/mpeg');
       res.setHeader('Last-Modified', stat.mtime.toUTCString());
-      res.setHeader('ETag', `W/"${slicedFileSize.toString(16)}-${Math.floor(stat.mtimeMs).toString(16)}-${ Math.floor(seekSeconds)}"`);
-      res.setHeader(
-        'Cache-Control',
-        seekSeconds > 0.5 ? 'no-store' : 'public, max-age=2592000, immutable'
-      );
+      res.setHeader('ETag', `W/"${slicedFileSize.toString(16)}-${Math.floor(stat.mtimeMs).toString(16)}-${Math.floor(seekSeconds)}"`);
+
+      // Crucial for VPS + Cloudflare: prevent Cloudflare from buffering/caching sliced seek streams or stripping byte ranges
+      if (seekSeconds > 0.5 || isApiStreamRoute) {
+        res.setHeader('Cache-Control', 'private, no-store, no-cache, must-revalidate, no-transform');
+        res.setHeader('CDN-Cache-Control', 'no-store');
+        res.setHeader('Cloudflare-CDN-Cache-Control', 'no-store');
+      } else {
+        res.setHeader('Cache-Control', 'public, max-age=2592000, immutable, no-transform');
+      }
 
       if (range) {
         const parts = range.replace(/bytes=/, '').split('-');
@@ -389,7 +432,7 @@ async function startServer() {
       setHeaders: (res, filePath) => {
         if (filePath.endsWith('.mp3')) {
           res.setHeader('Accept-Ranges', 'bytes');
-          res.setHeader('Cache-Control', 'public, max-age=2592000, immutable');
+          res.setHeader('Cache-Control', 'public, max-age=2592000, immutable, no-transform');
         }
       }
     })
@@ -640,6 +683,22 @@ async function startServer() {
   app.post('/api/gateway', handleStoryGateway);
   app.post('/api/v1/stories/gateway', handleStoryGateway);
   app.get('/api/gateway', handleStoryGateway);
+
+  // --- FAST SINGLE-REQUEST BOOTSTRAP ENDPOINT FOR INITIAL PAGE LOAD ---
+  app.get('/api/bootstrap', async (_req, res) => {
+    try {
+      const [tracks, siteSettings, categories, links] = await Promise.all([
+        getTracks(),
+        Promise.resolve(getSiteSettings()),
+        Promise.resolve(getCategories()),
+        Promise.resolve(getAffiliateLinks()),
+      ]);
+      res.setHeader('Cache-Control', 'no-cache');
+      res.json({ tracks, siteSettings, categories, links });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
 
   // --- TRACKS & STORIES RESTFUL API (/api/tracks AND /api/v1/stories) ---
   app.get(['/api/tracks', '/api/v1/stories'], async (_req, res) => {
@@ -1078,10 +1137,22 @@ async function startServer() {
   // --- DYNAMIC ROBOTS.TXT & SITEMAP.XML (CLEAN URLS WITHOUT #) ---
   const slugifyServer = slugifyVietnamese;
 
+  // Helper lấy Base URL công khai an toàn, tuyệt đối không bao giờ trả về localhost hoặc 127.0.0.1
+  const getSafePublicBaseUrl = (req: express.Request): string => {
+    const rawHost = String(req.headers['x-forwarded-host'] || req.headers.host || '').trim();
+    const isLoopbackOrPrivate =
+      !rawHost ||
+      /^(localhost|127\.\d+\.\d+\.\d+|0\.0\.0\.0|\[::1\]|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+)(:\d+)?$/i.test(rawHost);
+    if (isLoopbackOrPrivate) {
+      return '';
+    }
+    const rawProto = String(req.headers['x-forwarded-proto'] || req.protocol || 'https').split(',')[0].trim();
+    const protocol = rawProto === 'http' || rawProto === 'https' ? rawProto : 'https';
+    return `${protocol}://${rawHost}`;
+  };
+
   app.get('/robots.txt', (req, res) => {
-    const protocol = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'https';
-    const host = req.headers['x-forwarded-host'] || req.headers.host || `localhost:${PORT}`;
-    const baseUrl = `${protocol}://${host}`;
+    const baseUrl = getSafePublicBaseUrl(req);
     const content = [
       'User-agent: *',
       'Allow: /',
@@ -1098,9 +1169,7 @@ async function startServer() {
 
   app.get('/sitemap.xml', async (req, res) => {
     try {
-      const protocol = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'https';
-      const host = req.headers['x-forwarded-host'] || req.headers.host || `localhost:${PORT}`;
-      const baseUrl = `${protocol}://${host}`;
+      const baseUrl = getSafePublicBaseUrl(req);
       const tracks = await getTracks();
       const today = new Date().toISOString().split('T')[0];
 
@@ -1160,9 +1229,7 @@ ${urlsXml}
       try {
         let html = cachedIndexHtml || fs.readFileSync(indexHtmlPath, 'utf-8');
 
-        const protocol = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'https';
-        const host = req.headers['x-forwarded-host'] || req.headers.host || `localhost:${PORT}`;
-        const baseUrl = `${protocol}://${host}`;
+        const baseUrl = getSafePublicBaseUrl(req);
         const settings = getSiteSettings();
         const brandName = (settings.siteName || 'Gối Ôm Audio').trim() || 'Gối Ôm Audio';
         const tagline = (settings.siteTagline || 'Web Nghe Truyện Audio Online Miễn Phí').trim();

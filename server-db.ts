@@ -80,13 +80,40 @@ export function slugifyVietnamese(text: string): string {
 }
 
 /**
+ * Loại bỏ triệt để mọi địa chỉ loopback (localhost, 127.0.0.1, 0.0.0.0, IP nội bộ) và các giao thức gọi ứng dụng (intent://, shopeevn://)
+ * để trình duyệt Chrome không bao giờ hiểu lầm và bật thông báo hỏi quyền "Ứng dụng trên thiết bị" (Apps on device / Local network).
+ */
+export function sanitizePublicWebUrl(rawUrl: string | undefined | null, fallback = ''): string {
+  if (!rawUrl || typeof rawUrl !== 'string') return fallback;
+  let cleaned = rawUrl.trim();
+  if (!cleaned) return fallback;
+
+  // Chặn các custom scheme gọi ứng dụng trên thiết bị (shopeevn://, intent://, market://, tiktok://, lazada://)
+  if (/^(intent|shopeevn|shopee|lazada|tiktok|market|itms-apps|android-app|ios-app):\/\//i.test(cleaned)) {
+    return fallback || 'https://shopee.vn';
+  }
+
+  // Nếu URL chứa localhost, 127.0.0.1, 0.0.0.0, [::1] hoặc IP LAN 192.168.x.x / 10.x.x.x -> chuyển thành đường dẫn tương đối (/uploads/...)
+  const loopbackRegex = /^https?:\/\/(localhost|127\.\d+\.\d+\.\d+|0\.0\.0\.0|\[::1\]|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+)(:\d+)?(\/.*)?$/i;
+  const match = cleaned.match(loopbackRegex);
+  if (match) {
+    const pathPart = match[4] || '/';
+    return pathPart;
+  }
+
+  return cleaned;
+}
+
+/**
  * Đảm bảo file MP3 nội bộ (/uploads/audio/...) luôn có tên file chuẩn hóa theo storyTitle + chapterTitle slug
  * VD: "Truyện Ma Đêm Khuya" + "Phần 1" -> "/uploads/audio/truyen-ma-dem-khuya-phan-1.mp3"
  */
 export function normalizeLocalChapterAudioSlug(chapterTitle: string, mp3Url: string, storyTitle?: string): string {
-  if (!mp3Url || !mp3Url.startsWith('/uploads/audio/')) {
-    return mp3Url;
+  const safeMp3Url = sanitizePublicWebUrl(mp3Url);
+  if (!safeMp3Url || !safeMp3Url.startsWith('/uploads/audio/')) {
+    return safeMp3Url;
   }
+  mp3Url = safeMp3Url;
   const chapterSlug = slugifyVietnamese(chapterTitle);
   if (!chapterSlug) return mp3Url;
 
@@ -217,15 +244,101 @@ function scheduleSaveDatabase() {
   }, 1500);
 }
 
-// --- TỰ ĐỘNG TÍNH TOÁN ĐỘ DÀI AUDIO TỪ FILE DISK (FFPROBE / FILE SIZE) ---
+// --- TỰ ĐỘNG TÍNH TOÁN ĐỘ DÀI AUDIO TỪ FILE DISK (FFPROBE / MP3 HEADER / FILE SIZE) ---
+function parseMp3DurationFromHeader(localPath: string, fileSize: number): number {
+  let fd: number | null = null;
+  try {
+    fd = fs.openSync(localPath, 'r');
+    let id3v2Size = 0;
+    const headerBuf = Buffer.alloc(10);
+    if (fs.readSync(fd, headerBuf, 0, 10, 0) === 10 && headerBuf[0] === 0x49 && headerBuf[1] === 0x44 && headerBuf[2] === 0x33) {
+      id3v2Size =
+        10 +
+        (((headerBuf[6] & 0x7f) << 21) |
+          ((headerBuf[7] & 0x7f) << 14) |
+          ((headerBuf[8] & 0x7f) << 7) |
+          (headerBuf[9] & 0x7f));
+      if (id3v2Size >= fileSize) id3v2Size = 0;
+    }
+
+    const scanLen = Math.min(16384, fileSize - id3v2Size);
+    if (scanLen <= 4) return 0;
+    const buf = Buffer.alloc(scanLen);
+    const bytesRead = fs.readSync(fd, buf, 0, scanLen, id3v2Size);
+
+    const bitratesMpeg1L3 = [0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 0];
+    const bitratesMpeg2L3 = [0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160, 0];
+    const sampleRatesMpeg1 = [44100, 48000, 32000, 0];
+    const sampleRatesMpeg2 = [22050, 24000, 16000, 0];
+    const sampleRatesMpeg25 = [11025, 12000, 8000, 0];
+
+    for (let i = 0; i < bytesRead - 48; i++) {
+      if (buf[i] === 0xff && (buf[i + 1] & 0xe0) === 0xe0) {
+        const versionBits = (buf[i + 1] >> 3) & 0x03; // 3=MPEG1, 2=MPEG2, 0=MPEG2.5
+        const layerBits = (buf[i + 1] >> 1) & 0x03; // 1=Layer III
+        const bitrateIdx = (buf[i + 2] >> 4) & 0x0f;
+        const srIdx = (buf[i + 2] >> 2) & 0x03;
+
+        if (versionBits === 1 || layerBits !== 1 || bitrateIdx === 0 || bitrateIdx === 15 || srIdx === 3) {
+          continue;
+        }
+
+        const isMpeg1 = versionBits === 3;
+        const bitrateKbps = isMpeg1 ? bitratesMpeg1L3[bitrateIdx] : bitratesMpeg2L3[bitrateIdx];
+        const sampleRate =
+          versionBits === 3
+            ? sampleRatesMpeg1[srIdx]
+            : versionBits === 2
+            ? sampleRatesMpeg2[srIdx]
+            : sampleRatesMpeg25[srIdx];
+
+        if (!bitrateKbps || !sampleRate) continue;
+
+        // Check for Xing / Info VBR header inside this first frame
+        const frameSearchEnd = Math.min(bytesRead - 12, i + 200);
+        for (let j = i + 4; j < frameSearchEnd; j++) {
+          const isXing = buf[j] === 0x58 && buf[j + 1] === 0x69 && buf[j + 2] === 0x6e && buf[j + 3] === 0x67;
+          const isInfo = buf[j] === 0x49 && buf[j + 1] === 0x6e && buf[j + 2] === 0x66 && buf[j + 3] === 0x6f;
+          if (isXing || isInfo) {
+            const flags = buf.readUInt32BE(j + 4);
+            if (flags & 0x01) {
+              const totalFrames = buf.readUInt32BE(j + 8);
+              const samplesPerFrame = isMpeg1 ? 1152 : 576;
+              if (totalFrames > 0) {
+                return Math.round((totalFrames * samplesPerFrame) / sampleRate);
+              }
+            }
+            break;
+          }
+        }
+
+        const audioBytes = Math.max(0, fileSize - id3v2Size);
+        const bytesPerSec = (bitrateKbps * 1000) / 8;
+        if (bytesPerSec > 0) {
+          return Math.round(audioBytes / bytesPerSec);
+        }
+      }
+    }
+    return 0;
+  } catch {
+    return 0;
+  } finally {
+    if (fd !== null) {
+      try {
+        fs.closeSync(fd);
+      } catch {}
+    }
+  }
+}
+
 export function detectAudioDurationSync(mp3Url: string): string {
   try {
     if (!mp3Url) return '25:00';
     let filename = '';
     if (mp3Url.includes('/uploads/audio/')) {
-      filename = mp3Url.split('/uploads/audio/')[1]?.split('?')[0];
+      filename = decodeURIComponent(mp3Url.split('/uploads/audio/')[1]?.split('?')[0] || '');
     } else if (mp3Url.includes('/uploads/')) {
-      filename = mp3Url.split('/uploads/')[1]?.split('?')[0];
+      filename = decodeURIComponent(mp3Url.split('/uploads/')[1]?.split('?')[0] || '');
     }
     if (!filename) return '25:00';
 
@@ -235,33 +348,38 @@ export function detectAudioDurationSync(mp3Url: string): string {
       if (!fs.existsSync(localPath)) return '25:00';
     }
 
+    const formatSecs = (secs: number): string => {
+      const s = Math.max(1, Math.floor(secs));
+      const hrs = Math.floor(s / 3600);
+      const mins = Math.floor((s % 3600) / 60);
+      const rem = s % 60;
+      return hrs > 0
+        ? `${hrs}:${mins < 10 ? '0' : ''}${mins}:${rem < 10 ? '0' : ''}${rem}`
+        : `${mins < 10 ? '0' : ''}${mins}:${rem < 10 ? '0' : ''}${rem}`;
+    };
+
     // 1. Thử dùng ffprobe để lấy độ dài chính xác từng giây
     try {
       const out = execSync(
         `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${localPath}"`,
-        { timeout: 2500 }
+        { timeout: 2500, stdio: ['ignore', 'pipe', 'ignore'] }
       ).toString();
       const secs = parseFloat(out.trim());
       if (!isNaN(secs) && secs > 0) {
-        const s = Math.floor(secs);
-        const hrs = Math.floor(s / 3600);
-        const mins = Math.floor((s % 3600) / 60);
-        const rem = s % 60;
-        return hrs > 0
-          ? `${hrs}:${mins < 10 ? '0' : ''}${mins}:${rem < 10 ? '0' : ''}${rem}`
-          : `${mins < 10 ? '0' : ''}${mins}:${rem < 10 ? '0' : ''}${rem}`;
+        return formatSecs(secs);
       }
     } catch {}
 
-    // 2. Dự phòng: Tính toán theo dung lượng file (chuẩn bitrate 128kbps = 16,000 bytes/giây)
     const stat = fs.statSync(localPath);
-    const estSecs = Math.max(60, Math.round(stat.size / 16000));
-    const hrs = Math.floor(estSecs / 3600);
-    const mins = Math.floor((estSecs % 3600) / 60);
-    const rem = estSecs % 60;
-    return hrs > 0
-      ? `${hrs}:${mins < 10 ? '0' : ''}${mins}:${rem < 10 ? '0' : ''}${rem}`
-      : `${mins < 10 ? '0' : ''}${mins}:${rem < 10 ? '0' : ''}${rem}`;
+    // 2. Đọc trực tiếp MP3 Frame Header (CBR Bitrate / VBR Xing Header) không cần ffprobe
+    const headerSecs = parseMp3DurationFromHeader(localPath, stat.size);
+    if (headerSecs > 0) {
+      return formatSecs(headerSecs);
+    }
+
+    // 3. Dự phòng cuối: Tính theo dung lượng file (128kbps = 16,000 bytes/giây)
+    const estSecs = Math.max(1, Math.round(stat.size / 16000));
+    return formatSecs(estSecs);
   } catch {
     return '25:00';
   }
@@ -270,10 +388,68 @@ export function detectAudioDurationSync(mp3Url: string): string {
 export function autoFixMissingChapterDurations(): void {
   try {
     let changed = false;
+
+    // 1. Làm sạch toàn bộ URL trong siteSettings (loại bỏ localhost / 127.0.0.1 nếu có)
+    if (dbData.siteSettings) {
+      const cleanLogo = sanitizePublicWebUrl(dbData.siteSettings.logoUrl);
+      const cleanFav = sanitizePublicWebUrl(dbData.siteSettings.faviconUrl);
+      const cleanBanner = sanitizePublicWebUrl(dbData.siteSettings.heroBannerImage);
+      if (cleanLogo !== dbData.siteSettings.logoUrl) {
+        dbData.siteSettings.logoUrl = cleanLogo;
+        changed = true;
+      }
+      if (cleanFav !== dbData.siteSettings.faviconUrl) {
+        dbData.siteSettings.faviconUrl = cleanFav;
+        changed = true;
+      }
+      if (cleanBanner !== dbData.siteSettings.heroBannerImage) {
+        dbData.siteSettings.heroBannerImage = cleanBanner;
+        changed = true;
+      }
+    }
+
+    // 2. Làm sạch toàn bộ URL trong affiliateLinks (loại bỏ deep link gọi app hoặc localhost)
+    if (Array.isArray(dbData.affiliateLinks)) {
+      for (const link of dbData.affiliateLinks) {
+        const cleanUrl = sanitizePublicWebUrl(link.url, 'https://shopee.vn');
+        const cleanImg = link.imageUrl ? sanitizePublicWebUrl(link.imageUrl) : link.imageUrl;
+        if (cleanUrl !== link.url) {
+          link.url = cleanUrl;
+          changed = true;
+        }
+        if (cleanImg !== link.imageUrl) {
+          link.imageUrl = cleanImg;
+          changed = true;
+        }
+      }
+    }
+
+    // 3. Làm sạch URL và đồng bộ thời lượng cho toàn bộ tracks & chapters
     for (const track of dbData.tracks) {
+      const cleanTrackMp3 = sanitizePublicWebUrl(track.mp3_url);
+      const cleanThumb = sanitizePublicWebUrl(track.thumb_url);
+      const cleanAff = sanitizePublicWebUrl(track.affiliate_link, 'https://shopee.vn');
+      if (cleanTrackMp3 !== track.mp3_url) {
+        track.mp3_url = cleanTrackMp3;
+        changed = true;
+      }
+      if (cleanThumb !== track.thumb_url) {
+        track.thumb_url = cleanThumb;
+        changed = true;
+      }
+      if (cleanAff !== track.affiliate_link) {
+        track.affiliate_link = cleanAff;
+        changed = true;
+      }
+
       if (Array.isArray(track.chapters)) {
         for (const ch of track.chapters) {
-          const mp3Url = ch.mp3_url || track.mp3_url || '';
+          const cleanChMp3 = sanitizePublicWebUrl(ch.mp3_url || track.mp3_url || '');
+          if (ch.mp3_url && cleanChMp3 !== ch.mp3_url) {
+            ch.mp3_url = cleanChMp3;
+            changed = true;
+          }
+          const mp3Url = cleanChMp3;
           let hasPhysicalFile = false;
           if (mp3Url.includes('/uploads/')) {
             const fname = path.basename(mp3Url.split('?')[0]);
@@ -303,7 +479,7 @@ export function autoFixMissingChapterDurations(): void {
     }
     if (changed) {
       saveDatabase(dbData);
-      console.log('[Database] Đã tự động đồng bộ chính xác thời lượng audio cho toàn bộ các tập truyện.');
+      console.log('[Database] Đã tự động chuẩn hóa URL và đồng bộ thời lượng audio cho toàn bộ các tập truyện.');
     }
   } catch (err) {
     console.warn('[Database] Lỗi khi tự động gắn thời lượng tập:', err);
@@ -392,7 +568,7 @@ export async function addTrack(payload: Partial<Track> & { cover_url?: string })
         }
       ];
 
-  const primaryMp3 = rawChapters[0]?.mp3_url || payload.mp3_url || '';
+  const primaryMp3 = sanitizePublicWebUrl(rawChapters[0]?.mp3_url || payload.mp3_url || '');
 
   const newTrack: Track = {
     id: payload.id && String(payload.id).trim() ? String(payload.id).trim() : 'track-' + Date.now(),
@@ -401,10 +577,10 @@ export async function addTrack(payload: Partial<Track> & { cover_url?: string })
     narrator: (payload.narrator || 'Gối Ôm Audio').trim(),
     category: (payload.category || 'Truyện Ma').trim(),
     mp3_url: primaryMp3,
-    thumb_url: payload.thumb_url || payload.cover_url || 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&auto=format&fit=crop&q=80',
+    thumb_url: sanitizePublicWebUrl(payload.thumb_url || payload.cover_url) || 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&auto=format&fit=crop&q=80',
     description: payload.description || '',
     play_count: Number(payload.play_count) || 0,
-    affiliate_link: payload.affiliate_link || 'https://shopee.vn',
+    affiliate_link: sanitizePublicWebUrl(payload.affiliate_link, 'https://shopee.vn'),
     chapters: rawChapters,
     is_featured: Boolean(payload.is_featured),
     is_hot: Boolean(payload.is_hot),
@@ -439,6 +615,15 @@ export async function updateTrack(id: string, updates: Partial<Track> & { cover_
   const normalizedUpdates: Partial<Track> = { ...updates };
   if (updates.cover_url && !updates.thumb_url) {
     normalizedUpdates.thumb_url = updates.cover_url;
+  }
+  if (normalizedUpdates.thumb_url) {
+    normalizedUpdates.thumb_url = sanitizePublicWebUrl(normalizedUpdates.thumb_url);
+  }
+  if (normalizedUpdates.mp3_url) {
+    normalizedUpdates.mp3_url = sanitizePublicWebUrl(normalizedUpdates.mp3_url);
+  }
+  if (normalizedUpdates.affiliate_link) {
+    normalizedUpdates.affiliate_link = sanitizePublicWebUrl(normalizedUpdates.affiliate_link, 'https://shopee.vn');
   }
   if (Array.isArray(updates.chapters) && updates.chapters.length > 0) {
     normalizedUpdates.chapters = updates.chapters.map((ch, idx) => {

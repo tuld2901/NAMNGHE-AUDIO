@@ -1,12 +1,11 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { Track, Chapter, SiteSettings } from './types';
 import { 
   fetchTracks, 
+  fetchBootstrapData,
+  getLocalTracks,
   isDailyUnlockedToday, 
   getSiteSettings,
-  fetchSiteSettings,
-  fetchAffiliateCategories,
-  fetchAffiliateLinks,
   updateFavicon
 } from './services/api';
 import { getStoryPath, findTrackBySlugOrId, updateSEOMetadata } from './services/seo';
@@ -15,8 +14,11 @@ import { Home } from './components/Home';
 import { StoryPage } from './components/StoryPage';
 import { Player } from './components/Player';
 import { LockScreenModal } from './components/LockScreenModal';
-import { Admin } from './components/Admin';
 import { AudioProvider, useAudio } from './context/AudioContext';
+
+const Admin = React.lazy(() =>
+  import('./components/Admin').then((module) => ({ default: module.Admin }))
+);
 
 function AppContent({
   tracks,
@@ -187,20 +189,34 @@ function AppContent({
   }, [isAdminView, handleBackToHome, handleNavigateToAdmin]);
 
   // Handle playing with daily unlock gate
-  const handleSelectOrPlayChapter = (track: Track, chapter: Chapter) => {
-    const isUnlocked = isDailyUnlockedToday();
-    if (!isUnlocked) {
-      setPendingTrack(track);
-      setPendingChapter(chapter);
-      setIsLockModalOpen(true);
-    } else {
-      playTrackChapter(track, chapter);
-    }
-  };
+  const handleSelectOrPlayChapter = useCallback(
+    (track: Track, chapter: Chapter) => {
+      const isUnlocked = isDailyUnlockedToday();
+      if (!isUnlocked) {
+        setPendingTrack(track);
+        setPendingChapter(chapter);
+        setIsLockModalOpen(true);
+      } else {
+        playTrackChapter(track, chapter);
+      }
+    },
+    [playTrackChapter]
+  );
 
-  const handleUnlockSuccess = (track: Track, chapter: Chapter) => {
-    playTrackChapter(track, chapter);
-  };
+  const handleUnlockSuccess = useCallback(
+    (track: Track, chapter: Chapter) => {
+      playTrackChapter(track, chapter);
+    },
+    [playTrackChapter]
+  );
+
+  const handleOpenSupportModal = useCallback(() => {
+    if (tracks.length > 0) {
+      setPendingTrack(tracks[0]);
+      setPendingChapter(tracks[0].chapters?.[0] || null);
+      setIsLockModalOpen(true);
+    }
+  }, [tracks]);
 
   return (
     <div className="min-h-screen bg-[#0b0f17] text-slate-100 flex flex-col font-sans selection:bg-amber-500/30 selection:text-amber-200">
@@ -208,13 +224,7 @@ function AppContent({
       <Navbar
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        onOpenSupportModal={() => {
-          if (tracks.length > 0) {
-            setPendingTrack(tracks[0]);
-            setPendingChapter(tracks[0].chapters?.[0] || null);
-            setIsLockModalOpen(true);
-          }
-        }}
+        onOpenSupportModal={handleOpenSupportModal}
         onNavigateHome={handleBackToHome}
         onNavigateAdmin={handleNavigateToAdmin}
         isAdminView={isAdminView}
@@ -226,17 +236,25 @@ function AppContent({
         <main className="flex-1 w-full mx-auto">
           {isAdminView ? (
             <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-              <Admin
-                tracks={tracks}
-                onRefreshTracks={loadTracksData}
-                onExitAdmin={handleBackToHome}
-                onPreviewTrack={(t) => {
-                  const ch = t.chapters?.[0] || { id: 1, title: 'Phần 1', mp3_url: t.mp3_url };
-                  playTrackChapter(t, ch);
-                }}
-                siteSettings={siteSettings}
-                onUpdateSiteSettings={(newSettings) => setSiteSettings(newSettings)}
-              />
+              <Suspense
+                fallback={
+                  <div className="py-16 text-center text-sm text-slate-400">
+                    Đang tải trang quản trị...
+                  </div>
+                }
+              >
+                <Admin
+                  tracks={tracks}
+                  onRefreshTracks={loadTracksData}
+                  onExitAdmin={handleBackToHome}
+                  onPreviewTrack={(t) => {
+                    const ch = t.chapters?.[0] || { id: 1, title: 'Phần 1', mp3_url: t.mp3_url };
+                    playTrackChapter(t, ch);
+                  }}
+                  siteSettings={siteSettings}
+                  onUpdateSiteSettings={(newSettings) => setSiteSettings(newSettings)}
+                />
+              </Suspense>
             </div>
           ) : isStoryPageView && currentViewingStory ? (
             /* TRANG PHÁT NHẠC VÀ NGHE TRUYỆN ĐẦY ĐỦ CÁC TẬP */
@@ -260,7 +278,7 @@ function AppContent({
         </main>
 
         {/* Thanh trình chạy nhạc nằm ngay trên Footer */}
-        <Player onOpenStoryDetail={(t) => handleNavigateToStory(t)} />
+        <Player onOpenStoryDetail={handleNavigateToStory} />
       </div>
 
       {/* Fullscreen Lock Popup */}
@@ -302,7 +320,7 @@ function AppContent({
 }
 
 export default function App() {
-  const [tracks, setTracks] = useState<Track[]>([]);
+  const [tracks, setTracks] = useState<Track[]>(() => getLocalTracks());
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(() => getSiteSettings());
 
   // Dynamic favicon
@@ -310,7 +328,7 @@ export default function App() {
     updateFavicon(siteSettings.faviconUrl);
   }, [siteSettings.faviconUrl]);
 
-  // Load tracks and siteSettings from server
+  // Refresh tracks from server
   const loadTracksData = useCallback(async () => {
     try {
       const list = await fetchTracks();
@@ -321,15 +339,15 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    loadTracksData();
-    fetchAffiliateCategories().catch(() => {});
-    fetchAffiliateLinks().catch(() => {});
-    fetchSiteSettings().then(settings => {
-      if (settings) {
-        setSiteSettings(settings);
+    fetchBootstrapData().then(({ tracks: loadedTracks, siteSettings: loadedSettings }) => {
+      if (loadedTracks && loadedTracks.length > 0) {
+        setTracks(loadedTracks);
+      }
+      if (loadedSettings) {
+        setSiteSettings(loadedSettings);
       }
     });
-  }, [loadTracksData]);
+  }, []);
 
   return (
     <AudioProvider allTracks={tracks}>

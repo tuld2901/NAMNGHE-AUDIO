@@ -13,7 +13,7 @@ interface HomeProps {
   siteSettings?: SiteSettings;
 }
 
-export const Home: React.FC<HomeProps> = ({
+export const Home: React.FC<HomeProps> = React.memo(({
   tracks,
   currentTrack,
   isPlaying,
@@ -588,4 +588,5 @@ export const Home: React.FC<HomeProps> = ({
       </section>
     </div>
   );
-};
+});
+

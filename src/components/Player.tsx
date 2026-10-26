@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Play, Pause, Moon, SkipBack, SkipForward } from 'lucide-react';
 import { Track } from '../types';
-import { useAudio } from '../context/AudioContext';
+import { useAudio, useAudioTime } from '../context/AudioContext';
 import { AudioScrubber } from './AudioScrubber';
 import { SoundWaveIcon } from './BrandIcon';
 
@@ -19,17 +19,13 @@ const SPEED_OPTIONS = [
   { label: '2.0×', value: 2.0 },
 ];
 
-export const Player: React.FC<PlayerProps> = ({ onOpenStoryDetail }) => {
+export const Player: React.FC<PlayerProps> = React.memo(({ onOpenStoryDetail }) => {
   const {
     currentTrack,
     currentChapter,
     isPlaying,
-    currentTime,
-    bufferedTime,
-    duration,
     playbackSpeed,
     sleepTimerMinutes,
-    sleepTimerSecondsLeft,
     togglePlayPause,
     seekTo,
     setPlaybackSpeed,
@@ -39,6 +35,8 @@ export const Player: React.FC<PlayerProps> = ({ onOpenStoryDetail }) => {
     setIsScrubbing,
     formatTime,
   } = useAudio();
+
+  const { currentTime, bufferedTime, duration } = useAudioTime();
 
   const [isSpeedMenuOpen, setIsSpeedMenuOpen] = useState<boolean>(false);
   const [isSleepMenuOpen, setIsSleepMenuOpen] = useState<boolean>(false);
@@ -242,4 +240,5 @@ export const Player: React.FC<PlayerProps> = ({ onOpenStoryDetail }) => {
       </div>
     </div>
   );
-};
+});
+

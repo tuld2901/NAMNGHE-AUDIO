@@ -78,8 +78,48 @@ export const getAffiliateLinks = (): AffiliateItem[] => cachedLinks;
 export const getSiteSettings = (): SiteSettings => cachedSettings;
 
 // ===========================================================================
-// 1. TRACKS API (CRUD DIRECTLY WITH SERVER BACKEND)
+// 1. TRACKS & BOOTSTRAP API (CRUD DIRECTLY WITH SERVER BACKEND)
 // ===========================================================================
+
+/**
+ * Single-request bootstrap for instant initial page load
+ */
+export const fetchBootstrapData = async (): Promise<{
+  tracks: Track[];
+  siteSettings: SiteSettings;
+}> => {
+  try {
+    const res = await fetch('/api/bootstrap');
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data.tracks) && data.tracks.length > 0) {
+        cachedTracks = data.tracks;
+      }
+      if (Array.isArray(data.categories) && data.categories.length > 0) {
+        cachedCategories = data.categories;
+      }
+      if (Array.isArray(data.links) && data.links.length > 0) {
+        cachedLinks = data.links;
+      }
+      if (data.siteSettings) {
+        cachedSettings = { ...DEFAULT_SITE_SETTINGS, ...data.siteSettings };
+      }
+      return {
+        tracks: cachedTracks,
+        siteSettings: cachedSettings,
+      };
+    }
+  } catch {}
+
+  const [tracks, settings] = await Promise.all([
+    fetchTracks(),
+    fetchSiteSettings(),
+  ]);
+  return {
+    tracks,
+    siteSettings: settings || cachedSettings,
+  };
+};
 
 /**
  * Fetch all tracks from Server (/api/tracks)

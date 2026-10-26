@@ -11,7 +11,7 @@ interface StoryPageProps {
   onBackToHome: () => void;
 }
 
-export const StoryPage: React.FC<StoryPageProps> = ({
+export const StoryPage: React.FC<StoryPageProps> = React.memo(({
   track,
   onSelectChapter,
   onBackToHome,
@@ -38,16 +38,20 @@ export const StoryPage: React.FC<StoryPageProps> = ({
     [track.chapters, track.title, track.mp3_url]
   );
 
-  // Tự động nhận diện thời lượng các tập nếu dữ liệu chưa có sẵn
+  // Tự động nhận diện thời lượng các tập nếu dữ liệu chưa có sẵn (giới hạn tối đa 3 probe và dọn dẹp bộ nhớ khi unmount)
   const [probedDurations, setProbedDurations] = useState<Record<string | number, string>>({});
 
   useEffect(() => {
+    const createdAudios: HTMLAudioElement[] = [];
+    let probeCount = 0;
+
     chapters.forEach((ch, idx) => {
       const key = ch.id ?? idx;
       if (ch.duration && ch.duration.trim() && ch.duration !== 'Audio Full' && ch.duration !== 'Chưa gắn') {
         return;
       }
-      if (!ch.mp3_url) return;
+      if (!ch.mp3_url || probeCount >= 3) return;
+      probeCount++;
 
       const audio = new Audio();
       audio.preload = 'metadata';
@@ -63,9 +67,20 @@ export const StoryPage: React.FC<StoryPageProps> = ({
             : `${mins < 10 ? '0' : ''}${mins}:${rem < 10 ? '0' : ''}${rem}`;
           setProbedDurations((prev) => ({ ...prev, [key]: formatted }));
         }
+        audio.src = '';
       };
       audio.src = ch.mp3_url;
+      createdAudios.push(audio);
     });
+
+    return () => {
+      createdAudios.forEach((a) => {
+        try {
+          a.onloadedmetadata = null;
+          a.src = '';
+        } catch {}
+      });
+    };
   }, [chapters]);
 
   const isCurrentStoryActive = currentTrack?.id === track.id;
@@ -326,4 +341,5 @@ export const StoryPage: React.FC<StoryPageProps> = ({
       </div>
     </article>
   );
-};
+});
+

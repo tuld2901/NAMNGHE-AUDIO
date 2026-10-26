@@ -81,10 +81,29 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
     isActive: true,
   };
 
-  const targetUrl =
-    currentAffiliate.url && currentAffiliate.url.startsWith('http')
-      ? currentAffiliate.url
-      : 'https://shopee.vn';
+  const sanitizeWebAffiliateUrl = (rawUrl: string | undefined): string => {
+    if (!rawUrl || typeof rawUrl !== 'string') return 'https://shopee.vn';
+    const trimmed = rawUrl.trim();
+    if (/^(intent|shopeevn|shopee|lazada|tiktok|market|itms-apps|android-app|ios-app):\/\//i.test(trimmed)) {
+      return 'https://shopee.vn';
+    }
+    if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+      return 'https://shopee.vn';
+    }
+    try {
+      const parsed = new URL(trimmed);
+      // Loại bỏ các tham số ép mở ứng dụng (deep link) nếu có
+      parsed.searchParams.delete('deep_and_deferred');
+      parsed.searchParams.delete('af_dp');
+      parsed.searchParams.delete('af_force_deeplink');
+      parsed.searchParams.delete('is_retargeting');
+      return parsed.toString();
+    } catch {
+      return trimmed;
+    }
+  };
+
+  const targetUrl = sanitizeWebAffiliateUrl(currentAffiliate.url);
 
   const handleUnlockClick = () => {
     // 1. Ghi nhận lượt click thống kê
