@@ -24,7 +24,7 @@ git --version
 
 ### Step 1: Clone Repository
 ```bash
-git clone https://github.com/<USERNAME>/<REPO_NAME>.git NAMNGHE-AUDIO
+git clone https://github.com/tuld2901/NAMNGHE-AUDIO.git
 cd NAMNGHE-AUDIO
 ```
 
