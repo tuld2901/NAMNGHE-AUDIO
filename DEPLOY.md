@@ -323,28 +323,77 @@ Nếu tên miền của bạn bật đám mây cam (Proxy) qua Cloudflare, để
 
 ---
 
-## 7. CHECKLIST KIỂM TRA TOÀN BỘ FILE & THƯ MỤC CẦN THIẾT
+## 7. CẤU TRÚC THƯ MỤC LƯU TRỮ & CẤU HÌNH CỔNG API (`server-db.ts` & `server.ts`)
 
-Trước khi chạy, hãy kiểm tra danh sách file và thư mục đã đủ chưa:
+### 7.1. Cấu trúc thư mục lưu trữ trên Server (`server-db.ts`)
+> **Lưu ý quan trọng:** Trên hệ thống **hoàn toàn không có thư mục `download` (hay `downloads`)**. Khi khởi chạy, Server tự động kiểm tra và tạo đúng **3 thư mục gốc** tại thư mục dự án:
+
+1. **`uploads/`** *(Thư mục chứa toàn bộ file tải lên và phát ra ngoài)*:
+   - `uploads/audio/`: Chứa toàn bộ file `.mp3`. Khi upload, file tự động được đổi tên chuẩn SEO không dấu (`ten-truyen-ten-tap.mp3`).
+   - `uploads/images/`: Chứa file ảnh bìa, banner, icon tải lên.
+2. **`data/`**:
+   - `data/db.json`: Cơ sở dữ liệu chính lưu danh sách truyện, tập truyện, cấu hình web, tài khoản admin, affiliate và khóa API.
+3. **`backups/`**:
+   - Chứa các bản sao lưu tự động và thủ công (snapshot `.json`) trên máy chủ.
 
 | Đường Dẫn File / Thư Mục | Trạng Thái Bắt Buộc | Tác Dụng |
 | :--- | :---: | :--- |
 | `data/db.json` | **BẮT BUỘC** | Chứa toàn bộ dữ liệu truyện, tập, link affiliate, cấu hình website. Hệ thống sẽ tự tạo nếu chưa có. |
-| `uploads/audio/` | **BẮT BUỘC** | Thư mục lưu toàn bộ file âm thanh MP3 tải lên. |
+| `uploads/audio/` | **BẮT BUỘC** | Thư mục lưu toàn bộ file âm thanh MP3 tải lên và phát streaming ra ngoài. |
 | `uploads/images/` | **BẮT BUỘC** | Thư mục lưu ảnh bìa, logo, favicon, banner tải lên. |
 | `backups/` | **BẮT BUỘC** | Thư mục lưu các bản snapshot backup tự động & thủ công. |
 | `dist/` | **BẮT BUỘC** | Thư mục frontend được tạo ra sau khi chạy lệnh `npm run build`. |
 | `server.ts` | **BẮT BUỘC** | File server backend Node.js chính (chạy API, streaming audio, SEO SSR). |
 | `server-db.ts` | **BẮT BUỘC** | Module quản lý đọc/ghi cơ sở dữ liệu `data/db.json` và snapshot. |
-| `package.json` | **BẮT BUỘC** | Danh sách thư viện và scripts (`npm run build`, `npm start`). |
-| `tsconfig.json` | **BẮT BUỘC** | Cấu hình TypeScript của toàn bộ dự án. |
-| `vite.config.ts` | **BẮT BUỘC** | Cấu hình đóng gói giao diện React + Tailwind CSS. |
 
-### Lệnh tạo nhanh toàn bộ thư mục chỉ với 1 dòng:
+#### Lệnh tạo nhanh toàn bộ thư mục chỉ với 1 dòng:
 ```bash
 mkdir -p data uploads/audio uploads/images backups
 chmod -R 777 data uploads backups
 ```
+
+---
+
+### 7.2. Cấu hình chi tiết các cổng API (`server.ts`)
+
+#### A. API Upload File (Lưu thẳng vào `uploads/`)
+| Chức năng | Phương thức & Đường dẫn | Tên trường (`form-data`) | Giới hạn | Đường dẫn trả về (`url`) |
+| :--- | :--- | :--- | :--- | :--- |
+| **Upload Audio MP3** | `POST /api/upload-audio` | `audio` (kèm tùy chọn `storyTitle`, `chapterTitle`) | 150 MB | `/uploads/audio/<slug>.mp3` (kèm `duration` đo tự động bằng `ffprobe`) |
+| **Upload Hình ảnh** | `POST /api/upload-image` | `image` | 20 MB | `/uploads/images/<slug>.<ext>` |
+
+#### B. API Phát & Tua Audio (Streaming & Byte-Range)
+- **Đường dẫn tĩnh chuẩn**: `GET /uploads/audio/:filename` (Hỗ trợ `HTTP 206 Partial Content`, `Accept-Ranges: bytes`).
+- **Đường dẫn Cắt luồng khi tua qua Cloudflare**: `GET /api/stream-audio?src=/uploads/audio/:filename&t=<giây>&dur=<tổng_thời_lượng>`
+  - Nếu người dùng kéo tua đến giây `t` khi file chưa tải xong, Server tự động tính vị trí byte và cắt luồng MP3 phát ngay từ điểm đó mà không bị nhảy về `0:00`.
+
+#### C. Cổng API Gateway 1-Port Đa Năng (Dành cho Tool / Auto Post / n8n / Make)
+- **Endpoint chính**: `POST /api/gateway` *(Bí danh tương thích: `POST /api/v1/stories/gateway` hoặc `GET /api/gateway`)*
+- **Các hành động (`action`) hỗ trợ**:
+  - `list`: Lấy danh sách toàn bộ truyện.
+  - `get`: Lấy chi tiết 1 truyện theo `id`.
+  - `create` (hoặc `dang`): Đăng truyện mới (hỗ trợ truyền mảng `chapters` hoặc `audio_url` tập đầu).
+  - `update` (hoặc `sua`): Cập nhật thông tin truyện / danh sách tập.
+  - `add_chapter` (hoặc `them_tap`): Thêm tập mới vào bộ truyện đã có (`id`, `title`, `mp3_url`/`audio_url`, `duration`).
+  - `delete_chapter` (hoặc `xoa_tap`): Xóa 1 tập trong truyện.
+  - `delete` (hoặc `xoa`): Xóa truyện (tự động dọn luôn các file `.mp3` của truyện đó trong `uploads/audio/`).
+
+#### D. API RESTful Quản lý Truyện
+- `GET /api/tracks` (hoặc `/api/v1/stories`): Lấy danh sách truyện.
+- `POST /api/tracks`: Tạo truyện mới.
+- `PUT /api/tracks/:id` hoặc `PATCH /api/tracks/:id`: Sửa truyện.
+- `POST /api/tracks/:id/chapters`: Thêm tập mới vào truyện.
+- `DELETE /api/tracks/:id`: Xóa truyện.
+
+#### E. Bảo mật Khóa API (`API Key`)
+- Quản lý trực tiếp trong **Admin -> Cổng API Truyện (Đăng/Sửa/Xóa)**.
+- Khi bật **Yêu cầu API Key**, các lệnh thêm/sửa/xóa/upload từ bên ngoài chỉ cần truyền khóa qua 1 trong 3 cách:
+  1. Header: `x-api-key: <MÃ_KEY>`
+  2. Header: `Authorization: Bearer <MÃ_KEY>`
+  3. Body / Query: `"api_key": "<MÃ_KEY>"`
+
+#### F. Lưu ý trên VPS / Nginx (`nginx.conf`)
+- Trong file `nginx.conf` trên VPS, bạn chỉ cần trỏ duy nhất `location /uploads/` về đúng thư mục `/đường_dẫn_code/uploads/;` (hoặc để Node.js tự phục vụ trực tiếp qua Reverse Proxy cổng `3000`), không cần tạo hay cấu hình bất kỳ thư mục `download` nào.
 
 ---
 
@@ -374,3 +423,4 @@ pm2 logs audio-cms --lines 50
 - **Tài khoản mặc định**: `tuld2901@gmail.com` (hoặc `admin`)
 - **Mật khẩu mặc định**: `admin123`
 - Sau khi đăng nhập, vào mục **Tài Khoản Quản Trị** để đổi mật khẩu, thêm tài khoản mới hoặc xóa tài khoản mặc định.
+

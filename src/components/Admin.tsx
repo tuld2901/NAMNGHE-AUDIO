@@ -261,9 +261,9 @@ export const Admin: React.FC<AdminProps> = ({
   };
 
   // Story API Gateway & Live Playground State
-  const [apiDocExample, setApiDocExample] = useState<'create' | 'update' | 'add_chapter' | 'delete' | 'upload'>('create');
+  const [apiDocExample, setApiDocExample] = useState<'create' | 'update' | 'add_chapter' | 'delete_chapter' | 'delete' | 'upload' | 'upload_image'>('create');
   const [apiCopiedKey, setApiCopiedKey] = useState<string | null>(null);
-  const [apiPlaygroundAction, setApiPlaygroundAction] = useState<'create' | 'update' | 'add_chapter' | 'delete' | 'list'>('create');
+  const [apiPlaygroundAction, setApiPlaygroundAction] = useState<'create' | 'update' | 'add_chapter' | 'delete_chapter' | 'delete' | 'get' | 'list'>('create');
   const [apiPlaygroundTargetId, setApiPlaygroundTargetId] = useState<string>(tracks[0]?.id || 'track-1');
   const [apiPlaygroundBody, setApiPlaygroundBody] = useState<string>(() => JSON.stringify({
     action: 'create',
@@ -291,7 +291,7 @@ export const Admin: React.FC<AdminProps> = ({
     setTimeout(() => setApiCopiedKey(null), 2000);
   };
 
-  const handleSwitchPlaygroundTemplate = (actionType: 'create' | 'update' | 'add_chapter' | 'delete' | 'list', customId?: string) => {
+  const handleSwitchPlaygroundTemplate = (actionType: 'create' | 'update' | 'add_chapter' | 'delete_chapter' | 'delete' | 'get' | 'list', customId?: string) => {
     setApiPlaygroundAction(actionType);
     const sampleId = customId || apiPlaygroundTargetId || tracks[0]?.id || 'track-1';
     const sampleTrack = tracks.find(t => t.id === sampleId) || tracks[0];
@@ -310,7 +310,8 @@ export const Admin: React.FC<AdminProps> = ({
           {
             id: 1,
             title: 'Phần 1: Tiếng gọi lúc nửa đêm',
-            mp3_url: 'https://cdn.freesound.org/previews/612/612610_5674468-lq.mp3'
+            mp3_url: '/uploads/audio/dem-trang-mau-noi-mieu-hoang-phan-1.mp3',
+            duration: '45:10'
           }
         ]
       }, null, 2));
@@ -331,12 +332,25 @@ export const Admin: React.FC<AdminProps> = ({
         id: sampleId,
         chapter: {
           title: `Phần ${nextEp}: Tập mới cập nhật qua API`,
-          mp3_url: 'https://cdn.freesound.org/previews/682/682631_11861866-lq.mp3'
+          mp3_url: '/uploads/audio/tap-moi-cap-nhat.mp3',
+          duration: '48:00'
         }
+      }, null, 2));
+    } else if (actionType === 'delete_chapter') {
+      const lastChapterId = sampleTrack?.chapters?.[sampleTrack.chapters.length - 1]?.id || 1;
+      setApiPlaygroundBody(JSON.stringify({
+        action: 'delete_chapter',
+        id: sampleId,
+        chapter_id: lastChapterId
       }, null, 2));
     } else if (actionType === 'delete') {
       setApiPlaygroundBody(JSON.stringify({
         action: 'delete',
+        id: sampleId
+      }, null, 2));
+    } else if (actionType === 'get') {
+      setApiPlaygroundBody(JSON.stringify({
+        action: 'get',
         id: sampleId
       }, null, 2));
     } else if (actionType === 'list') {
@@ -4610,16 +4624,20 @@ https://s.lazada.vn/s.flashsale_deal`}
               {/* Standard RESTful Endpoints Table */}
               <div className="space-y-2">
                 <span className="text-xs font-semibold text-slate-400 block">
-                  Hoặc gọi theo chuẩn RESTful truyền thống:
+                  Hoặc gọi theo chuẩn RESTful & Upload / Streaming trực tiếp:
                 </span>
                 <div className="divide-y divide-slate-800/80 rounded-xl border border-slate-800 bg-slate-950/70 text-xs">
                   {[
-                    { method: 'GET', badge: 'bg-sky-500/20 text-sky-300', path: '/api/v1/stories', desc: 'Lấy danh sách tất cả truyện' },
-                    { method: 'POST', badge: 'bg-emerald-500/20 text-emerald-300', path: '/api/v1/stories', desc: 'Đăng truyện mới lên Server' },
-                    { method: 'PUT', badge: 'bg-amber-500/20 text-amber-300', path: '/api/v1/stories/:id', desc: 'Sửa thông tin truyện theo ID' },
-                    { method: 'POST', badge: 'bg-purple-500/20 text-purple-300', path: '/api/v1/stories/:id/chapters', desc: 'Thêm tập MP3 mới vào truyện' },
-                    { method: 'DELETE', badge: 'bg-rose-500/20 text-rose-300', path: '/api/v1/stories/:id', desc: 'Xóa truyện theo ID khỏi Server' },
-                    { method: 'POST', badge: 'bg-indigo-500/20 text-indigo-300', path: '/api/upload-audio', desc: 'Upload file .mp3 lên Server (multipart field: audio)' }
+                    { method: 'POST', badge: 'bg-amber-500/20 text-amber-300', path: '/api/gateway', desc: 'Cổng 1-Port Đa Năng (list, get, create, update, add_chapter, delete_chapter, delete)' },
+                    { method: 'POST', badge: 'bg-indigo-500/20 text-indigo-300', path: '/api/upload-audio', desc: 'Upload file .mp3 vào uploads/audio/ (form-data: audio, tối đa 150MB, đo duration bằng ffprobe)' },
+                    { method: 'POST', badge: 'bg-cyan-500/20 text-cyan-300', path: '/api/upload-image', desc: 'Upload ảnh bìa/banner vào uploads/images/ (form-data: image, tối đa 20MB)' },
+                    { method: 'GET', badge: 'bg-teal-500/20 text-teal-300', path: '/uploads/audio/:filename', desc: 'Phát trực tiếp file MP3 (HTTP 206 Partial Content, Accept-Ranges: bytes)' },
+                    { method: 'GET', badge: 'bg-emerald-500/20 text-emerald-300', path: '/api/stream-audio', desc: 'Cắt luồng Byte-Slicing khi tua qua Cloudflare (?src=/uploads/audio/...&t=giây&dur=tổng)' },
+                    { method: 'GET', badge: 'bg-sky-500/20 text-sky-300', path: '/api/tracks (hoặc /api/v1/stories)', desc: 'Lấy danh sách tất cả truyện' },
+                    { method: 'POST', badge: 'bg-emerald-500/20 text-emerald-300', path: '/api/tracks (hoặc /api/v1/stories)', desc: 'Đăng truyện mới lên Server' },
+                    { method: 'PUT', badge: 'bg-amber-500/20 text-amber-300', path: '/api/tracks/:id', desc: 'Sửa thông tin truyện theo ID (Hỗ trợ cả PUT và PATCH)' },
+                    { method: 'POST', badge: 'bg-purple-500/20 text-purple-300', path: '/api/tracks/:id/chapters', desc: 'Thêm tập MP3 mới vào truyện' },
+                    { method: 'DELETE', badge: 'bg-rose-500/20 text-rose-300', path: '/api/tracks/:id', desc: 'Xóa truyện theo ID (Tự động xóa luôn file .mp3 trong uploads/audio/)' }
                   ].map((ep, i) => (
                     <div key={i} className="p-2.5 flex items-center justify-between gap-2 hover:bg-slate-900/50">
                       <div className="flex items-center gap-2.5 min-w-0">
@@ -4653,7 +4671,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                 </div>
 
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Nếu bật <strong className="text-slate-200">Yêu cầu API Key</strong>, các lệnh Đăng / Sửa / Xóa truyện từ bên ngoài phải truyền kèm header <code className="text-amber-300 font-mono">x-api-key</code> hoặc trường <code className="text-amber-300 font-mono">api_key</code> trong JSON.
+                  Nếu bật <strong className="text-slate-200">Yêu cầu API Key</strong>, các lệnh Đăng / Sửa / Xóa / Upload từ bên ngoài chỉ cần truyền khóa qua 1 trong 3 cách: Header <code className="text-amber-300 font-mono">x-api-key</code>, Header <code className="text-amber-300 font-mono">Authorization: Bearer &lt;KEY&gt;</code>, hoặc trường <code className="text-amber-300 font-mono">"api_key"</code> trong Body/Query.
                 </p>
 
                 {/* Toggle requireApiKey */}
@@ -4731,6 +4749,148 @@ https://s.lazada.vn/s.flashsale_deal`}
             </div>
           </div>
 
+          {/* Section 1.5: Cấu Trúc Thư Mục Vật Lý Trên Server (Chỉ có uploads/, không có download/) & Chi Tiết Cổng API */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Left: Cấu trúc thư mục lưu trữ trên Server */}
+            <div className="lg:col-span-5 p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <HardDrive size={16} className="text-emerald-400" />
+                  <span>Cấu Trúc Thư Mục Lưu Trữ Trên Server (<code className="text-amber-300 font-mono">server-db.ts</code>)</span>
+                </h3>
+                <span className="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
+                  Chuẩn Đồng Bộ 100%
+                </span>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 leading-relaxed">
+                <strong>Lưu ý quan trọng:</strong> Trên hệ thống <strong>hoàn toàn không có thư mục <code className="font-mono text-white">download</code> (hay <code className="font-mono text-white">downloads</code>)</strong>. Khi khởi chạy, Server tự động kiểm tra và tạo đúng <strong>3 thư mục gốc</strong> tại thư mục dự án:
+              </div>
+
+              <div className="space-y-2.5 text-xs">
+                <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1.5">
+                  <div className="font-bold text-emerald-400 font-mono flex items-center justify-between">
+                    <span>1. uploads/ (Thư mục chứa file tải lên & phát ra ngoài)</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Public Static</span>
+                  </div>
+                  <ul className="space-y-1 text-slate-300 pl-3 list-disc">
+                    <li>
+                      <code className="text-amber-300 font-mono">uploads/audio/</code>: Chứa toàn bộ file <code className="text-white font-mono">.mp3</code>. Khi upload, file tự động đổi tên chuẩn SEO không dấu (<code className="text-emerald-300 font-mono">ten-truyen-ten-tap.mp3</code>).
+                    </li>
+                    <li>
+                      <code className="text-amber-300 font-mono">uploads/images/</code>: Chứa file ảnh bìa, banner, icon tải lên.
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                  <div className="font-bold text-amber-300 font-mono">2. data/</div>
+                  <p className="text-slate-300">
+                    <code className="text-amber-300 font-mono">data/db.json</code>: Cơ sở dữ liệu chính lưu danh sách truyện, tập truyện, cấu hình web, tài khoản admin, affiliate và khóa API.
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                  <div className="font-bold text-sky-300 font-mono">3. backups/</div>
+                  <p className="text-slate-300">
+                    Chứa các bản sao lưu tự động và thủ công (<code className="text-sky-300 font-mono">snapshot .json</code>) trên máy chủ.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-400 leading-relaxed">
+                <strong className="text-slate-200">Lưu ý trên VPS / Nginx (<code className="font-mono text-amber-300">nginx.conf</code>):</strong> Bạn chỉ cần trỏ duy nhất <code className="font-mono text-emerald-300">location /uploads/</code> về đúng thư mục <code className="font-mono text-emerald-300">/đường_dẫn_code/uploads/;</code> (hoặc để Node.js tự phục vụ trực tiếp qua cổng 3000), không cần tạo hay cấu hình bất kỳ thư mục <code className="font-mono text-rose-300">download</code> nào.
+              </div>
+            </div>
+
+            {/* Right: Bảng tổng hợp chi tiết cấu hình API Upload, Streaming & Gateway */}
+            <div className="lg:col-span-7 p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
+              <div className="border-b border-slate-800 pb-3">
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <Zap size={16} className="text-amber-400" />
+                  <span>Bảng Chi Tiết Cấu Hình Các Cổng API (<code className="text-amber-300 font-mono">server.ts</code>)</span>
+                </h3>
+              </div>
+
+              {/* A. Bảng API Upload */}
+              <div className="space-y-1.5">
+                <span className="text-xs font-bold text-amber-300 block">
+                  A. API Upload File (Lưu thẳng vào thư mục <code className="font-mono">uploads/</code>):
+                </span>
+                <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-900/90 text-slate-400 border-b border-slate-800">
+                      <tr>
+                        <th className="p-2.5">Chức năng</th>
+                        <th className="p-2.5">Endpoint</th>
+                        <th className="p-2.5">Trường (form-data)</th>
+                        <th className="p-2.5">Giới hạn</th>
+                        <th className="p-2.5">Đường dẫn trả về (url)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/70 text-slate-300">
+                      <tr>
+                        <td className="p-2.5 font-semibold text-white">Upload Audio MP3</td>
+                        <td className="p-2.5 font-mono text-emerald-300">POST /api/upload-audio</td>
+                        <td className="p-2.5 font-mono text-amber-300">audio <span className="text-slate-400 font-sans text-[10px]">(+ storyTitle, chapterTitle)</span></td>
+                        <td className="p-2.5 font-mono">150 MB</td>
+                        <td className="p-2.5 font-mono text-emerald-300">/uploads/audio/&lt;slug&gt;.mp3 <span className="text-slate-400 font-sans text-[10px]">(+ duration ffprobe)</span></td>
+                      </tr>
+                      <tr>
+                        <td className="p-2.5 font-semibold text-white">Upload Hình ảnh</td>
+                        <td className="p-2.5 font-mono text-cyan-300">POST /api/upload-image</td>
+                        <td className="p-2.5 font-mono text-amber-300">image</td>
+                        <td className="p-2.5 font-mono">20 MB</td>
+                        <td className="p-2.5 font-mono text-cyan-300">/uploads/images/&lt;slug&gt;.&lt;ext&gt;</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* B. Các hành động (action) trong Cổng Gateway 1-Port */}
+              <div className="space-y-1.5">
+                <span className="text-xs font-bold text-amber-300 block">
+                  B. Các hành động (<code className="font-mono">action</code>) hỗ trợ tại Cổng 1-Port <code className="font-mono text-emerald-300">POST /api/gateway</code>:
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  {[
+                    { act: 'list', alias: '', desc: 'Lấy danh sách toàn bộ truyện' },
+                    { act: 'get', alias: '', desc: 'Lấy chi tiết 1 truyện theo id' },
+                    { act: 'create', alias: 'dang', desc: 'Đăng truyện mới (kèm mảng chapters hoặc audio_url)' },
+                    { act: 'update', alias: 'sua', desc: 'Cập nhật thông tin truyện / danh sách tập' },
+                    { act: 'add_chapter', alias: 'them_tap', desc: 'Thêm tập mới vào bộ truyện đã có (id, title, mp3_url, duration)' },
+                    { act: 'delete_chapter', alias: 'xoa_tap', desc: 'Xóa 1 tập trong truyện (theo chapter_id hoặc chapter_index)' },
+                    { act: 'delete', alias: 'xoa', desc: 'Xóa truyện & tự động dọn luôn file .mp3 trong uploads/audio/' }
+                  ].map((item, idx) => (
+                    <div key={idx} className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 flex flex-col gap-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <code className="font-mono font-bold text-emerald-300">"{item.act}"</code>
+                        {item.alias && (
+                          <span className="text-[10px] font-mono text-amber-300 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                            hoặc "{item.alias}"
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[11px] text-slate-400">{item.desc}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* C. API Phát & Tua Audio qua Cloudflare */}
+              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1 text-xs">
+                <span className="font-bold text-amber-300 block">
+                  C. Cơ chế Phát & Tua Audio Không Bị Nhảy Về 0:00 (Streaming & Byte-Range):
+                </span>
+                <p className="text-[11px] text-slate-300 leading-relaxed">
+                  • <strong>Phát chuẩn:</strong> <code className="font-mono text-emerald-300">GET /uploads/audio/:filename</code> (Hỗ trợ <code className="font-mono">HTTP 206 Partial Content</code>, <code className="font-mono">Accept-Ranges: bytes</code>).<br />
+                  • <strong>Cắt luồng khi tua qua Cloudflare:</strong> <code className="font-mono text-emerald-300">GET /api/stream-audio?src=/uploads/audio/:filename&amp;t=&lt;giây&gt;&amp;dur=&lt;tổng_thời_lượng&gt;</code> — Nếu người nghe kéo tua đến giây <code className="font-mono text-amber-300">t</code> khi file chưa tải xong vào bộ đệm, Server tự động tính vị trí byte và cắt luồng MP3 phát ngay từ điểm đó.
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* Section 2: Interactive Live API Tester & Code Examples */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Left: Ready-to-copy cURL & JSON Payload Documentation */}
@@ -4745,8 +4905,10 @@ https://s.lazada.vn/s.flashsale_deal`}
                     { id: 'create', label: '1. Đăng Truyện' },
                     { id: 'update', label: '2. Sửa Truyện' },
                     { id: 'add_chapter', label: '3. Thêm Tập' },
-                    { id: 'delete', label: '4. Xóa Truyện' },
-                    { id: 'upload', label: '5. Upload MP3' }
+                    { id: 'delete_chapter', label: '4. Xóa Tập' },
+                    { id: 'delete', label: '5. Xóa Truyện' },
+                    { id: 'upload', label: '6. Upload MP3' },
+                    { id: 'upload_image', label: '7. Upload Ảnh' }
                   ].map((tab) => (
                     <button
                       key={tab.id}
@@ -4777,7 +4939,7 @@ https://s.lazada.vn/s.flashsale_deal`}
 
                 if (apiDocExample === 'create') {
                   title = 'Đăng Truyện Mới (POST /api/gateway)';
-                  desc = 'Truyền action: "create" kèm tên truyện, tác giả, thể loại và danh sách các tập MP3:';
+                  desc = 'Truyền action: "create" (hoặc "dang") kèm tên truyện, tác giả, thể loại và danh sách các tập MP3:';
                   curlCode = `curl -X POST "${origin}/api/gateway" \\
   -H "Content-Type: application/json"${keyHeader} \\
   -d '{
@@ -4792,18 +4954,20 @@ https://s.lazada.vn/s.flashsale_deal`}
       {
         "id": 1,
         "title": "Phần 1: Đêm mưa đầu tiên",
-        "mp3_url": "${origin}/uploads/audio/tap-1.mp3"
+        "mp3_url": "/uploads/audio/bong-ma-ben-khung-cua-so-phan-1.mp3",
+        "duration": "45:20"
       },
       {
         "id": 2,
         "title": "Phần 2: Tiếng bước chân trên gác",
-        "mp3_url": "${origin}/uploads/audio/tap-2.mp3"
+        "mp3_url": "/uploads/audio/bong-ma-ben-khung-cua-so-phan-2.mp3",
+        "duration": "52:10"
       }
     ]
   }'`;
                 } else if (apiDocExample === 'update') {
                   title = 'Sửa Thông Tin Truyện Đang Có (POST /api/gateway)';
-                  desc = 'Truyền action: "update", id của truyện cần sửa, và các trường muốn thay đổi:';
+                  desc = 'Truyền action: "update" (hoặc "sua"), id của truyện cần sửa, và các trường muốn thay đổi:';
                   curlCode = `curl -X POST "${origin}/api/gateway" \\
   -H "Content-Type: application/json"${keyHeader} \\
   -d '{
@@ -4817,7 +4981,7 @@ https://s.lazada.vn/s.flashsale_deal`}
   }'`;
                 } else if (apiDocExample === 'add_chapter') {
                   title = 'Thêm Tập MP3 Mới Vào Truyện Có Sẵn (POST /api/gateway)';
-                  desc = 'Truyền action: "add_chapter", id của truyện, và thông tin tập mới trong trường chapter:';
+                  desc = 'Truyền action: "add_chapter" (hoặc "them_tap"), id của truyện, và thông tin tập mới trong trường chapter:';
                   curlCode = `curl -X POST "${origin}/api/gateway" \\
   -H "Content-Type: application/json"${keyHeader} \\
   -d '{
@@ -4825,22 +4989,40 @@ https://s.lazada.vn/s.flashsale_deal`}
     "id": "${sampleId}",
     "chapter": {
       "title": "Phần Mới: Tập tiếp theo",
-      "mp3_url": "${origin}/uploads/audio/tap-moi.mp3"
+      "mp3_url": "/uploads/audio/ten-truyen-phan-moi.mp3",
+      "duration": "48:15"
     }
+  }'`;
+                } else if (apiDocExample === 'delete_chapter') {
+                  title = 'Xóa 1 Tập Trong Bộ Truyện (POST /api/gateway)';
+                  desc = 'Truyền action: "delete_chapter" (hoặc "xoa_tap"), id truyện, kèm chapter_id (hoặc chapter_index):';
+                  curlCode = `curl -X POST "${origin}/api/gateway" \\
+  -H "Content-Type: application/json"${keyHeader} \\
+  -d '{
+    "action": "delete_chapter",
+    "id": "${sampleId}",
+    "chapter_id": 2
   }'`;
                 } else if (apiDocExample === 'delete') {
                   title = 'Xóa Truyện Khỏi Server (POST /api/gateway)';
-                  desc = 'Truyền action: "delete" và id của bộ truyện muốn xóa vĩnh viễn:';
+                  desc = 'Truyền action: "delete" (hoặc "xoa") và id của bộ truyện (tự động xóa luôn các file MP3 của truyện trong uploads/audio/):';
                   curlCode = `curl -X POST "${origin}/api/gateway" \\
   -H "Content-Type: application/json"${keyHeader} \\
   -d '{
     "action": "delete",
     "id": "${sampleId}"
   }'`;
+                } else if (apiDocExample === 'upload_image') {
+                  title = 'Upload File Hình Ảnh Vào uploads/images/ (POST /api/upload-image)';
+                  desc = 'Tải file ảnh bìa/banner (tối đa 20MB) lên Server, nhận lại đường dẫn /uploads/images/<slug>.<ext>:';
+                  curlCode = `curl -X POST "${origin}/api/upload-image"${keyHeader} \\
+  -F "image=@/duong-dan/anh-bia.jpg"`;
                 } else {
-                  title = 'Upload File Audio .MP3 Lên Server (POST /api/upload-audio)';
-                  desc = 'Tải file .mp3 từ máy tính/server của bạn lên, nhận lại đường dẫn url để gắn vào tập truyện:';
+                  title = 'Upload File Audio .MP3 Vào uploads/audio/ (POST /api/upload-audio)';
+                  desc = 'Tải file .mp3 (tối đa 150MB) lên Server, tự động đổi tên chuẩn SEO và đo thời lượng bằng ffprobe:';
                   curlCode = `curl -X POST "${origin}/api/upload-audio"${keyHeader} \\
+  -F "storyTitle=Bóng Ma Bên Khung Cửa Sổ" \\
+  -F "chapterTitle=Phần 1" \\
   -F "audio=@/duong-dan/file-truyen-tap-1.mp3"`;
                 }
 
@@ -4892,10 +5074,12 @@ https://s.lazada.vn/s.flashsale_deal`}
                     onChange={(e) => handleSwitchPlaygroundTemplate(e.target.value as any)}
                     className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-400"
                   >
-                    <option value="create">➕ Đăng truyện mới (action: create)</option>
-                    <option value="update">✏️ Sửa truyện đang có (action: update)</option>
-                    <option value="add_chapter">🎵 Thêm tập mới vào truyện (action: add_chapter)</option>
-                    <option value="delete">🗑️ Xóa truyện theo ID (action: delete)</option>
+                    <option value="create">➕ Đăng truyện mới (action: create / dang)</option>
+                    <option value="update">✏️ Sửa truyện đang có (action: update / sua)</option>
+                    <option value="add_chapter">🎵 Thêm tập mới vào truyện (action: add_chapter / them_tap)</option>
+                    <option value="delete_chapter">✂️ Xóa 1 tập trong truyện (action: delete_chapter / xoa_tap)</option>
+                    <option value="delete">🗑️ Xóa truyện theo ID (action: delete / xoa)</option>
+                    <option value="get">🔍 Xem chi tiết 1 truyện (action: get)</option>
                     <option value="list">📋 Lấy danh sách truyện (action: list)</option>
                   </select>
                 </div>
