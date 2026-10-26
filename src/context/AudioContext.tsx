@@ -71,7 +71,6 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({
       setCurrentTime(0);
       setDuration(0);
       audio.src = activeMp3Url;
-      audio.load();
     }
     audio.playbackRate = playbackSpeed;
     audio.volume = isMuted ? 0 : volume;
@@ -307,6 +306,8 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({
       {/* Global Audio Element */}
       <audio
         ref={audioRef}
+        preload="auto"
+        playsInline
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleTimeUpdate}
         onEnded={nextChapter}

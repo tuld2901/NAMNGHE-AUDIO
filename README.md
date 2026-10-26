@@ -109,13 +109,21 @@ server {
     client_body_timeout 600s;
     client_header_timeout 600s;
 
-    # Serve static audio & image uploads directly (fast streaming)
+    # Serve static audio & image uploads directly (fast progressive streaming: load đến đâu nghe đến đó)
     location /uploads/ {
         alias /root/NAMNGHE-AUDIO/uploads/;
         expires 30d;
         add_header Cache-Control "public, no-transform";
         add_header Accept-Ranges bytes;
         client_max_body_size 250M;
+
+        # Tối ưu truyền tải chunk MP3 trực tiếp, không buffer toàn bộ file
+        sendfile on;
+        sendfile_max_chunk 1m;
+        tcp_nopush on;
+        tcp_nodelay on;
+        proxy_buffering off;
+        proxy_request_buffering off;
     }
 
     # Proxy all clean routes into Node.js (Port 3000)
@@ -146,6 +154,13 @@ sudo ln -sf /etc/nginx/sites-available/namnghe-cms /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl restart nginx
 ```
+
+---
+
+### Cloudflare CDN Recommendation (If using Cloudflare Proxy)
+If your domain is proxied through Cloudflare (orange cloud):
+1. **Cache Rule**: In Cloudflare -> **Caching** -> **Cache Rules**, create a rule for `*your-domain.com/uploads/*` with **Cache Everything** and **Edge TTL = 1 month**. This caches audio chunks at Cloudflare edge nodes in Vietnam (VNPT, Viettel) so playback starts under 100ms.
+2. **Range Requests**: Cloudflare automatically respects `Accept-Ranges: bytes` and HTTP 206 delivered by Node.js.
 
 Free SSL (HTTPS) with Certbot:
 ```bash

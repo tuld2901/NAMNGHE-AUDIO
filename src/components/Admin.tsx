@@ -6,7 +6,7 @@ import {
   Sliders, Globe, Palette, BookmarkCheck, Folder, FolderPlus, Layers,
   AlertTriangle, Power, Filter, Search, Code2, Terminal, Download, PlayCircle,
   CheckSquare, Square, Zap, Users, UserPlus, Key, Eye, EyeOff,
-  HardDrive, Archive, FileJson, FileAudio, RotateCcw, Server
+  HardDrive, Archive, FileJson, FileAudio, RotateCcw, Server, Clock
 } from 'lucide-react';
 import { Track, Chapter, AffiliateItem, AffiliateCategory, SiteSettings, AdminAccount } from '../types';
 import { getStoryPath } from '../services/seo';
@@ -1074,32 +1074,58 @@ export const Admin: React.FC<AdminProps> = ({
 
   const detectAudioFileDuration = (file: File): Promise<string> => {
     return new Promise((resolve) => {
+      let settled = false;
+
+      const formatSecs = (secs: number): string => {
+        const s = Math.max(1, Math.floor(secs));
+        const hrs = Math.floor(s / 3600);
+        const mins = Math.floor((s % 3600) / 60);
+        const rem = s % 60;
+        return hrs > 0
+          ? `${hrs}:${mins < 10 ? '0' : ''}${mins}:${rem < 10 ? '0' : ''}${rem}`
+          : `${mins < 10 ? '0' : ''}${mins}:${rem < 10 ? '0' : ''}${rem}`;
+      };
+
+      // Fallback calculation based on file size (standard 128kbps MP3 = 16,000 bytes/sec)
+      const fallbackSecs = Math.max(1, Math.round(file.size / 16000));
+      const fallbackFormatted = formatSecs(fallbackSecs);
+
       try {
         const audio = document.createElement('audio');
         const objectUrl = URL.createObjectURL(file);
         audio.preload = 'metadata';
-        audio.onloadedmetadata = () => {
-          URL.revokeObjectURL(objectUrl);
-          const secs = Math.floor(audio.duration || 0);
-          if (secs > 0 && isFinite(secs)) {
-            const hrs = Math.floor(secs / 3600);
-            const mins = Math.floor((secs % 3600) / 60);
-            const rem = secs % 60;
-            const formatted = hrs > 0
-              ? `${hrs}:${mins < 10 ? '0' : ''}${mins}:${rem < 10 ? '0' : ''}${rem}`
-              : `${mins < 10 ? '0' : ''}${mins}:${rem < 10 ? '0' : ''}${rem}`;
-            resolve(formatted);
-          } else {
-            resolve('');
+
+        const finish = (result: string) => {
+          if (!settled) {
+            settled = true;
+            try { URL.revokeObjectURL(objectUrl); } catch {}
+            resolve(result || fallbackFormatted);
           }
         };
-        audio.onerror = () => {
-          URL.revokeObjectURL(objectUrl);
-          resolve('');
+
+        // Safety timeout: if browser audio decoder takes over 2 seconds, immediately resolve with calculated estimate
+        const timer = setTimeout(() => {
+          finish(fallbackFormatted);
+        }, 2000);
+
+        audio.onloadedmetadata = () => {
+          clearTimeout(timer);
+          const secs = audio.duration;
+          if (secs > 0 && isFinite(secs)) {
+            finish(formatSecs(secs));
+          } else {
+            finish(fallbackFormatted);
+          }
         };
+
+        audio.onerror = () => {
+          clearTimeout(timer);
+          finish(fallbackFormatted);
+        };
+
         audio.src = objectUrl;
       } catch {
-        resolve('');
+        resolve(fallbackFormatted);
       }
     });
   };
@@ -1112,6 +1138,7 @@ export const Admin: React.FC<AdminProps> = ({
     setFormMessage(null);
     try {
       const currentChapterTitle = formChapters[index]?.title || `Tập ${index + 1}`;
+      // Compute duration immediately from the file
       const detectedDuration = await detectAudioFileDuration(file);
       const serverUrl = await uploadAudioFile(file, currentChapterTitle, formTitle);
 
@@ -1120,7 +1147,7 @@ export const Admin: React.FC<AdminProps> = ({
           return {
             ...ch,
             mp3_url: serverUrl,
-            duration: detectedDuration || ch.duration || ''
+            duration: detectedDuration || ch.duration || '25:00'
           };
         }
         return ch;
@@ -1186,6 +1213,7 @@ export const Admin: React.FC<AdminProps> = ({
       play_count: Math.max(0, Number(formPlayCount) || 0),
       chapters: formChapters.map(ch => ({
         ...ch,
+        duration: ch.duration && ch.duration.trim() ? ch.duration.trim() : '25:00',
         mp3_url: ch.mp3_url || formMp3Url || 'https://cdn.freesound.org/previews/612/612610_5674468-lq.mp3'
       }))
     };
@@ -1856,7 +1884,22 @@ export const Admin: React.FC<AdminProps> = ({
                             />
                           </div>
 
-                          <div className="flex items-center gap-2 justify-end shrink-0">
+                          <div className="flex items-center gap-2 justify-end shrink-0 flex-wrap">
+                            {/* Thời lượng hiển thị và chỉnh sửa trực tiếp */}
+                            <div
+                              className="flex items-center gap-1.5 shrink-0 bg-slate-900 border border-slate-700 px-2.5 py-1.5 rounded-lg"
+                              title="Thời lượng tập truyện: Tự động tính toán khi tải file MP3 lên, hoặc bạn có thể chỉnh sửa thủ công"
+                            >
+                              <Clock size={12} className="text-amber-400 shrink-0" />
+                              <input
+                                type="text"
+                                value={ch.duration || ''}
+                                onChange={(e) => handleUpdateChapter(idx, 'duration', e.target.value)}
+                                placeholder="Thời lượng"
+                                className="w-16 bg-transparent text-xs text-amber-300 font-mono focus:outline-none focus:text-white"
+                              />
+                            </div>
+
                             <input
                               type="file"
                               accept=".mp3,audio/*"
@@ -1868,12 +1911,12 @@ export const Admin: React.FC<AdminProps> = ({
                             {isUploadingThis ? (
                               <span className="px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-semibold flex items-center gap-1.5">
                                 <RefreshCw size={13} className="animate-spin" />
-                                <span>Đang chuẩn hóa & lưu {expectedDiskFile}...</span>
+                                <span>Đang tính thời lượng & lưu {expectedDiskFile}...</span>
                               </span>
                             ) : hasMp3 ? (
                               <div className="flex items-center gap-2">
                                 <span
-                                  className="px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[11px] font-mono font-medium flex items-center gap-1.5 max-w-[220px] truncate"
+                                  className="px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[11px] font-mono font-medium flex items-center gap-1.5 max-w-[200px] truncate"
                                   title={ch.mp3_url}
                                 >
                                   <Check size={13} className="shrink-0 text-emerald-400" />
@@ -1911,13 +1954,18 @@ export const Admin: React.FC<AdminProps> = ({
                           </div>
                         </div>
 
-                        {/* Live Slug Filename & DB Path Preview */}
-                        <div className="pl-8 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-400">
+                        {/* Live Slug Filename & DB Path & Duration Preview */}
+                        <div className="pl-8 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-400">
                           <span>
-                            Tên file lưu trên đĩa: <code className="text-amber-300 font-mono">{expectedDiskFile}</code>
+                            Thời lượng: <strong className="text-amber-300 font-mono">{ch.duration || 'Chưa gắn'}</strong>
                           </span>
+                          <span>•</span>
                           <span>
-                            Đường dẫn db.json: <code className="text-emerald-300 font-mono">{hasMp3 && ch.mp3_url.startsWith('/uploads/') ? expectedDbUrl : expectedDbUrl}</code>
+                            Tên file đĩa: <code className="text-slate-300 font-mono">{expectedDiskFile}</code>
+                          </span>
+                          <span>•</span>
+                          <span>
+                            Đường dẫn db: <code className="text-emerald-300 font-mono">{hasMp3 ? ch.mp3_url : expectedDbUrl}</code>
                           </span>
                         </div>
                       </div>

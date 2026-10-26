@@ -166,6 +166,65 @@ async function startServer() {
     limits: { fileSize: 20 * 1024 * 1024 } // 20MB image files
   });
 
+  // Dedicated progressive audio streaming endpoint with HTTP 206 Partial Content
+  // "Load đến đâu nghe đến đó": browser sends Range (bytes=0-), server immediately delivers
+  // a lightweight initial 1.5MB chunk so audio playback starts instantaneously without waiting for the full file.
+  app.get(['/uploads/audio/:filename', '/uploads/:filename'], (req, res, next) => {
+    const filename = path.basename(req.params.filename);
+    if (!filename.toLowerCase().endsWith('.mp3')) {
+      return next();
+    }
+
+    let filePath = path.join(UPLOAD_AUDIO_DIR, filename);
+    if (!fs.existsSync(filePath)) {
+      filePath = path.join(UPLOAD_ROOT_DIR, filename);
+      if (!fs.existsSync(filePath)) {
+        return next();
+      }
+    }
+
+    try {
+      const stat = fs.statSync(filePath);
+      const fileSize = stat.size;
+      const range = req.headers.range;
+
+      res.setHeader('Accept-Ranges', 'bytes');
+      res.setHeader('Content-Type', 'audio/mpeg');
+      res.setHeader('Cache-Control', 'public, max-age=2592000, immutable');
+
+      if (range) {
+        const parts = range.replace(/bytes=/, '').split('-');
+        const start = parseInt(parts[0], 10);
+        const CHUNK_SIZE = 1.5 * 1024 * 1024; // 1.5MB chunks: instant start, smooth progressive buffering
+        const end = parts[1] ? parseInt(parts[1], 10) : Math.min(start + CHUNK_SIZE - 1, fileSize - 1);
+
+        if (start >= fileSize) {
+          res.status(416).setHeader('Content-Range', `bytes */${fileSize}`).end();
+          return;
+        }
+
+        const chunksize = end - start + 1;
+        const fileStream = fs.createReadStream(filePath, { start, end });
+
+        res.writeHead(206, {
+          'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+          'Accept-Ranges': 'bytes',
+          'Content-Length': chunksize,
+          'Content-Type': 'audio/mpeg',
+        });
+        fileStream.pipe(res);
+      } else {
+        res.writeHead(200, {
+          'Content-Length': fileSize,
+          'Content-Type': 'audio/mpeg',
+        });
+        fs.createReadStream(filePath).pipe(res);
+      }
+    } catch {
+      next();
+    }
+  });
+
   // Serve unified static uploaded audio & image files from root /uploads directory
   // Supports HTTP Byte-Range (206 Partial Content) & 30-day cache
   app.use(
@@ -174,6 +233,12 @@ async function startServer() {
       maxAge: '30d',
       acceptRanges: true,
       etag: true,
+      setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.mp3')) {
+          res.setHeader('Accept-Ranges', 'bytes');
+          res.setHeader('Cache-Control', 'public, max-age=2592000, immutable');
+        }
+      }
     })
   );
 

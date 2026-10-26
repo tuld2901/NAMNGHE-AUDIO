@@ -189,23 +189,38 @@ pm2 save
 pm2 startup
 ```
 
-### Bước 5.3: Cấu hình Nginx & SSL
-Tạo file `/etc/nginx/sites-available/audio-web`:
+### Bước 5.3: Cấu hình Nginx Tối Ưu Cho Streaming Audio & SSL
+Tạo hoặc sửa file `/etc/nginx/sites-available/audio-web` (thay `/var/www/audio-web` bằng đường dẫn thực tế trên VPS của bạn, ví dụ `/root/NAMNGHE-AUDIO`):
+
 ```nginx
 server {
     listen 80;
     server_name tenmien.com www.tenmien.com;
 
-    client_max_body_size 150M;
-    client_body_timeout 300s;
+    # Cho phép upload file MP3 và backup dung lượng lớn (lên tới 250MB)
+    client_max_body_size 250M;
+    client_body_timeout 600s;
+    client_header_timeout 600s;
 
+    # TỐI ƯU STREAMING MP3 (LOAD ĐẾN ĐÂU NGHE ĐẾN ĐÓ - KHÔNG BUFFER TOÀN BỘ FILE)
     location /uploads/ {
-        alias /var/www/audio-web/uploads/;
+        alias /var/www/audio-web/uploads/; # Đổi thành thư mục uploads của bạn
         expires 30d;
         add_header Cache-Control "public, no-transform";
         add_header Accept-Ranges bytes;
+        
+        # Tối ưu truyền tải file âm thanh từng đoạn (chunk 1MB)
+        sendfile on;
+        sendfile_max_chunk 1m;
+        tcp_nopush on;
+        tcp_nodelay on;
+
+        # Tắt buffering để phát ngay lập tức khi người nghe bấm Play
+        proxy_buffering off;
+        proxy_request_buffering off;
     }
 
+    # Proxy toàn bộ API và giao diện Web vào Node.js (Cổng 3000)
     location / {
         proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
@@ -216,12 +231,18 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cache_bypass $http_upgrade;
-        proxy_read_timeout 300s;
+
+        proxy_connect_timeout 600s;
+        proxy_send_timeout 600s;
+        proxy_read_timeout 600s;
+        proxy_buffer_size 128k;
+        proxy_buffers 4 256k;
+        proxy_busy_buffers_size 256k;
     }
 }
 ```
 
-Kích hoạt Nginx và cài SSL:
+Kích hoạt Nginx và cài SSL miễn phí:
 ```bash
 sudo ln -sf /etc/nginx/sites-available/audio-web /etc/nginx/sites-enabled/
 sudo rm -f /etc/nginx/sites-enabled/default
@@ -233,9 +254,72 @@ sudo certbot --nginx -d tenmien.com -d www.tenmien.com
 
 ---
 
-## 6. THÔNG TIN TÀI KHOẢN QUẢN TRỊ MẶC ĐỊNH
+## 6. CẤU HÌNH CLOUDFLARE (NẾU DÙNG DOMAIN QUA CLOUDFLARE)
 
-- **URL đăng nhập CMS**: `https://tenmien.com/admin`
+Nếu tên miền của bạn bật đám mây cam (Proxy) qua Cloudflare, để audio nghe mượt mà và không bị trễ:
+
+1. **Bật Range Requests (HTTP 206):**
+   - Cloudflare mặc định hỗ trợ Range Requests. Node.js backend đã tự động cắt chunk 1.5MB để người nghe nghe được ngay trong <100ms.
+2. **Tạo Cache Rule cho thư mục Audio (Khuyên dùng để tiết kiệm băng thông VPS):**
+   - Vào Cloudflare Dashboard -> **Caching** -> **Cache Rules** -> **Create Rule**:
+     - *Field*: URI Path
+     - *Operator*: starts with
+     - *Value*: `/uploads/`
+     - *Cache eligibility*: Cache Everything
+     - *Edge TTL*: 1 month (hoặc 7 days)
+   - Kết quả: File audio nghe lần đầu sẽ được Cloudflare lưu tại máy chủ CDN gần nhất ở Việt Nam (VNPT, Viettel, FPT), lần nghe sau tốc độ phát sẽ đạt tối đa ngay tức thì!
+3. **Tắt Auto Minify cho HTML/JS** nếu trang web có cập nhật mới chưa kịp xóa cache: Vào **Speed** -> **Optimization** -> kiểm tra cache.
+
+---
+
+## 7. CHECKLIST KIỂM TRA TOÀN BỘ FILE & THƯ MỤC CẦN THIẾT
+
+Trước khi chạy, hãy kiểm tra danh sách file và thư mục đã đủ chưa:
+
+| Đường Dẫn File / Thư Mục | Trạng Thái Bắt Buộc | Tác Dụng |
+| :--- | :---: | :--- |
+| `data/db.json` | **BẮT BUỘC** | Chứa toàn bộ dữ liệu truyện, tập, link affiliate, cấu hình website. Hệ thống sẽ tự tạo nếu chưa có. |
+| `uploads/audio/` | **BẮT BUỘC** | Thư mục lưu toàn bộ file âm thanh MP3 tải lên. |
+| `uploads/images/` | **BẮT BUỘC** | Thư mục lưu ảnh bìa, logo, favicon, banner tải lên. |
+| `backups/` | **BẮT BUỘC** | Thư mục lưu các bản snapshot backup tự động & thủ công. |
+| `dist/` | **BẮT BUỘC** | Thư mục frontend được tạo ra sau khi chạy lệnh `npm run build`. |
+| `server.ts` | **BẮT BUỘC** | File server backend Node.js chính (chạy API, streaming audio, SEO SSR). |
+| `server-db.ts` | **BẮT BUỘC** | Module quản lý đọc/ghi cơ sở dữ liệu `data/db.json` và snapshot. |
+| `package.json` | **BẮT BUỘC** | Danh sách thư viện và scripts (`npm run build`, `npm start`). |
+| `tsconfig.json` | **BẮT BUỘC** | Cấu hình TypeScript của toàn bộ dự án. |
+| `vite.config.ts` | **BẮT BUỘC** | Cấu hình đóng gói giao diện React + Tailwind CSS. |
+
+### Lệnh tạo nhanh toàn bộ thư mục chỉ với 1 dòng:
+```bash
+mkdir -p data uploads/audio uploads/images backups
+chmod -R 777 data uploads backups
+```
+
+---
+
+## 8. LỆNH KIỂM TRA SỨC KHỎE HỆ THỐNG (HEALTH CHECK)
+
+Sau khi cài đặt xong, bạn có thể chạy các lệnh sau để đảm bảo hệ thống hoạt động hoàn hảo:
+
+```bash
+# 1. Kiểm tra Node.js có đang lắng nghe trên cổng 3000 không:
+ss -tulpn | grep 3000
+
+# 2. Kiểm tra API backend trả về chuẩn JSON (Không được trả về <!doctype html>):
+curl -i http://127.0.0.1:3000/api/settings
+
+# 3. Kiểm tra xem file audio có phát streaming HTTP 206 không:
+curl -I http://127.0.0.1:3000/uploads/audio/test.mp3
+
+# 4. Xem log hoạt động thời gian thực của PM2:
+pm2 logs audio-cms --lines 50
+```
+
+---
+
+## 9. THÔNG TIN TÀI KHOẢN QUẢN TRỊ MẶC ĐỊNH
+
+- **URL đăng nhập CMS**: `https://tenmien.com/admin` (hoặc `http://localhost:3000/admin`)
 - **Tài khoản mặc định**: `tuld2901@gmail.com` (hoặc `admin`)
 - **Mật khẩu mặc định**: `admin123`
 - Sau khi đăng nhập, vào mục **Tài Khoản Quản Trị** để đổi mật khẩu, thêm tài khoản mới hoặc xóa tài khoản mặc định.

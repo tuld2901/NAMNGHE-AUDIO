@@ -17,7 +17,6 @@ export const StoryPage: React.FC<StoryPageProps> = ({
   onBackToHome,
 }) => {
   const [isSleepOpen, setIsSleepOpen] = useState<boolean>(false);
-  const [detectedDurations, setDetectedDurations] = useState<Record<string, string>>({});
 
   const {
     currentTrack,
@@ -38,45 +37,6 @@ export const StoryPage: React.FC<StoryPageProps> = ({
         : [{ id: 1, title: track.title, duration: '', mp3_url: track.mp3_url }],
     [track.chapters, track.title, track.mp3_url]
   );
-
-  // Tự động nhận diện thời lượng thực tế của từng file MP3 trên trang nghe (chỉ tải metadata cho các tập chưa có sẵn thời lượng)
-  useEffect(() => {
-    let isMounted = true;
-    const tempAudios: HTMLAudioElement[] = [];
-
-    chapters.forEach((ch, idx) => {
-      if (ch.duration && ch.duration.trim().length > 0) return;
-      const mp3Url = ch.mp3_url || track.mp3_url;
-      if (!mp3Url) return;
-      const key = `${track.id}-${ch.id || idx}`;
-
-      const tempAudio = new Audio();
-      tempAudio.preload = 'metadata';
-      tempAudio.onloadedmetadata = () => {
-        if (!isMounted) return;
-        const secs = Math.floor(tempAudio.duration || 0);
-        if (secs > 0 && isFinite(secs)) {
-          const hrs = Math.floor(secs / 3600);
-          const mins = Math.floor((secs % 3600) / 60);
-          const rem = secs % 60;
-          const formatted = hrs > 0
-            ? `${hrs}:${mins < 10 ? '0' : ''}${mins}:${rem < 10 ? '0' : ''}${rem}`
-            : `${mins < 10 ? '0' : ''}${mins}:${rem < 10 ? '0' : ''}${rem}`;
-          setDetectedDurations(prev => ({ ...prev, [key]: formatted }));
-        }
-      };
-      tempAudio.src = mp3Url;
-      tempAudios.push(tempAudio);
-    });
-
-    return () => {
-      isMounted = false;
-      tempAudios.forEach(a => {
-        a.onloadedmetadata = null;
-        a.src = '';
-      });
-    };
-  }, [track.id, chapters, track.mp3_url]);
 
   const isCurrentStoryActive = currentTrack?.id === track.id;
 
@@ -288,7 +248,9 @@ export const StoryPage: React.FC<StoryPageProps> = ({
                         isThisActive ? 'text-amber-300/80' : 'text-slate-400'
                       }`}
                     >
-                      {(isThisActive && duration > 0 ? formatTime(duration) : detectedDurations[`${track.id}-${ch.id || idx}`]) || ch.duration || 'Tự nhận diện...'}
+                      {isThisActive && duration > 0
+                        ? formatTime(duration)
+                        : (ch.duration && ch.duration.trim() ? ch.duration : 'Audio Full')}
                     </span>
                   </div>
                 </div>
