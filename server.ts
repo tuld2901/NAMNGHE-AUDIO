@@ -52,8 +52,6 @@ import {
   restoreFromServerSnapshot,
   deleteServerSnapshot,
   normalizeAllAudioFilesToSlug,
-  cleanupOrphanedUploadFiles,
-  deleteSingleUploadAudioFile,
   detectAudioDurationSync,
   detectAudioDurationSecondsFast
 } from './server-db';
@@ -803,25 +801,14 @@ async function startServer() {
         return res.json({
           success: true,
           action: 'delete',
-          message: `Đã xóa truyện có id "${targetId}" và dọn file MP3 liên quan khỏi Server thành công!`,
+          message: `Đã xóa truyện có id "${targetId}" khỏi Server thành công!`,
           deletedId: targetId
-        });
-      }
-
-      // 8. CLEANUP ORPHANED AUDIO/IMAGE FILES IN UPLOADS/
-      if (rawAction === 'cleanup' || rawAction === 'clean' || rawAction === 'don_dep' || rawAction === 'don_rac') {
-        const result = cleanupOrphanedUploadFiles({
-          includeImages: mergedBody.includeImages !== false
-        });
-        return res.json({
-          ...result,
-          action: 'cleanup'
         });
       }
 
       return res.status(400).json({
         success: false,
-        error: `Action "${rawAction}" không hợp lệ. Các action hỗ trợ: "create" (đăng truyện), "update" (sửa truyện), "add_chapter" (thêm tập), "delete_chapter" (xóa tập), "delete" (xóa truyện), "cleanup" (dọn file rác), "list" (danh sách), "get" (chi tiết).`
+        error: `Action "${rawAction}" không hợp lệ. Các action hỗ trợ: "create" (đăng truyện), "update" (sửa truyện), "add_chapter" (thêm tập), "delete_chapter" (xóa tập), "delete" (xóa truyện), "list" (danh sách), "get" (chi tiết).`
       });
     } catch (err: any) {
       return res.status(500).json({
@@ -1302,30 +1289,6 @@ async function startServer() {
   app.post('/api/backup/normalize-slugs', (_req, res) => {
     try {
       const result = normalizeAllAudioFilesToSlug();
-      return res.json(result);
-    } catch (err: any) {
-      return res.status(500).json({ success: false, message: err.message });
-    }
-  });
-
-  app.post(['/api/backup/cleanup-orphans', '/api/admin/cleanup-uploads'], (req, res) => {
-    try {
-      const result = cleanupOrphanedUploadFiles({
-        includeImages: req.body?.includeImages !== false,
-        targetFilenames: Array.isArray(req.body?.targetFilenames) ? req.body.targetFilenames : undefined
-      });
-      return res.json(result);
-    } catch (err: any) {
-      return res.status(500).json({ success: false, message: err.message });
-    }
-  });
-
-  app.delete('/api/backup/audio-file/:filename', (req, res) => {
-    try {
-      const result = deleteSingleUploadAudioFile(req.params.filename);
-      if (!result.success) {
-        return res.status(404).json(result);
-      }
       return res.json(result);
     } catch (err: any) {
       return res.status(500).json({ success: false, message: err.message });
