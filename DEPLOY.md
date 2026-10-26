@@ -247,9 +247,13 @@ server {
     location /uploads/ {
         alias /root/NAMNGHE-AUDIO/uploads/; # Đổi thành đường dẫn thư mục uploads thực tế của bạn
         
-        # Bật Byte-Range để trình duyệt/điện thoại nhận ngay chunk nhỏ 1.5MB nghe ngay
+        # Bật Byte-Range để trình duyệt/điện thoại nhận ngay chunk nhỏ nghe ngay, tua mượt mà
         add_header Accept-Ranges bytes always;
-        add_header Cache-Control "public, max-age=2592000, immutable" always;
+        add_header Cache-Control "public, max-age=2592000, immutable, no-transform" always;
+        add_header Access-Control-Allow-Origin * always;
+        add_header Access-Control-Allow-Methods "GET, HEAD, OPTIONS" always;
+        add_header Access-Control-Allow-Headers "Range, Origin, Content-Type, Accept" always;
+        add_header Access-Control-Expose-Headers "Content-Range, Content-Length, Accept-Ranges" always;
         expires 30d;
 
         # Tối ưu truyền tải file âm thanh từ ổ đĩa Linux ra mạng cực nhanh
@@ -268,7 +272,29 @@ server {
         }
     }
 
-    # 4. CHUYỂN TOÀN BỘ API, GATEWAY VÀ GIAO DIỆN VÀO NODE.JS (PORT 3000)
+    # 3B. ƯU TIÊN TUYỆT ĐỐI CHO TOÀN BỘ CỔNG API (/api/gateway, /api/upload-audio, /api/stream-audio, /api/tracks)
+    # Dùng ^~ để chặn các rule regex tĩnh của aaPanel/Nginx nuốt mất request JSON hoặc trả về lỗi 404/405 HTML
+    location ^~ /api/ {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header Range $http_range;
+        proxy_set_header If-Range $http_if_range;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        client_max_body_size 250M;
+        gzip off;
+        proxy_buffering off;
+        proxy_request_buffering off;
+        proxy_cache off;
+        proxy_connect_timeout 600s;
+        proxy_read_timeout 600s;
+        proxy_send_timeout 600s;
+    }
+
+    # 4. CHUYỂN TOÀN BỘ GIAO DIỆN VÀO NODE.JS (PORT 3000)
     # Khắc phục triệt để lỗi: <!doctype html> ... is not valid JSON
     location / {
         proxy_pass http://127.0.0.1:3000;
@@ -310,7 +336,7 @@ sudo certbot --nginx -d tenmien.com -d www.tenmien.com
 Nếu tên miền của bạn bật đám mây cam (Proxy) qua Cloudflare, để audio nghe mượt mà và không bị trễ:
 
 1. **Bật Range Requests (HTTP 206):**
-   - Cloudflare mặc định hỗ trợ Range Requests. Node.js backend đã tự động cắt chunk 1.5MB để người nghe nghe được ngay trong <100ms.
+   - Cloudflare mặc định hỗ trợ Range Requests. Node.js backend đã tự động hỗ trợ HTTP 206 và endpoint `/api/stream-audio` để người nghe phát và tua ngay trong <100ms.
 2. **Tạo Cache Rule cho thư mục Audio (Khuyên dùng để tiết kiệm băng thông VPS):**
    - Vào Cloudflare Dashboard -> **Caching** -> **Cache Rules** -> **Create Rule**:
      - *Field*: URI Path
@@ -359,8 +385,8 @@ chmod -R 777 data uploads backups
 #### A. API Upload File (Lưu thẳng vào `uploads/`)
 | Chức năng | Phương thức & Đường dẫn | Tên trường (`form-data`) | Giới hạn | Đường dẫn trả về (`url`) |
 | :--- | :--- | :--- | :--- | :--- |
-| **Upload Audio MP3** | `POST /api/upload-audio` | `audio` (kèm tùy chọn `storyTitle`, `chapterTitle`) | 150 MB | `/uploads/audio/<slug>.mp3` (kèm `duration` đo tự động bằng `ffprobe`) |
-| **Upload Hình ảnh** | `POST /api/upload-image` | `image` | 20 MB | `/uploads/images/<slug>.<ext>` |
+| **Upload Audio MP3** | `POST /api/upload-audio` | `audio` (hoặc `file`, `mp3`; kèm tùy chọn `storyTitle`, `chapterTitle`) | 150 MB | `/uploads/audio/<slug>.mp3` (kèm `duration` đo tự động bằng `ffprobe`) |
+| **Upload Hình ảnh** | `POST /api/upload-image` | `image` (hoặc `file`, `thumb`, `cover`) | 20 MB | `/uploads/images/<slug>.<ext>` |
 
 #### B. API Phát & Tua Audio (Streaming & Byte-Range)
 - **Đường dẫn tĩnh chuẩn**: `GET /uploads/audio/:filename` (Hỗ trợ `HTTP 206 Partial Content`, `Accept-Ranges: bytes`).
@@ -369,20 +395,26 @@ chmod -R 777 data uploads backups
 
 #### C. Cổng API Gateway 1-Port Đa Năng (Dành cho Tool / Auto Post / n8n / Make)
 - **Endpoint chính**: `POST /api/gateway` *(Bí danh tương thích: `POST /api/v1/stories/gateway` hoặc `GET /api/gateway`)*
+- **Định dạng dữ liệu nhận vào**: Hỗ trợ đồng thời `application/json`, `application/x-www-form-urlencoded`, và `multipart/form-data`.
+- **Tự động nhận diện linh hoạt**:
+  - Tìm truyện theo `id` (VD: `track-1`), theo **Slug không dấu** (VD: `bong-ma-ben-khung-cua-so`), hoặc theo **Tên truyện**.
+  - Chấp nhận các tên trường đồng nghĩa: `mp3_url` / `audio_url` / `url` / `mp3` và `thumb_url` / `cover_url` / `image_url`.
 - **Các hành động (`action`) hỗ trợ**:
   - `list`: Lấy danh sách toàn bộ truyện.
-  - `get`: Lấy chi tiết 1 truyện theo `id`.
-  - `create` (hoặc `dang`): Đăng truyện mới (hỗ trợ truyền mảng `chapters` hoặc `audio_url` tập đầu).
+  - `get`: Lấy chi tiết 1 truyện theo `id` (hoặc slug / tên truyện).
+  - `create` (hoặc `dang`): Đăng truyện mới (hỗ trợ truyền mảng `chapters` hoặc `mp3_url`/`audio_url` tập đầu).
   - `update` (hoặc `sua`): Cập nhật thông tin truyện / danh sách tập.
   - `add_chapter` (hoặc `them_tap`): Thêm tập mới vào bộ truyện đã có (`id`, `title`, `mp3_url`/`audio_url`, `duration`).
-  - `delete_chapter` (hoặc `xoa_tap`): Xóa 1 tập trong truyện.
+  - `delete_chapter` (hoặc `xoa_tap`): Xóa 1 tập trong truyện (theo `chapter_id` hoặc `chapter_index`).
   - `delete` (hoặc `xoa`): Xóa truyện (tự động dọn luôn các file `.mp3` của truyện đó trong `uploads/audio/`).
 
 #### D. API RESTful Quản lý Truyện
 - `GET /api/tracks` (hoặc `/api/v1/stories`): Lấy danh sách truyện.
+- `GET /api/tracks/:id`: Lấy chi tiết 1 truyện.
 - `POST /api/tracks`: Tạo truyện mới.
 - `PUT /api/tracks/:id` hoặc `PATCH /api/tracks/:id`: Sửa truyện.
 - `POST /api/tracks/:id/chapters`: Thêm tập mới vào truyện.
+- `DELETE /api/tracks/:id/chapters/:chapterId`: Xóa 1 tập trong truyện.
 - `DELETE /api/tracks/:id`: Xóa truyện.
 
 #### E. Bảo mật Khóa API (`API Key`)
@@ -393,7 +425,7 @@ chmod -R 777 data uploads backups
   3. Body / Query: `"api_key": "<MÃ_KEY>"`
 
 #### F. Lưu ý trên VPS / Nginx (`nginx.conf`)
-- Trong file `nginx.conf` trên VPS, bạn chỉ cần trỏ duy nhất `location /uploads/` về đúng thư mục `/đường_dẫn_code/uploads/;` (hoặc để Node.js tự phục vụ trực tiếp qua Reverse Proxy cổng `3000`), không cần tạo hay cấu hình bất kỳ thư mục `download` nào.
+- Trong file `nginx.conf` trên VPS, bạn chỉ cần trỏ duy nhất `location /uploads/` về đúng thư mục `/đường_dẫn_code/uploads/;` và `location ^~ /api/` vào `http://127.0.0.1:3000`, hoàn toàn không cần tạo hay cấu hình bất kỳ thư mục `download` nào.
 
 ---
 

@@ -378,6 +378,16 @@ export const Admin: React.FC<AdminProps> = ({
         return;
       }
 
+      // Tự động đồng bộ cấu hình API Key hiện tại lên Server trước khi chạy test để không bao giờ lệch Key
+      if (
+        settingsForm.requireApiKey !== siteSettings.requireApiKey ||
+        settingsForm.apiKey !== siteSettings.apiKey
+      ) {
+        const synced = await saveSiteSettings(settingsForm);
+        setSettingsForm(synced);
+        onUpdateSiteSettings(synced);
+      }
+
       const headers: Record<string, string> = {
         'Content-Type': 'application/json'
       };
@@ -390,7 +400,20 @@ export const Admin: React.FC<AdminProps> = ({
         headers,
         body: JSON.stringify(parsedBody)
       });
-      const json = await res.json();
+
+      const rawText = await res.text();
+      let json: any;
+      try {
+        json = JSON.parse(rawText);
+      } catch {
+        json = {
+          success: false,
+          error: rawText.trim().startsWith('<')
+            ? 'Máy chủ Web (Nginx) trả về HTML thay vì JSON. Vui lòng kiểm tra cấu hình proxy_pass http://127.0.0.1:3000 cho /api/ trong Nginx.'
+            : rawText || `HTTP ${res.status}`
+        };
+      }
+
       const elapsed = Math.round(performance.now() - startTime);
       setApiPlaygroundResponse({
         status: res.status,
@@ -431,15 +454,17 @@ export const Admin: React.FC<AdminProps> = ({
     }
   };
 
-  const handleSaveSettings = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSaveSettings = async (e?: React.FormEvent | React.MouseEvent) => {
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault();
+    }
     setIsSavingSettings(true);
     setSettingsSaveMsg(null);
     try {
       const saved = await saveSiteSettings(settingsForm);
       setSettingsForm(saved);
       onUpdateSiteSettings(saved);
-      setSettingsSaveMsg('Đã lưu cấu hình Website, Banner, Logo và Favicon trực tiếp lên Server thành công!');
+      setSettingsSaveMsg('Đã lưu cấu hình trực tiếp lên Server thành công!');
       setTimeout(() => setSettingsSaveMsg(null), 4000);
     } catch (err: any) {
       setSettingsSaveMsg('Lỗi lưu cài đặt lên Server: ' + err.message);
@@ -4682,7 +4707,16 @@ https://s.lazada.vn/s.flashsale_deal`}
                   </div>
                   <button
                     type="button"
-                    onClick={() => setSettingsForm(prev => ({ ...prev, requireApiKey: !prev.requireApiKey }))}
+                    onClick={async () => {
+                      const nextVal = !settingsForm.requireApiKey;
+                      const updated = { ...settingsForm, requireApiKey: nextVal };
+                      setSettingsForm(updated);
+                      const saved = await saveSiteSettings(updated);
+                      setSettingsForm(saved);
+                      onUpdateSiteSettings(saved);
+                      setSettingsSaveMsg(nextVal ? 'Đã bật khóa bảo mật API Key trên Server!' : 'Đã mở tự do cổng API (không cần Key)!');
+                      setTimeout(() => setSettingsSaveMsg(null), 3000);
+                    }}
                     className={`w-12 h-6 rounded-full transition-colors relative shrink-0 cursor-pointer ${
                       settingsForm.requireApiKey ? 'bg-amber-400' : 'bg-slate-700'
                     }`}
@@ -4710,9 +4744,15 @@ https://s.lazada.vn/s.flashsale_deal`}
                     />
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={async () => {
                         const randomKey = 'goiom_sk_' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36).slice(-4);
-                        setSettingsForm(prev => ({ ...prev, apiKey: randomKey }));
+                        const updated = { ...settingsForm, apiKey: randomKey };
+                        setSettingsForm(updated);
+                        const saved = await saveSiteSettings(updated);
+                        setSettingsForm(saved);
+                        onUpdateSiteSettings(saved);
+                        setSettingsSaveMsg('Đã tạo và lưu mã API Key mới trên Server!');
+                        setTimeout(() => setSettingsSaveMsg(null), 3000);
                       }}
                       className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 shrink-0 cursor-pointer"
                       title="Tạo mã ngẫu nhiên mới"
@@ -4799,7 +4839,7 @@ https://s.lazada.vn/s.flashsale_deal`}
               </div>
 
               <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-400 leading-relaxed">
-                <strong className="text-slate-200">Lưu ý trên VPS / Nginx (<code className="font-mono text-amber-300">nginx.conf</code>):</strong> Bạn chỉ cần trỏ duy nhất <code className="font-mono text-emerald-300">location /uploads/</code> về đúng thư mục <code className="font-mono text-emerald-300">/đường_dẫn_code/uploads/;</code> (hoặc để Node.js tự phục vụ trực tiếp qua cổng 3000), không cần tạo hay cấu hình bất kỳ thư mục <code className="font-mono text-rose-300">download</code> nào.
+                <strong className="text-slate-200">Lưu ý trên VPS / Nginx (<code className="font-mono text-amber-300">nginx.conf</code>):</strong> Bạn chỉ cần trỏ duy nhất <code className="font-mono text-emerald-300">location /uploads/</code> về đúng thư mục <code className="font-mono text-emerald-300">/đường_dẫn_code/uploads/;</code> và <code className="font-mono text-emerald-300">location ^~ /api/</code> vào <code className="font-mono text-emerald-300">http://127.0.0.1:3000</code>, hoàn toàn không cần tạo hay cấu hình bất kỳ thư mục <code className="font-mono text-rose-300">download</code> nào.
               </div>
             </div>
 
@@ -4832,14 +4872,14 @@ https://s.lazada.vn/s.flashsale_deal`}
                       <tr>
                         <td className="p-2.5 font-semibold text-white">Upload Audio MP3</td>
                         <td className="p-2.5 font-mono text-emerald-300">POST /api/upload-audio</td>
-                        <td className="p-2.5 font-mono text-amber-300">audio <span className="text-slate-400 font-sans text-[10px]">(+ storyTitle, chapterTitle)</span></td>
+                        <td className="p-2.5 font-mono text-amber-300">audio <span className="text-slate-400 font-sans text-[10px]">(hoặc file, mp3 + storyTitle, chapterTitle)</span></td>
                         <td className="p-2.5 font-mono">150 MB</td>
                         <td className="p-2.5 font-mono text-emerald-300">/uploads/audio/&lt;slug&gt;.mp3 <span className="text-slate-400 font-sans text-[10px]">(+ duration ffprobe)</span></td>
                       </tr>
                       <tr>
                         <td className="p-2.5 font-semibold text-white">Upload Hình ảnh</td>
                         <td className="p-2.5 font-mono text-cyan-300">POST /api/upload-image</td>
-                        <td className="p-2.5 font-mono text-amber-300">image</td>
+                        <td className="p-2.5 font-mono text-amber-300">image <span className="text-slate-400 font-sans text-[10px]">(hoặc file, thumb, cover)</span></td>
                         <td className="p-2.5 font-mono">20 MB</td>
                         <td className="p-2.5 font-mono text-cyan-300">/uploads/images/&lt;slug&gt;.&lt;ext&gt;</td>
                       </tr>
@@ -4853,13 +4893,16 @@ https://s.lazada.vn/s.flashsale_deal`}
                 <span className="text-xs font-bold text-amber-300 block">
                   B. Các hành động (<code className="font-mono">action</code>) hỗ trợ tại Cổng 1-Port <code className="font-mono text-emerald-300">POST /api/gateway</code>:
                 </span>
+                <p className="text-[11px] text-slate-400">
+                  Hỗ trợ <code className="font-mono text-slate-200">JSON</code>, <code className="font-mono text-slate-200">form-urlencoded</code> &amp; <code className="font-mono text-slate-200">multipart/form-data</code>. Nhận diện truyện thông minh theo <code className="font-mono text-amber-300">id</code>, <code className="font-mono text-amber-300">slug</code> hoặc <code className="font-mono text-amber-300">title</code>.
+                </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                   {[
                     { act: 'list', alias: '', desc: 'Lấy danh sách toàn bộ truyện' },
-                    { act: 'get', alias: '', desc: 'Lấy chi tiết 1 truyện theo id' },
-                    { act: 'create', alias: 'dang', desc: 'Đăng truyện mới (kèm mảng chapters hoặc audio_url)' },
+                    { act: 'get', alias: '', desc: 'Lấy chi tiết 1 truyện theo id / slug / tên truyện' },
+                    { act: 'create', alias: 'dang', desc: 'Đăng truyện mới (kèm mảng chapters hoặc mp3_url / audio_url)' },
                     { act: 'update', alias: 'sua', desc: 'Cập nhật thông tin truyện / danh sách tập' },
-                    { act: 'add_chapter', alias: 'them_tap', desc: 'Thêm tập mới vào bộ truyện đã có (id, title, mp3_url, duration)' },
+                    { act: 'add_chapter', alias: 'them_tap', desc: 'Thêm tập mới vào bộ truyện đã có (id, title, mp3_url / audio_url, duration)' },
                     { act: 'delete_chapter', alias: 'xoa_tap', desc: 'Xóa 1 tập trong truyện (theo chapter_id hoặc chapter_index)' },
                     { act: 'delete', alias: 'xoa', desc: 'Xóa truyện & tự động dọn luôn file .mp3 trong uploads/audio/' }
                   ].map((item, idx) => (

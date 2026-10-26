@@ -101,6 +101,16 @@ export function sanitizePublicWebUrl(rawUrl: string | undefined | null, fallback
     return pathPart;
   }
 
+  // Nếu URL có chứa /uploads/audio/ hoặc /uploads/images/ từ domain chính -> rút gọn về đường dẫn tương đối /uploads/... nếu file tồn tại trên ổ đĩa
+  const uploadsIdx = cleaned.indexOf('/uploads/');
+  if (uploadsIdx > 0 && /^https?:\/\//i.test(cleaned)) {
+    const relativePart = cleaned.slice(uploadsIdx);
+    const cleanRel = decodeURIComponent(relativePart.split('?')[0]).replace(/^\/uploads\//, '');
+    if (fs.existsSync(path.join(UPLOAD_ROOT_DIR, cleanRel))) {
+      return relativePart.split('?')[0];
+    }
+  }
+
   return cleaned;
 }
 
@@ -135,6 +145,11 @@ export function normalizeLocalChapterAudioSlug(chapterTitle: string, mp3Url: str
 
   if (currentFileName === targetFileName) {
     return targetUrl;
+  }
+
+  // Không đổi tên các file demo dùng chung để tránh làm mất file của các truyện mẫu
+  if (currentFileName.startsWith('demo-audio-')) {
+    return mp3Url;
   }
 
   const currentFilePath = path.join(UPLOAD_AUDIO_DIR, currentFileName);
@@ -582,21 +597,39 @@ export async function getTracks(): Promise<Track[]> {
   return dbData.tracks;
 }
 
-export async function getTrackById(id: string): Promise<Track | null> {
-  const tracks = await getTracks();
-  return tracks.find(t => t.id === id) || null;
+function findTrackInList(tracks: Track[], idOrSlug: string): Track | null {
+  if (!idOrSlug) return null;
+  const raw = String(idOrSlug).trim();
+  if (!raw) return null;
+  const lower = raw.toLowerCase();
+  const slug = slugifyVietnamese(raw);
+
+  return (
+    tracks.find(t => t.id === raw) ||
+    tracks.find(t => t.id.toLowerCase() === lower) ||
+    (slug ? tracks.find(t => slugifyVietnamese(t.title) === slug) : undefined) ||
+    tracks.find(t => t.title.trim().toLowerCase() === lower) ||
+    null
+  );
 }
 
-export async function addTrack(payload: Partial<Track> & { cover_url?: string }): Promise<Track> {
+export async function getTrackById(id: string): Promise<Track | null> {
+  const tracks = await getTracks();
+  return findTrackInList(tracks, id);
+}
+
+export async function addTrack(payload: Partial<Track> & { cover_url?: string; image_url?: string; audio_url?: string; url?: string }): Promise<Track> {
   const storyTitle = (payload.title || 'Truyện mới').trim();
+  const fallbackTopAudio = payload.mp3_url || payload.audio_url || payload.url || '';
+
   const rawChapters = Array.isArray(payload.chapters) && payload.chapters.length > 0
-    ? payload.chapters.map((ch, idx) => {
-        const chTitle = ch.title || `Phần ${idx + 1}`;
-        const rawUrl = ch.mp3_url || payload.mp3_url || '';
+    ? payload.chapters.map((ch: any, idx: number) => {
+        const chTitle = ch.title || ch.chapter_title || ch.name || `Phần ${idx + 1}`;
+        const rawUrl = ch.mp3_url || ch.audio_url || ch.url || ch.mp3 || fallbackTopAudio || '';
         const normalizedUrl = normalizeLocalChapterAudioSlug(chTitle, rawUrl, storyTitle);
         const resolvedDuration =
-          ch.duration && ch.duration.trim() && ch.duration !== 'Audio Full' && ch.duration !== 'Chưa gắn'
-            ? ch.duration.trim()
+          ch.duration && String(ch.duration).trim() && ch.duration !== 'Audio Full' && ch.duration !== 'Chưa gắn'
+            ? String(ch.duration).trim()
             : detectAudioDurationSync(normalizedUrl);
         return {
           id: ch.id !== undefined ? ch.id : idx + 1,
@@ -609,21 +642,21 @@ export async function addTrack(payload: Partial<Track> & { cover_url?: string })
         {
           id: 1,
           title: 'Phần 1: Khởi đầu',
-          duration: detectAudioDurationSync(payload.mp3_url || ''),
-          mp3_url: normalizeLocalChapterAudioSlug('Phần 1: Khởi đầu', payload.mp3_url || '', storyTitle)
+          duration: detectAudioDurationSync(fallbackTopAudio),
+          mp3_url: normalizeLocalChapterAudioSlug('Phần 1: Khởi đầu', fallbackTopAudio, storyTitle)
         }
       ];
 
-  const primaryMp3 = sanitizePublicWebUrl(rawChapters[0]?.mp3_url || payload.mp3_url || '');
+  const primaryMp3 = sanitizePublicWebUrl(rawChapters[0]?.mp3_url || fallbackTopAudio);
 
   const newTrack: Track = {
     id: payload.id && String(payload.id).trim() ? String(payload.id).trim() : 'track-' + Date.now(),
-    title: (payload.title || 'Truyện mới').trim(),
+    title: storyTitle,
     author: (payload.author || 'Đang cập nhật').trim(),
     narrator: (payload.narrator || 'Gối Ôm Audio').trim(),
     category: (payload.category || 'Truyện Ma').trim(),
     mp3_url: primaryMp3,
-    thumb_url: sanitizePublicWebUrl(payload.thumb_url || payload.cover_url) || 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&auto=format&fit=crop&q=80',
+    thumb_url: sanitizePublicWebUrl(payload.thumb_url || payload.cover_url || payload.image_url) || 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&auto=format&fit=crop&q=80',
     description: payload.description || '',
     play_count: Number(payload.play_count) || 0,
     affiliate_link: sanitizePublicWebUrl(payload.affiliate_link, 'https://shopee.vn'),
@@ -653,14 +686,28 @@ export async function addTrack(payload: Partial<Track> & { cover_url?: string })
   return newTrack;
 }
 
-export async function updateTrack(id: string, updates: Partial<Track> & { cover_url?: string }): Promise<Track | null> {
+export async function updateTrack(
+  id: string,
+  updates: Partial<Track> & { cover_url?: string; image_url?: string; audio_url?: string; url?: string }
+): Promise<Track | null> {
+  const currentStory = findTrackInList(dbData.tracks, id);
+  if (!currentStory) return null;
+  const resolvedId = currentStory.id;
+
   let updatedTrack: Track | null = null;
-  const currentStory = dbData.tracks.find(t => t.id === id);
-  const storyTitle = (updates.title || currentStory?.title || '').trim();
+  const storyTitle = (updates.title || currentStory.title || '').trim();
 
   const normalizedUpdates: Partial<Track> = { ...updates };
-  if (updates.cover_url && !updates.thumb_url) {
-    normalizedUpdates.thumb_url = updates.cover_url;
+  delete (normalizedUpdates as any).cover_url;
+  delete (normalizedUpdates as any).image_url;
+  delete (normalizedUpdates as any).audio_url;
+  delete (normalizedUpdates as any).url;
+
+  if ((updates.cover_url || updates.image_url) && !updates.thumb_url) {
+    normalizedUpdates.thumb_url = updates.cover_url || updates.image_url;
+  }
+  if ((updates.audio_url || updates.url) && !updates.mp3_url) {
+    normalizedUpdates.mp3_url = updates.audio_url || updates.url;
   }
   if (normalizedUpdates.thumb_url) {
     normalizedUpdates.thumb_url = sanitizePublicWebUrl(normalizedUpdates.thumb_url);
@@ -671,13 +718,14 @@ export async function updateTrack(id: string, updates: Partial<Track> & { cover_
   if (normalizedUpdates.affiliate_link) {
     normalizedUpdates.affiliate_link = sanitizePublicWebUrl(normalizedUpdates.affiliate_link, 'https://shopee.vn');
   }
-  if (Array.isArray(updates.chapters) && updates.chapters.length > 0) {
-    normalizedUpdates.chapters = updates.chapters.map((ch, idx) => {
-      const chTitle = ch.title || `Phần ${idx + 1}`;
-      const normalizedUrl = normalizeLocalChapterAudioSlug(chTitle, ch.mp3_url || '', storyTitle);
+  if (Array.isArray(updates.chapters)) {
+    normalizedUpdates.chapters = updates.chapters.map((ch: any, idx: number) => {
+      const chTitle = ch.title || ch.chapter_title || ch.name || `Phần ${idx + 1}`;
+      const rawChUrl = ch.mp3_url || ch.audio_url || ch.url || ch.mp3 || '';
+      const normalizedUrl = normalizeLocalChapterAudioSlug(chTitle, rawChUrl, storyTitle);
       const resolvedDuration =
-        ch.duration && ch.duration.trim() && ch.duration !== 'Audio Full' && ch.duration !== 'Chưa gắn'
-          ? ch.duration.trim()
+        ch.duration && String(ch.duration).trim() && ch.duration !== 'Audio Full' && ch.duration !== 'Chưa gắn'
+          ? String(ch.duration).trim()
           : detectAudioDurationSync(normalizedUrl);
       return {
         id: ch.id !== undefined ? ch.id : idx + 1,
@@ -693,14 +741,14 @@ export async function updateTrack(id: string, updates: Partial<Track> & { cover_
 
   if (serverSupabase) {
     try {
-      await serverSupabase.from('tracks').update(normalizedUpdates).eq('id', id);
+      await serverSupabase.from('tracks').update(normalizedUpdates).eq('id', resolvedId);
     } catch (err) {
       console.warn('Supabase update failed on server:', err);
     }
   }
 
   dbData.tracks = dbData.tracks.map(t => {
-    if (t.id === id) {
+    if (t.id === resolvedId) {
       updatedTrack = { ...t, ...normalizedUpdates, id: t.id, updated_at: new Date().toISOString() };
       return updatedTrack;
     }
@@ -715,30 +763,34 @@ export async function updateTrack(id: string, updates: Partial<Track> & { cover_
 
 export async function addChapterToTrack(
   trackId: string,
-  chapterPayload: { id?: string | number; title?: string; mp3_url: string; duration?: string }
+  chapterPayload: { id?: string | number; title?: string; chapter_title?: string; mp3_url?: string; audio_url?: string; url?: string; duration?: string }
 ): Promise<Track | null> {
-  const existing = dbData.tracks.find(t => t.id === trackId);
+  const existing = findTrackInList(dbData.tracks, trackId);
   if (!existing) return null;
 
   const currentChapters = Array.isArray(existing.chapters) ? [...existing.chapters] : [];
   const nextIndex = currentChapters.length + 1;
+  const rawMp3Url = chapterPayload.mp3_url || chapterPayload.audio_url || chapterPayload.url || '';
+  const chTitle = chapterPayload.title || chapterPayload.chapter_title || `Phần ${nextIndex}: Tập mới`;
+  const normalizedUrl = normalizeLocalChapterAudioSlug(chTitle, rawMp3Url, existing.title);
+
   const resolvedDuration =
     chapterPayload.duration &&
-    chapterPayload.duration.trim() &&
+    String(chapterPayload.duration).trim() &&
     chapterPayload.duration !== 'Audio Full' &&
     chapterPayload.duration !== 'Chưa gắn'
-      ? chapterPayload.duration.trim()
-      : detectAudioDurationSync(chapterPayload.mp3_url);
+      ? String(chapterPayload.duration).trim()
+      : detectAudioDurationSync(normalizedUrl);
 
   const newChapter = {
     id: chapterPayload.id !== undefined ? chapterPayload.id : nextIndex,
-    title: chapterPayload.title || `Phần ${nextIndex}: Tập mới`,
+    title: chTitle,
     duration: resolvedDuration,
-    mp3_url: chapterPayload.mp3_url || ''
+    mp3_url: normalizedUrl
   };
 
   const nextChapters = [...currentChapters, newChapter];
-  return updateTrack(trackId, {
+  return updateTrack(existing.id, {
     chapters: nextChapters,
     mp3_url: existing.mp3_url || newChapter.mp3_url
   });
@@ -746,29 +798,41 @@ export async function addChapterToTrack(
 
 export async function deleteChapterFromTrack(
   trackId: string,
-  chapterId: string | number
+  chapterIdOrIndex: string | number
 ): Promise<Track | null> {
-  const existing = dbData.tracks.find(t => t.id === trackId);
+  const existing = findTrackInList(dbData.tracks, trackId);
   if (!existing || !Array.isArray(existing.chapters)) return null;
 
-  const nextChapters = existing.chapters.filter(ch => String(ch.id) !== String(chapterId));
-  return updateTrack(trackId, {
+  let nextChapters = existing.chapters.filter(ch => String(ch.id) !== String(chapterIdOrIndex));
+  // Nếu không khớp theo ch.id mà truyền số thứ tự tập (1-based index), xóa theo vị trí tập
+  if (nextChapters.length === existing.chapters.length) {
+    const idxNum = Number(chapterIdOrIndex);
+    if (!isNaN(idxNum) && idxNum >= 1 && idxNum <= existing.chapters.length) {
+      nextChapters = existing.chapters.filter((_, i) => i !== idxNum - 1);
+    }
+  }
+
+  return updateTrack(existing.id, {
     chapters: nextChapters,
     mp3_url: nextChapters[0]?.mp3_url || existing.mp3_url
   });
 }
 
 export async function deleteTrack(id: string): Promise<boolean> {
+  const existing = findTrackInList(dbData.tracks, id);
+  if (!existing) return false;
+  const resolvedId = existing.id;
+
   if (serverSupabase) {
     try {
-      await serverSupabase.from('tracks').delete().eq('id', id);
+      await serverSupabase.from('tracks').delete().eq('id', resolvedId);
     } catch (err) {
       console.warn('Supabase delete failed on server:', err);
     }
   }
 
   const initialLen = dbData.tracks.length;
-  dbData.tracks = dbData.tracks.filter(t => t.id !== id);
+  dbData.tracks = dbData.tracks.filter(t => t.id !== resolvedId);
   saveDatabase(dbData);
   return dbData.tracks.length < initialLen;
 }

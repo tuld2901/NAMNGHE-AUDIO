@@ -434,82 +434,203 @@ async function startServer() {
     })
   );
 
-  // JSON middleware
-  app.use(express.json({ limit: '25mb' }));
+  // Body parsers: JSON, URL-encoded, and plain-text JSON fallback
+  app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+  app.use('/api', express.text({ type: ['text/plain', 'application/*+json'], limit: '50mb' }), (req, _res, next) => {
+    if (typeof req.body === 'string' && req.body.trim().startsWith('{')) {
+      try {
+        req.body = JSON.parse(req.body.trim());
+      } catch {}
+    } else if (!req.body || typeof req.body !== 'object') {
+      req.body = {};
+    }
+    next();
+  });
 
   // --- AUDIO UPLOAD API (AUTO CONVERT FILENAME TO CHAPTER TITLE SLUG) ---
-  app.post('/api/upload-audio', uploadAudioMiddleware.single('audio'), (req, res) => {
-    try {
-      if (!verifyExternalApiKey(req, res)) return;
-      if (!req.file) {
-        return res.status(400).json({ error: 'Không tìm thấy file audio để tải lên' });
+  app.post('/api/upload-audio', (req, res) => {
+    uploadAudioMiddleware.any()(req, res, (multerErr: any) => {
+      try {
+        if (multerErr) {
+          return res.status(400).json({
+            success: false,
+            error: `Lỗi tải file audio: ${multerErr.message || String(multerErr)}`
+          });
+        }
+        if (!verifyExternalApiKey(req, res)) return;
+
+        const files = (req.files as Express.Multer.File[]) || [];
+        const uploadedFile = req.file || files.find(f => f.fieldname === 'audio' || f.fieldname === 'file' || f.fieldname === 'mp3') || files[0];
+        if (!uploadedFile) {
+          return res.status(400).json({
+            success: false,
+            error: 'Không tìm thấy file audio để tải lên (vui lòng gửi form-data với trường "audio" hoặc "file")'
+          });
+        }
+
+        let fileUrl = `/uploads/audio/${uploadedFile.filename}`;
+        const explicitTitle =
+          (req.query?.title as string) ||
+          (req.query?.chapterTitle as string) ||
+          (req.body?.title as string) ||
+          (req.body?.chapterTitle as string) ||
+          '';
+        const explicitStory =
+          (req.query?.story as string) ||
+          (req.query?.storyTitle as string) ||
+          (req.body?.story as string) ||
+          (req.body?.storyTitle as string) ||
+          '';
+
+        if (explicitTitle.trim()) {
+          fileUrl = normalizeLocalChapterAudioSlug(explicitTitle.trim(), fileUrl, explicitStory.trim());
+        }
+
+        const finalFilename = fileUrl.replace('/uploads/audio/', '');
+        const detectedDuration = detectAudioDurationSync(fileUrl);
+
+        return res.json({
+          success: true,
+          url: fileUrl,
+          mp3_url: fileUrl,
+          audio_url: fileUrl,
+          filename: finalFilename,
+          originalName: uploadedFile.originalname,
+          size: uploadedFile.size,
+          duration: detectedDuration
+        });
+      } catch (err: any) {
+        return res.status(500).json({ success: false, error: err.message });
       }
-
-      let fileUrl = `/uploads/audio/${req.file.filename}`;
-      const explicitTitle =
-        (req.query?.title as string) ||
-        (req.query?.chapterTitle as string) ||
-        (req.body?.title as string) ||
-        (req.body?.chapterTitle as string) ||
-        '';
-      const explicitStory =
-        (req.query?.story as string) ||
-        (req.query?.storyTitle as string) ||
-        (req.body?.story as string) ||
-        (req.body?.storyTitle as string) ||
-        '';
-
-      if (explicitTitle.trim()) {
-        fileUrl = normalizeLocalChapterAudioSlug(explicitTitle.trim(), fileUrl, explicitStory.trim());
-      }
-
-      const finalFilename = fileUrl.replace('/uploads/audio/', '');
-      const detectedDuration = detectAudioDurationSync(fileUrl);
-
-      res.json({
-        success: true,
-        url: fileUrl,
-        filename: finalFilename,
-        originalName: req.file.originalname,
-        size: req.file.size,
-        duration: detectedDuration
-      });
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
-    }
+    });
   });
 
   // --- IMAGE UPLOAD API (LOGO, FAVICON, BANNER, COVER) ---
-  app.post('/api/upload-image', uploadImageMiddleware.single('image'), (req, res) => {
-    try {
-      if (!verifyExternalApiKey(req, res)) return;
-      if (!req.file) {
-        return res.status(400).json({ error: 'Không tìm thấy file ảnh để tải lên' });
+  app.post('/api/upload-image', (req, res) => {
+    uploadImageMiddleware.any()(req, res, (multerErr: any) => {
+      try {
+        if (multerErr) {
+          return res.status(400).json({
+            success: false,
+            error: `Lỗi tải file ảnh: ${multerErr.message || String(multerErr)}`
+          });
+        }
+        if (!verifyExternalApiKey(req, res)) return;
+
+        const files = (req.files as Express.Multer.File[]) || [];
+        const uploadedFile = req.file || files.find(f => f.fieldname === 'image' || f.fieldname === 'file' || f.fieldname === 'thumb' || f.fieldname === 'cover') || files[0];
+        if (!uploadedFile) {
+          return res.status(400).json({
+            success: false,
+            error: 'Không tìm thấy file ảnh để tải lên (vui lòng gửi form-data với trường "image" hoặc "file")'
+          });
+        }
+
+        const fileUrl = `/uploads/images/${uploadedFile.filename}`;
+        return res.json({
+          success: true,
+          url: fileUrl,
+          thumb_url: fileUrl,
+          cover_url: fileUrl,
+          filename: uploadedFile.filename,
+          originalName: uploadedFile.originalname,
+          size: uploadedFile.size
+        });
+      } catch (err: any) {
+        return res.status(500).json({ success: false, error: err.message });
       }
-      const fileUrl = `/uploads/images/${req.file.filename}`;
-      res.json({
-        success: true,
-        url: fileUrl,
-        filename: req.file.filename,
-        originalName: req.file.originalname,
-        size: req.file.size
-      });
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
-    }
+    });
   });
 
   // --- UNIFIED STORY API GATEWAY (1 CỔNG DUY NHẤT ĐỂ ĐĂNG / SỬA / XÓA TRUYỆN) ---
   const handleStoryGateway = async (req: express.Request, res: express.Response) => {
     try {
-      if (!verifyExternalApiKey(req, res)) return;
+      // Nếu payload.data là chuỗi JSON (khi gửi qua form-data), tự động parse
+      let parsedDataObj: any = {};
+      if (typeof req.body?.data === 'string' && req.body.data.trim().startsWith('{')) {
+        try {
+          parsedDataObj = JSON.parse(req.body.data.trim());
+        } catch {}
+      } else if (req.body?.data && typeof req.body.data === 'object') {
+        parsedDataObj = req.body.data;
+      }
 
-      const rawAction = String(req.body?.action || req.query?.action || 'list').toLowerCase().trim();
-      const targetId = String(req.body?.id || req.body?.track_id || req.body?.story_id || req.query?.id || '').trim();
-      const payload = req.body?.data || req.body || {};
+      const mergedBody: any = {
+        ...(req.body || {}),
+        ...parsedDataObj
+      };
+
+      // Nếu gửi kèm chapters dưới dạng chuỗi JSON trong form-data
+      if (typeof mergedBody.chapters === 'string' && mergedBody.chapters.trim().startsWith('[')) {
+        try {
+          mergedBody.chapters = JSON.parse(mergedBody.chapters.trim());
+        } catch {}
+      }
+      if (typeof mergedBody.chapter === 'string' && mergedBody.chapter.trim().startsWith('{')) {
+        try {
+          mergedBody.chapter = JSON.parse(mergedBody.chapter.trim());
+        } catch {}
+      }
+
+      // Nếu người dùng upload kèm file .mp3 trực tiếp vào /api/gateway (multipart/form-data)
+      const files = (req.files as Express.Multer.File[]) || (req.file ? [req.file] : []);
+      const audioFile = files.find(f => f.originalname?.toLowerCase().endsWith('.mp3') || f.fieldname === 'audio' || f.fieldname === 'mp3' || f.fieldname === 'file');
+      if (audioFile) {
+        const uploadedAudioUrl = `/uploads/audio/${audioFile.filename}`;
+        if (!mergedBody.mp3_url && !mergedBody.audio_url) {
+          mergedBody.mp3_url = uploadedAudioUrl;
+        }
+        if (mergedBody.chapter && typeof mergedBody.chapter === 'object' && !mergedBody.chapter.mp3_url) {
+          mergedBody.chapter.mp3_url = uploadedAudioUrl;
+        }
+      }
+
+      req.body = mergedBody;
+
+      // Xác định action tự động nếu không truyền rõ
+      let rawAction = String(
+        mergedBody.action ||
+        req.query?.action ||
+        ''
+      ).toLowerCase().trim();
+
+      if (!rawAction) {
+        if (req.method === 'GET') {
+          rawAction = (req.query?.id || mergedBody.id) ? 'get' : 'list';
+        } else if (req.method === 'DELETE') {
+          rawAction = 'delete';
+        } else if (req.method === 'PUT' || req.method === 'PATCH') {
+          rawAction = 'update';
+        } else if (mergedBody.chapter || mergedBody.chapter_title) {
+          rawAction = 'add_chapter';
+        } else if (mergedBody.title && !mergedBody.id) {
+          rawAction = 'create';
+        } else if (mergedBody.id && Object.keys(mergedBody).length > 1) {
+          rawAction = 'update';
+        } else {
+          rawAction = 'list';
+        }
+      }
+
+      // Chỉ yêu cầu API Key cho các thao tác ghi (create, update, add_chapter, delete_chapter, delete)
+      const isReadOnlyAction = rawAction === 'list' || rawAction === 'get_all' || rawAction === 'get' || rawAction === 'detail';
+      if (!isReadOnlyAction && !verifyExternalApiKey(req, res)) {
+        return;
+      }
+
+      const targetId = String(
+        mergedBody.id ||
+        mergedBody.track_id ||
+        mergedBody.story_id ||
+        mergedBody.slug ||
+        req.query?.id ||
+        req.query?.slug ||
+        ''
+      ).trim();
 
       // 1. LIST ALL STORIES
-      if (rawAction === 'list' || rawAction === 'get_all') {
+      if (rawAction === 'list' || rawAction === 'get_all' || rawAction === 'danh_sach') {
         const tracks = await getTracks();
         return res.json({
           success: true,
@@ -519,14 +640,14 @@ async function startServer() {
         });
       }
 
-      // 2. GET SINGLE STORY BY ID
-      if (rawAction === 'get' || rawAction === 'detail') {
+      // 2. GET SINGLE STORY BY ID OR SLUG
+      if (rawAction === 'get' || rawAction === 'detail' || rawAction === 'chi_tiet') {
         if (!targetId) {
-          return res.status(400).json({ success: false, error: 'Thiếu trường "id" của truyện cần lấy thông tin.' });
+          return res.status(400).json({ success: false, error: 'Thiếu trường "id" (hoặc "slug") của truyện cần lấy thông tin.' });
         }
         const track = await getTrackById(targetId);
         if (!track) {
-          return res.status(404).json({ success: false, error: `Không tìm thấy truyện có id: ${targetId}` });
+          return res.status(404).json({ success: false, error: `Không tìm thấy truyện có id/slug: ${targetId}` });
         }
         return res.json({
           success: true,
@@ -536,17 +657,14 @@ async function startServer() {
       }
 
       // 3. CREATE / POST NEW STORY
-      if (rawAction === 'create' || rawAction === 'post' || rawAction === 'add' || rawAction === 'dang') {
-        if (!payload.title && !req.body?.title) {
+      if (rawAction === 'create' || rawAction === 'post' || rawAction === 'add' || rawAction === 'dang' || rawAction === 'them_truyen') {
+        if (!mergedBody.title) {
           return res.status(400).json({
             success: false,
             error: 'Thiếu trường "title" (Tên truyện). Vui lòng truyền "title" khi đăng truyện mới.'
           });
         }
-        const created = await addTrack({
-          ...req.body,
-          ...payload
-        });
+        const created = await addTrack(mergedBody);
         return res.status(201).json({
           success: true,
           action: 'create',
@@ -556,17 +674,18 @@ async function startServer() {
       }
 
       // 4. UPDATE / EDIT EXISTING STORY
-      if (rawAction === 'update' || rawAction === 'edit' || rawAction === 'put' || rawAction === 'patch' || rawAction === 'sua') {
+      if (rawAction === 'update' || rawAction === 'edit' || rawAction === 'put' || rawAction === 'patch' || rawAction === 'sua' || rawAction === 'cap_nhat') {
         if (!targetId) {
           return res.status(400).json({
             success: false,
             error: 'Thiếu trường "id" của truyện cần chỉnh sửa.'
           });
         }
-        const cleanUpdates = { ...req.body, ...payload };
+        const cleanUpdates = { ...mergedBody };
         delete cleanUpdates.action;
         delete cleanUpdates.api_key;
         delete cleanUpdates.apiKey;
+        delete cleanUpdates.data;
 
         const updated = await updateTrack(targetId, cleanUpdates);
         if (!updated) {
@@ -591,17 +710,32 @@ async function startServer() {
             error: 'Thiếu trường "id" của truyện cần thêm tập mới.'
           });
         }
-        const chapterData = req.body?.chapter || payload?.chapter || {
-          title: req.body?.chapter_title || req.body?.title,
-          mp3_url: req.body?.mp3_url,
-          duration: req.body?.duration
+
+        const rawChapterObj = mergedBody.chapter || (Array.isArray(mergedBody.chapters) ? mergedBody.chapters[0] : null) || {};
+        const resolvedMp3Url =
+          rawChapterObj.mp3_url ||
+          rawChapterObj.audio_url ||
+          rawChapterObj.url ||
+          rawChapterObj.mp3 ||
+          mergedBody.mp3_url ||
+          mergedBody.audio_url ||
+          mergedBody.url ||
+          '';
+
+        const chapterData = {
+          id: rawChapterObj.id ?? mergedBody.chapter_id,
+          title: rawChapterObj.title || rawChapterObj.chapter_title || mergedBody.chapter_title || mergedBody.title,
+          mp3_url: resolvedMp3Url,
+          duration: rawChapterObj.duration || mergedBody.duration
         };
-        if (!chapterData?.mp3_url) {
+
+        if (!chapterData.mp3_url) {
           return res.status(400).json({
             success: false,
-            error: 'Thiếu "mp3_url" cho tập truyện mới.'
+            error: 'Thiếu "mp3_url" (hoặc "audio_url") cho tập truyện mới.'
           });
         }
+
         const updated = await addChapterToTrack(targetId, chapterData);
         if (!updated) {
           return res.status(404).json({
@@ -619,11 +753,19 @@ async function startServer() {
 
       // 6. DELETE CHAPTER FROM STORY
       if (rawAction === 'delete_chapter' || rawAction === 'remove_chapter' || rawAction === 'xoa_tap') {
-        const chapterId = req.body?.chapter_id ?? req.body?.chapterId;
-        if (!targetId || chapterId === undefined) {
+        const chapterId =
+          mergedBody.chapter_id ??
+          mergedBody.chapterId ??
+          mergedBody.chapter_index ??
+          mergedBody.index ??
+          mergedBody.episode ??
+          mergedBody.chapter?.id ??
+          req.query?.chapter_id;
+
+        if (!targetId || chapterId === undefined || chapterId === '') {
           return res.status(400).json({
             success: false,
-            error: 'Thiếu "id" truyện hoặc "chapter_id" cần xóa.'
+            error: 'Thiếu "id" truyện hoặc "chapter_id" (hoặc "chapter_index") cần xóa.'
           });
         }
         const updated = await deleteChapterFromTrack(targetId, chapterId);
@@ -642,7 +784,7 @@ async function startServer() {
       }
 
       // 7. DELETE STORY
-      if (rawAction === 'delete' || rawAction === 'remove' || rawAction === 'xoa') {
+      if (rawAction === 'delete' || rawAction === 'remove' || rawAction === 'xoa' || rawAction === 'xoa_truyen') {
         if (!targetId) {
           return res.status(400).json({
             success: false,
@@ -676,9 +818,22 @@ async function startServer() {
     }
   };
 
-  app.post('/api/gateway', handleStoryGateway);
-  app.post('/api/v1/stories/gateway', handleStoryGateway);
-  app.get('/api/gateway', handleStoryGateway);
+  // Cho phép gọi cổng Gateway bằng cả JSON, x-www-form-urlencoded, multipart/form-data và mọi HTTP method (GET/POST/PUT/PATCH/DELETE)
+  const gatewayMiddleware = (req: express.Request, res: express.Response) => {
+    const contentType = String(req.headers['content-type'] || '').toLowerCase();
+    if (contentType.includes('multipart/form-data')) {
+      uploadAudioMiddleware.any()(req, res, (err: any) => {
+        if (err) {
+          return res.status(400).json({ success: false, error: `Lỗi đọc dữ liệu form-data: ${err.message}` });
+        }
+        handleStoryGateway(req, res);
+      });
+    } else {
+      handleStoryGateway(req, res);
+    }
+  };
+
+  app.all(['/api/gateway', '/api/v1/stories/gateway', '/api/v1/gateway'], gatewayMiddleware);
 
   // --- FAST SINGLE-REQUEST BOOTSTRAP ENDPOINT FOR INITIAL PAGE LOAD ---
   app.get('/api/bootstrap', async (req, res) => {
@@ -1208,6 +1363,24 @@ ${urlsXml}
     } catch (err: any) {
       res.status(500).send(err.message);
     }
+  });
+
+  // Đảm bảo mọi đường dẫn /api/* không khớp hoặc bị lỗi cú pháp JSON đều trả về JSON chuẩn, tuyệt đối không bao giờ trả về trang HTML
+  app.all('/api/*', (req, res) => {
+    res.status(404).json({
+      success: false,
+      error: `Không tìm thấy đường dẫn API: ${req.method} ${req.path}. Cổng API chính thức là POST /api/gateway hoặc /api/tracks.`
+    });
+  });
+
+  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (req.path.startsWith('/api')) {
+      return res.status(err.status || 400).json({
+        success: false,
+        error: err.message || 'Dữ liệu gửi lên cổng API không hợp lệ'
+      });
+    }
+    next(err);
   });
 
   const distPath = path.join(process.cwd(), 'dist');

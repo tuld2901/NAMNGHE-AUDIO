@@ -157,6 +157,14 @@ export const fetchTracks = async (): Promise<Track[]> => {
   return cachedTracks;
 };
 
+const getApiAuthHeaders = (extra?: Record<string, string>): Record<string, string> => {
+  const headers: Record<string, string> = { ...(extra || {}) };
+  if (cachedSettings.apiKey && cachedSettings.apiKey.trim()) {
+    headers['x-api-key'] = cachedSettings.apiKey.trim();
+  }
+  return headers;
+};
+
 /**
  * Create a new track on Server
  */
@@ -183,7 +191,7 @@ export const createTrack = async (newTrack: Partial<Track>): Promise<Track> => {
   try {
     const res = await fetch('/api/tracks', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getApiAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(payload)
     });
     if (res.ok) {
@@ -212,7 +220,7 @@ export const updateTrack = async (id: string, updates: Partial<Track>): Promise<
   try {
     const res = await fetch(`/api/tracks/${encodeURIComponent(id)}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getApiAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(updates)
     });
     if (res.ok) {
@@ -242,7 +250,8 @@ export const updateTrack = async (id: string, updates: Partial<Track>): Promise<
 export const deleteTrack = async (id: string): Promise<boolean> => {
   try {
     const res = await fetch(`/api/tracks/${encodeURIComponent(id)}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: getApiAuthHeaders()
     });
     if (res.ok) {
       cachedTracks = cachedTracks.filter(t => t.id !== id);
@@ -921,6 +930,7 @@ export const uploadAudioToServer = async (
 
   const res = await fetch(`/api/upload-audio${queryString}`, {
     method: 'POST',
+    headers: getApiAuthHeaders(),
     body: formData,
   });
 
@@ -941,6 +951,7 @@ export const uploadImageToServer = async (
 
   const res = await fetch('/api/upload-image', {
     method: 'POST',
+    headers: getApiAuthHeaders(),
     body: formData,
   });
 
