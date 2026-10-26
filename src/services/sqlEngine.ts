@@ -500,12 +500,41 @@ function executeDeleteQuery(
  * Generate full production PostgreSQL / Supabase SQL schema and seed data
  */
 export function generateFullSQLMigration(tracks: Track[]): string {
-  const tracksList = tracks && tracks.length > 0 ? tracks : DEFAULT_TRACKS;
+  const tracksList = Array.isArray(tracks) ? tracks : [];
+
+  const seedSql = tracksList.length > 0
+    ? `-- 7. DỮ LIỆU AUDIO HIỆN TẠI TRONG DATABASE
+INSERT INTO public.tracks (id, title, author, narrator, category, mp3_url, thumb_url, description, play_count, affiliate_link, chapters, is_featured, is_hot)
+VALUES
+${tracksList.map(t => {
+  const safeId = t.id.replace(/'/g, "''");
+  const safeTitle = t.title.replace(/'/g, "''");
+  const safeAuthor = (t.author || 'Phú Bà').replace(/'/g, "''");
+  const safeNarrator = (t.narrator || 'Phú Bà Audio').replace(/'/g, "''");
+  const safeCat = (t.category || 'Truyện Ngắn').replace(/'/g, "''");
+  const safeUrl = (t.mp3_url || '').replace(/'/g, "''");
+  const safeThumb = (t.thumb_url || '').replace(/'/g, "''");
+  const safeDesc = (t.description || '').replace(/'/g, "''");
+  const safePlays = Number(t.play_count) || 0;
+  const safeAff = (t.affiliate_link || 'https://shopee.vn').replace(/'/g, "''");
+  const chaptersJson = JSON.stringify(t.chapters || []).replace(/'/g, "''");
+  const isFeat = Boolean(t.is_featured);
+  const isHot = Boolean(t.is_hot);
+
+  return `('${safeId}', '${safeTitle}', '${safeAuthor}', '${safeNarrator}', '${safeCat}', '${safeUrl}', '${safeThumb}', '${safeDesc}', ${safePlays}, '${safeAff}', '${chaptersJson}'::jsonb, ${isFeat}, ${isHot})`;
+}).join(',\n')}
+ON CONFLICT (id) DO UPDATE SET
+  title = EXCLUDED.title,
+  author = EXCLUDED.author,
+  category = EXCLUDED.category,
+  mp3_url = EXCLUDED.mp3_url,
+  chapters = EXCLUDED.chapters,
+  play_count = EXCLUDED.play_count;`
+    : `-- (Hiện chưa có bản ghi truyện nào trong bảng tracks)`;
 
   return `-- =====================================================================
--- BẢN SCRIPT CSDL SQL CHUẨN HOÀN CHỈNH CHO PHÚ BÀ AUDIO
+-- BẢN SCRIPT CSDL SQL CHUẨN HOÀN CHỈNH CHO GỐI ÔM AUDIO
 -- Tương thích 100%: PostgreSQL, Supabase Cloud SQL, Neon, Google Cloud SQL
--- Ngày tạo: 2026-10-23
 -- =====================================================================
 
 -- 1. TẠO BẢNG TRACKS (DANH SÁCH BÀI AUDIO & TẬP TRUYỆN)
@@ -513,7 +542,7 @@ CREATE TABLE IF NOT EXISTS public.tracks (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
     title TEXT NOT NULL,
     author TEXT DEFAULT 'Đang cập nhật',
-    narrator TEXT DEFAULT 'Phú Bà Audio',
+    narrator TEXT DEFAULT 'Gối Ôm Audio',
     category TEXT DEFAULT 'Truyện Ngắn',
     mp3_url TEXT NOT NULL,
     thumb_url TEXT,
@@ -552,7 +581,7 @@ CREATE TABLE IF NOT EXISTS public.affiliate_links (
 -- 4. BẢNG CẤU HÌNH GIAO DIỆN & MÃ THEO DÕI (SITE SETTINGS)
 CREATE TABLE IF NOT EXISTS public.site_settings (
     id TEXT PRIMARY KEY DEFAULT 'current_settings',
-    site_name TEXT DEFAULT 'Phú Bà Audio',
+    site_name TEXT DEFAULT 'Gối Ôm Audio',
     site_tagline TEXT DEFAULT 'Web Nghe Truyện Audio Online Miễn Phí',
     logo_url TEXT,
     favicon_url TEXT,
@@ -580,7 +609,6 @@ ALTER TABLE public.affiliate_categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.affiliate_links ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.site_settings ENABLE ROW LEVEL SECURITY;
 
--- Cho phép công khai đọc dữ liệu (Public SELECT)
 DROP POLICY IF EXISTS "Public read tracks" ON public.tracks;
 CREATE POLICY "Public read tracks" ON public.tracks FOR SELECT USING (true);
 
@@ -593,37 +621,10 @@ CREATE POLICY "Public read affiliate_links" ON public.affiliate_links FOR SELECT
 DROP POLICY IF EXISTS "Public read site_settings" ON public.site_settings;
 CREATE POLICY "Public read site_settings" ON public.site_settings FOR SELECT USING (true);
 
--- Cho phép Quản trị viên thêm/sửa/xóa
 DROP POLICY IF EXISTS "Admin write tracks" ON public.tracks;
 CREATE POLICY "Admin write tracks" ON public.tracks FOR ALL 
 USING (auth.jwt() ->> 'email' = 'tuld2901@gmail.com' OR auth.role() = 'service_role');
 
--- 7. SEED DỮ LIỆU AUDIO BAN ĐẦU (10 TRUYỆN MẪU CHUẨN)
-INSERT INTO public.tracks (id, title, author, narrator, category, mp3_url, thumb_url, description, play_count, affiliate_link, chapters, is_featured, is_hot)
-VALUES
-${tracksList.map(t => {
-  const safeId = t.id.replace(/'/g, "''");
-  const safeTitle = t.title.replace(/'/g, "''");
-  const safeAuthor = (t.author || 'Phú Bà').replace(/'/g, "''");
-  const safeNarrator = (t.narrator || 'Phú Bà Audio').replace(/'/g, "''");
-  const safeCat = (t.category || 'Truyện Ngắn').replace(/'/g, "''");
-  const safeUrl = (t.mp3_url || '').replace(/'/g, "''");
-  const safeThumb = (t.thumb_url || '').replace(/'/g, "''");
-  const safeDesc = (t.description || '').replace(/'/g, "''");
-  const safePlays = Number(t.play_count) || 0;
-  const safeAff = (t.affiliate_link || 'https://shopee.vn').replace(/'/g, "''");
-  const chaptersJson = JSON.stringify(t.chapters || []).replace(/'/g, "''");
-  const isFeat = Boolean(t.is_featured);
-  const isHot = Boolean(t.is_hot);
-
-  return `('${safeId}', '${safeTitle}', '${safeAuthor}', '${safeNarrator}', '${safeCat}', '${safeUrl}', '${safeThumb}', '${safeDesc}', ${safePlays}, '${safeAff}', '${chaptersJson}'::jsonb, ${isFeat}, ${isHot})`;
-}).join(',\n')}
-ON CONFLICT (id) DO UPDATE SET
-  title = EXCLUDED.title,
-  author = EXCLUDED.author,
-  category = EXCLUDED.category,
-  mp3_url = EXCLUDED.mp3_url,
-  chapters = EXCLUDED.chapters,
-  play_count = EXCLUDED.play_count;
+${seedSql}
 `;
 }

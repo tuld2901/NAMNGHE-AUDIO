@@ -67,9 +67,9 @@ const ssrBootstrap =
   typeof window !== 'undefined' ? (window as any).__INITIAL_BOOTSTRAP__ : null;
 
 let cachedTracks: Track[] =
-  ssrBootstrap && Array.isArray(ssrBootstrap.tracks) && ssrBootstrap.tracks.length > 0
+  ssrBootstrap && Array.isArray(ssrBootstrap.tracks)
     ? ssrBootstrap.tracks
-    : [...DEFAULT_TRACKS];
+    : [];
 let cachedCategories: AffiliateCategory[] = [...DEFAULT_AFFILIATE_CATEGORIES];
 let cachedLinks: AffiliateItem[] = [...DEFAULT_AFFILIATE_LINKS];
 let cachedSettings: SiteSettings =
@@ -98,7 +98,7 @@ export const fetchBootstrapData = async (): Promise<{
   siteSettings: SiteSettings;
 }> => {
   // If SSR already injected __INITIAL_BOOTSTRAP__ into index.html, return immediately in 0ms!
-  if (ssrBootstrap && Array.isArray(ssrBootstrap.tracks) && ssrBootstrap.tracks.length > 0) {
+  if (ssrBootstrap && Array.isArray(ssrBootstrap.tracks)) {
     return {
       tracks: cachedTracks,
       siteSettings: cachedSettings,
@@ -109,13 +109,13 @@ export const fetchBootstrapData = async (): Promise<{
     const res = await fetch('/api/bootstrap');
     if (res.ok) {
       const data = await res.json();
-      if (Array.isArray(data.tracks) && data.tracks.length > 0) {
+      if (Array.isArray(data.tracks)) {
         cachedTracks = data.tracks;
       }
-      if (Array.isArray(data.categories) && data.categories.length > 0) {
+      if (Array.isArray(data.categories)) {
         cachedCategories = data.categories;
       }
-      if (Array.isArray(data.links) && data.links.length > 0) {
+      if (Array.isArray(data.links)) {
         cachedLinks = data.links;
       }
       if (data.siteSettings) {
@@ -146,7 +146,7 @@ export const fetchTracks = async (): Promise<Track[]> => {
     const res = await fetch('/api/tracks');
     if (res.ok) {
       const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
+      if (Array.isArray(data)) {
         cachedTracks = data;
         return data;
       }
@@ -286,18 +286,7 @@ export const incrementPlayCount = async (trackId: string): Promise<void> => {
  * Reset default tracks on Server
  */
 export const resetDefaultTracks = async (): Promise<Track[]> => {
-  try {
-    const res = await fetch('/api/tracks/reset', { method: 'POST' });
-    if (res.ok) {
-      const data = await res.json();
-      cachedTracks = data;
-      return data;
-    }
-  } catch (err) {
-    console.error('Error resetting tracks on server:', err);
-  }
-  cachedTracks = [...DEFAULT_TRACKS];
-  return cachedTracks;
+  return fetchTracks();
 };
 
 // ===========================================================================
@@ -1145,13 +1134,20 @@ export interface BackupStatusResponse {
     audioPath: string;
     imagesPath: string;
     audioFilesCount: number;
+    usedAudioFilesCount?: number;
+    orphanAudioFilesCount?: number;
+    orphanAudioSizeBytes?: number;
     imageFilesCount: number;
+    orphanImageFilesCount?: number;
+    orphanImageSizeBytes?: number;
     totalSizeBytes: number;
     audioFiles: Array<{
       filename: string;
       url: string;
       sizeBytes: number;
       updatedAt: string;
+      isUsedInDb?: boolean;
+      usedBy?: string[];
     }>;
   };
   snapshots: Array<{
@@ -1264,6 +1260,64 @@ export const normalizeAllAudioSlugsOnServer = async (): Promise<{
     return data;
   } catch (err: any) {
     return { success: false, updatedChaptersCount: 0, message: err.message };
+  }
+};
+
+export const cleanupOrphanedFilesOnServer = async (options?: {
+  includeImages?: boolean;
+  targetFilenames?: string[];
+}): Promise<{
+  success: boolean;
+  deletedCount: number;
+  deletedAudioFiles: string[];
+  deletedImageFiles: string[];
+  freedBytes: number;
+  message: string;
+  info?: BackupStatusResponse;
+}> => {
+  try {
+    const res = await fetch('/api/backup/cleanup-orphans', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getApiAuthHeaders()
+      },
+      body: JSON.stringify(options || {})
+    });
+    return await res.json();
+  } catch (err: any) {
+    return {
+      success: false,
+      deletedCount: 0,
+      deletedAudioFiles: [],
+      deletedImageFiles: [],
+      freedBytes: 0,
+      message: err.message || 'Lỗi khi dọn dẹp file rác trên Server'
+    };
+  }
+};
+
+export const deleteSingleAudioFileOnServer = async (
+  filename: string
+): Promise<{
+  success: boolean;
+  deletedFile?: string;
+  freedBytes: number;
+  message: string;
+  info?: BackupStatusResponse;
+}> => {
+  try {
+    const res = await fetch(`/api/backup/audio-file/${encodeURIComponent(filename)}`, {
+      method: 'DELETE',
+      headers: getApiAuthHeaders()
+    });
+    return await res.json();
+  } catch (err: any) {
+    return {
+      success: false,
+      freedBytes: 0,
+      message: err.message || 'Lỗi khi xóa file audio trên Server'
+    };
   }
 };
 

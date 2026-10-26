@@ -175,6 +175,21 @@ export function normalizeLocalChapterAudioSlug(chapterTitle: string, mp3Url: str
 // In-memory cache of server DB
 let dbData: ServerDBData;
 
+function isLegacyDemoTrack(track: any): boolean {
+  if (!track || typeof track !== 'object') return false;
+  const topMp3 = String(track.mp3_url || '');
+  if (topMp3.includes('demo-audio-1.mp3') || topMp3.includes('demo-audio-2.mp3')) {
+    return true;
+  }
+  if (Array.isArray(track.chapters)) {
+    return track.chapters.some((ch: any) => {
+      const chMp3 = String(ch?.mp3_url || '');
+      return chMp3.includes('demo-audio-1.mp3') || chMp3.includes('demo-audio-2.mp3');
+    });
+  }
+  return false;
+}
+
 function loadDatabase(): ServerDBData {
   try {
     if (fs.existsSync(DB_FILE)) {
@@ -185,10 +200,14 @@ function loadDatabase(): ServerDBData {
         ? parsed.adminAccounts
         : DEFAULT_ADMIN_ACCOUNTS.map(acc => ({ ...acc }));
 
+      const rawTracks: Track[] = Array.isArray(parsed.tracks) ? parsed.tracks : [];
+      const cleanedTracks = rawTracks.filter(t => !isLegacyDemoTrack(t));
+      const hadDemoTracks = cleanedTracks.length !== rawTracks.length;
+
       const loadedData: ServerDBData = {
-        tracks: Array.isArray(parsed.tracks) && parsed.tracks.length > 0 ? parsed.tracks : DEFAULT_TRACKS,
-        affiliateCategories: Array.isArray(parsed.affiliateCategories) && parsed.affiliateCategories.length > 0 ? parsed.affiliateCategories : DEFAULT_AFFILIATE_CATEGORIES,
-        affiliateLinks: Array.isArray(parsed.affiliateLinks) && parsed.affiliateLinks.length > 0 ? parsed.affiliateLinks : DEFAULT_AFFILIATE_LINKS,
+        tracks: cleanedTracks,
+        affiliateCategories: Array.isArray(parsed.affiliateCategories) ? parsed.affiliateCategories : DEFAULT_AFFILIATE_CATEGORIES,
+        affiliateLinks: Array.isArray(parsed.affiliateLinks) ? parsed.affiliateLinks : DEFAULT_AFFILIATE_LINKS,
         siteSettings: parsed.siteSettings ? { ...DEFAULT_SITE_SETTINGS, ...parsed.siteSettings } : DEFAULT_SITE_SETTINGS,
         adminAccounts: loadedAdminAccounts.length > 0 ? loadedAdminAccounts : DEFAULT_ADMIN_ACCOUNTS.map(acc => ({ ...acc })),
         supabaseConfig: parsed.supabaseConfig || {
@@ -198,7 +217,7 @@ function loadDatabase(): ServerDBData {
         }
       };
 
-      if (!hasAdminAccountsArray) {
+      if (!hasAdminAccountsArray || hadDemoTracks) {
         saveDatabase(loadedData);
       }
       return loadedData;
@@ -208,7 +227,7 @@ function loadDatabase(): ServerDBData {
   }
 
   const initial: ServerDBData = {
-    tracks: DEFAULT_TRACKS,
+    tracks: [],
     affiliateCategories: DEFAULT_AFFILIATE_CATEGORIES,
     affiliateLinks: DEFAULT_AFFILIATE_LINKS,
     siteSettings: DEFAULT_SITE_SETTINGS,
@@ -686,6 +705,146 @@ export async function addTrack(payload: Partial<Track> & { cover_url?: string; i
   return newTrack;
 }
 
+export function extractLocalAudioFilename(rawUrl?: string | null): string | null {
+  if (!rawUrl || typeof rawUrl !== 'string') return null;
+  const cleaned = sanitizePublicWebUrl(rawUrl);
+  if (cleaned.includes('/uploads/audio/')) {
+    const part = cleaned.split('/uploads/audio/')[1]?.split('?')[0]?.split('#')[0] || '';
+    try {
+      const decoded = path.basename(decodeURIComponent(part).trim());
+      return decoded || null;
+    } catch {
+      return path.basename(part.trim()) || null;
+    }
+  }
+  return null;
+}
+
+export function extractLocalImageFilename(rawUrl?: string | null): string | null {
+  if (!rawUrl || typeof rawUrl !== 'string') return null;
+  const cleaned = sanitizePublicWebUrl(rawUrl);
+  if (cleaned.includes('/uploads/images/')) {
+    const part = cleaned.split('/uploads/images/')[1]?.split('?')[0]?.split('#')[0] || '';
+    try {
+      const decoded = path.basename(decodeURIComponent(part).trim());
+      return decoded || null;
+    } catch {
+      return path.basename(part.trim()) || null;
+    }
+  }
+  return null;
+}
+
+export function getActiveAudioUsageMap(tracksList: Track[] = dbData.tracks): Map<string, string[]> {
+  const usageMap = new Map<string, string[]>();
+  const addRef = (filename: string | null, label: string) => {
+    if (!filename) return;
+    const existing = usageMap.get(filename) || [];
+    if (!existing.includes(label)) {
+      existing.push(label);
+      usageMap.set(filename, existing);
+    }
+  };
+
+  for (const track of tracksList) {
+    const topFile = extractLocalAudioFilename(track.mp3_url);
+    if (topFile) {
+      addRef(topFile, track.title);
+    }
+    if (Array.isArray(track.chapters)) {
+      for (const ch of track.chapters) {
+        const chFile = extractLocalAudioFilename(ch.mp3_url);
+        if (chFile) {
+          addRef(chFile, `${track.title} (${ch.title || 'Tập'})`);
+        }
+      }
+    }
+  }
+  return usageMap;
+}
+
+export function getActiveImageUsageSet(): Set<string> {
+  const activeImages = new Set<string>();
+  const addImg = (url?: string | null) => {
+    const fn = extractLocalImageFilename(url);
+    if (fn) activeImages.add(fn);
+  };
+
+  for (const track of dbData.tracks) {
+    addImg(track.thumb_url);
+  }
+  if (dbData.siteSettings) {
+    addImg(dbData.siteSettings.logoUrl);
+    addImg(dbData.siteSettings.faviconUrl);
+    addImg(dbData.siteSettings.heroBannerImage);
+  }
+  if (Array.isArray(dbData.affiliateLinks)) {
+    for (const link of dbData.affiliateLinks) {
+      addImg(link.imageUrl);
+    }
+  }
+  return activeImages;
+}
+
+function collectTrackLocalFiles(track: Track): { audioFiles: string[]; imageFiles: string[] } {
+  const audioSet = new Set<string>();
+  const imageSet = new Set<string>();
+
+  const topAudio = extractLocalAudioFilename(track.mp3_url);
+  if (topAudio) audioSet.add(topAudio);
+
+  if (Array.isArray(track.chapters)) {
+    for (const ch of track.chapters) {
+      const chAudio = extractLocalAudioFilename(ch.mp3_url);
+      if (chAudio) audioSet.add(chAudio);
+    }
+  }
+
+  const thumbImg = extractLocalImageFilename(track.thumb_url);
+  if (thumbImg) imageSet.add(thumbImg);
+
+  return {
+    audioFiles: Array.from(audioSet),
+    imageFiles: Array.from(imageSet)
+  };
+}
+
+function removeUnreferencedTrackFiles(candidateAudioFiles: string[], candidateImageFiles: string[] = []): string[] {
+  const deletedFiles: string[] = [];
+  if (candidateAudioFiles.length > 0) {
+    const activeAudioMap = getActiveAudioUsageMap(dbData.tracks);
+    for (const filename of candidateAudioFiles) {
+      if (!filename || activeAudioMap.has(filename)) continue;
+      const fullPath = path.join(UPLOAD_AUDIO_DIR, path.basename(filename));
+      try {
+        if (fs.existsSync(fullPath) && fs.statSync(fullPath).isFile()) {
+          fs.unlinkSync(fullPath);
+          deletedFiles.push(filename);
+        }
+      } catch (err) {
+        console.warn(`[Cleanup] Không thể xóa file audio ${filename}:`, err);
+      }
+    }
+  }
+
+  if (candidateImageFiles.length > 0) {
+    const activeImageSet = getActiveImageUsageSet();
+    for (const filename of candidateImageFiles) {
+      if (!filename || activeImageSet.has(filename)) continue;
+      const fullPath = path.join(UPLOAD_IMAGE_DIR, path.basename(filename));
+      try {
+        if (fs.existsSync(fullPath) && fs.statSync(fullPath).isFile()) {
+          fs.unlinkSync(fullPath);
+        }
+      } catch (err) {
+        console.warn(`[Cleanup] Không thể xóa file ảnh ${filename}:`, err);
+      }
+    }
+  }
+
+  return deletedFiles;
+}
+
 export async function updateTrack(
   id: string,
   updates: Partial<Track> & { cover_url?: string; image_url?: string; audio_url?: string; url?: string }
@@ -693,6 +852,7 @@ export async function updateTrack(
   const currentStory = findTrackInList(dbData.tracks, id);
   if (!currentStory) return null;
   const resolvedId = currentStory.id;
+  const previousFiles = collectTrackLocalFiles(currentStory);
 
   let updatedTrack: Track | null = null;
   const storyTitle = (updates.title || currentStory.title || '').trim();
@@ -757,6 +917,8 @@ export async function updateTrack(
 
   if (updatedTrack) {
     saveDatabase(dbData);
+    // Tự động xóa file MP3 / ảnh cũ của truyện nếu đã bị thay thế hoặc xóa tập và không còn truyện nào dùng
+    removeUnreferencedTrackFiles(previousFiles.audioFiles, previousFiles.imageFiles);
   }
   return updatedTrack;
 }
@@ -822,6 +984,7 @@ export async function deleteTrack(id: string): Promise<boolean> {
   const existing = findTrackInList(dbData.tracks, id);
   if (!existing) return false;
   const resolvedId = existing.id;
+  const previousFiles = collectTrackLocalFiles(existing);
 
   if (serverSupabase) {
     try {
@@ -833,8 +996,13 @@ export async function deleteTrack(id: string): Promise<boolean> {
 
   const initialLen = dbData.tracks.length;
   dbData.tracks = dbData.tracks.filter(t => t.id !== resolvedId);
-  saveDatabase(dbData);
-  return dbData.tracks.length < initialLen;
+  const deleted = dbData.tracks.length < initialLen;
+  if (deleted) {
+    saveDatabase(dbData);
+    // Tự động xóa luôn các file MP3 và ảnh bìa trong uploads/audio/ & uploads/images/ của truyện vừa xóa (nếu không còn truyện nào khác dùng)
+    removeUnreferencedTrackFiles(previousFiles.audioFiles, previousFiles.imageFiles);
+  }
+  return deleted;
 }
 
 export async function incrementTrackPlay(id: string): Promise<void> {
@@ -852,8 +1020,6 @@ export async function incrementTrackPlay(id: string): Promise<void> {
 }
 
 export async function resetTracks(): Promise<Track[]> {
-  dbData.tracks = DEFAULT_TRACKS;
-  saveDatabase(dbData);
   return dbData.tracks;
 }
 
@@ -1411,7 +1577,7 @@ export function deleteAdminAccount(id: string): {
   };
 }
 
-// --- BACKUP, RESTORE & SLUG FILE NORMALIZATION API ---
+// --- BACKUP, RESTORE, ORPHAN CLEANUP & SLUG FILE NORMALIZATION API ---
 export interface BackupStatusInfo {
   dbFile: {
     path: string;
@@ -1429,13 +1595,20 @@ export interface BackupStatusInfo {
     audioPath: string;
     imagesPath: string;
     audioFilesCount: number;
+    usedAudioFilesCount: number;
+    orphanAudioFilesCount: number;
+    orphanAudioSizeBytes: number;
     imageFilesCount: number;
+    orphanImageFilesCount: number;
+    orphanImageSizeBytes: number;
     totalSizeBytes: number;
     audioFiles: Array<{
       filename: string;
       url: string;
       sizeBytes: number;
       updatedAt: string;
+      isUsedInDb: boolean;
+      usedBy: string[];
     }>;
   };
   snapshots: Array<{
@@ -1468,9 +1641,22 @@ export function getBackupStatusInfo(): BackupStatusInfo {
     0
   );
 
-  // 2. Inspect uploads/audio & uploads/images
-  const audioFiles: Array<{ filename: string; url: string; sizeBytes: number; updatedAt: string }> = [];
+  // 2. Inspect uploads/audio & uploads/images against active DB references
+  const activeAudioMap = getActiveAudioUsageMap(dbData.tracks);
+  const activeImageSet = getActiveImageUsageSet();
+
+  const audioFiles: Array<{
+    filename: string;
+    url: string;
+    sizeBytes: number;
+    updatedAt: string;
+    isUsedInDb: boolean;
+    usedBy: string[];
+  }> = [];
   let totalUploadBytes = 0;
+  let usedAudioFilesCount = 0;
+  let orphanAudioFilesCount = 0;
+  let orphanAudioSizeBytes = 0;
 
   if (fs.existsSync(UPLOAD_AUDIO_DIR)) {
     try {
@@ -1479,11 +1665,21 @@ export function getBackupStatusInfo(): BackupStatusInfo {
         const st = fs.statSync(full);
         if (st.isFile()) {
           totalUploadBytes += st.size;
+          const usedBy = activeAudioMap.get(name) || [];
+          const isUsedInDb = usedBy.length > 0;
+          if (isUsedInDb) {
+            usedAudioFilesCount++;
+          } else {
+            orphanAudioFilesCount++;
+            orphanAudioSizeBytes += st.size;
+          }
           audioFiles.push({
             filename: name,
             url: `/uploads/audio/${name}`,
             sizeBytes: st.size,
-            updatedAt: st.mtime.toISOString()
+            updatedAt: st.mtime.toISOString(),
+            isUsedInDb,
+            usedBy
           });
         }
       }
@@ -1492,9 +1688,17 @@ export function getBackupStatusInfo(): BackupStatusInfo {
     }
   }
 
-  audioFiles.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  // Sort: Orphaned files first so admin sees them immediately, then by updatedAt descending
+  audioFiles.sort((a, b) => {
+    if (a.isUsedInDb !== b.isUsedInDb) {
+      return a.isUsedInDb ? 1 : -1;
+    }
+    return b.updatedAt.localeCompare(a.updatedAt);
+  });
 
   let imageFilesCount = 0;
+  let orphanImageFilesCount = 0;
+  let orphanImageSizeBytes = 0;
   if (fs.existsSync(UPLOAD_IMAGE_DIR)) {
     try {
       for (const name of fs.readdirSync(UPLOAD_IMAGE_DIR)) {
@@ -1503,6 +1707,10 @@ export function getBackupStatusInfo(): BackupStatusInfo {
         if (st.isFile()) {
           imageFilesCount++;
           totalUploadBytes += st.size;
+          if (!activeImageSet.has(name)) {
+            orphanImageFilesCount++;
+            orphanImageSizeBytes += st.size;
+          }
         }
       }
     } catch {
@@ -1573,12 +1781,165 @@ export function getBackupStatusInfo(): BackupStatusInfo {
       audioPath: 'uploads/audio/',
       imagesPath: 'uploads/images/',
       audioFilesCount: audioFiles.length,
+      usedAudioFilesCount,
+      orphanAudioFilesCount,
+      orphanAudioSizeBytes,
       imageFilesCount,
+      orphanImageFilesCount,
+      orphanImageSizeBytes,
       totalSizeBytes: totalUploadBytes,
       audioFiles
     },
     snapshots
   };
+}
+
+/**
+ * Quét dựa trên data/db.json và dọn dẹp toàn bộ file âm thanh / hình ảnh rác (đã xóa truyện/tập nhưng file vẫn còn trong uploads/audio/ hoặc uploads/images/)
+ */
+export function cleanupOrphanedUploadFiles(options?: {
+  includeImages?: boolean;
+  targetFilenames?: string[];
+}): {
+  success: boolean;
+  deletedCount: number;
+  deletedAudioFiles: string[];
+  deletedImageFiles: string[];
+  freedBytes: number;
+  message: string;
+  info: BackupStatusInfo;
+} {
+  const activeAudioMap = getActiveAudioUsageMap(dbData.tracks);
+  const activeImageSet = getActiveImageUsageSet();
+  const includeImages = options?.includeImages !== undefined ? Boolean(options.includeImages) : true;
+  const targetSet =
+    Array.isArray(options?.targetFilenames) && options!.targetFilenames.length > 0
+      ? new Set(options!.targetFilenames.map(f => path.basename(String(f).trim())))
+      : null;
+
+  const deletedAudioFiles: string[] = [];
+  const deletedImageFiles: string[] = [];
+  let freedBytes = 0;
+
+  if (fs.existsSync(UPLOAD_AUDIO_DIR)) {
+    try {
+      for (const name of fs.readdirSync(UPLOAD_AUDIO_DIR)) {
+        const safeName = path.basename(name);
+        if (targetSet && !targetSet.has(safeName)) continue;
+
+        const isUsed = activeAudioMap.has(safeName);
+        // Nếu truyền targetFilenames cụ thể hoặc file không còn nằm trong db.json -> xóa khỏi ổ đĩa
+        if (!isUsed || targetSet) {
+          const fullPath = path.join(UPLOAD_AUDIO_DIR, safeName);
+          try {
+            const st = fs.statSync(fullPath);
+            if (st.isFile()) {
+              fs.unlinkSync(fullPath);
+              deletedAudioFiles.push(safeName);
+              freedBytes += st.size;
+            }
+          } catch (err) {
+            console.warn(`[Cleanup] Lỗi khi xóa file audio rác ${safeName}:`, err);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[Cleanup] Lỗi khi quét thư mục uploads/audio:', err);
+    }
+  }
+
+  if (includeImages && !targetSet && fs.existsSync(UPLOAD_IMAGE_DIR)) {
+    try {
+      for (const name of fs.readdirSync(UPLOAD_IMAGE_DIR)) {
+        const safeName = path.basename(name);
+        if (!activeImageSet.has(safeName)) {
+          const fullPath = path.join(UPLOAD_IMAGE_DIR, safeName);
+          try {
+            const st = fs.statSync(fullPath);
+            if (st.isFile()) {
+              fs.unlinkSync(fullPath);
+              deletedImageFiles.push(safeName);
+              freedBytes += st.size;
+            }
+          } catch (err) {
+            console.warn(`[Cleanup] Lỗi khi xóa file ảnh rác ${safeName}:`, err);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[Cleanup] Lỗi khi quét thư mục uploads/images:', err);
+    }
+  }
+
+  const deletedCount = deletedAudioFiles.length + deletedImageFiles.length;
+  const freedMb = (freedBytes / (1024 * 1024)).toFixed(2);
+  const message =
+    deletedCount > 0
+      ? `Đã dọn sạch ${deletedAudioFiles.length} file MP3 rác${
+          deletedImageFiles.length > 0 ? ` và ${deletedImageFiles.length} file ảnh rác` : ''
+        } không còn trong Database (Giải phóng ${freedMb} MB ổ cứng)!`
+      : 'Thư mục uploads/audio/ hoàn toàn sạch sẽ! Không có file thừa nào nằm ngoài Database.';
+
+  return {
+    success: true,
+    deletedCount,
+    deletedAudioFiles,
+    deletedImageFiles,
+    freedBytes,
+    message,
+    info: getBackupStatusInfo()
+  };
+}
+
+/**
+ * Xóa trực tiếp 1 file vật lý trong uploads/audio/
+ */
+export function deleteSingleUploadAudioFile(filename: string): {
+  success: boolean;
+  deletedFile?: string;
+  freedBytes: number;
+  message: string;
+  info: BackupStatusInfo;
+} {
+  const safeName = path.basename(String(filename || '').trim());
+  if (!safeName) {
+    return {
+      success: false,
+      freedBytes: 0,
+      message: 'Tên file cần xóa không hợp lệ.',
+      info: getBackupStatusInfo()
+    };
+  }
+
+  const fullPath = path.join(UPLOAD_AUDIO_DIR, safeName);
+  if (!fs.existsSync(fullPath)) {
+    return {
+      success: false,
+      freedBytes: 0,
+      message: `Không tìm thấy file "${safeName}" trong thư mục uploads/audio/.`,
+      info: getBackupStatusInfo()
+    };
+  }
+
+  try {
+    const st = fs.statSync(fullPath);
+    const size = st.size;
+    fs.unlinkSync(fullPath);
+    return {
+      success: true,
+      deletedFile: safeName,
+      freedBytes: size,
+      message: `Đã xóa vĩnh viễn file "${safeName}" khỏi thư mục uploads/audio/!`,
+      info: getBackupStatusInfo()
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      freedBytes: 0,
+      message: `Không thể xóa file "${safeName}": ${err.message}`,
+      info: getBackupStatusInfo()
+    };
+  }
 }
 
 export function getRawDatabaseData(): ServerDBData {
@@ -1732,7 +2093,7 @@ export function normalizeAllAudioFilesToSlug(): {
     const nextChapters = chapters.map((ch, idx) => {
       const chTitle = ch.title || `Phần ${idx + 1}`;
       if (ch.mp3_url && ch.mp3_url.startsWith('/uploads/audio/')) {
-        const normalizedUrl = normalizeLocalChapterAudioSlug(chTitle, ch.mp3_url);
+        const normalizedUrl = normalizeLocalChapterAudioSlug(chTitle, ch.mp3_url, track.title);
         if (normalizedUrl !== ch.mp3_url) {
           updatedCount++;
           return { ...ch, mp3_url: normalizedUrl };
@@ -1744,7 +2105,7 @@ export function normalizeAllAudioFilesToSlug(): {
     const nextPrimaryMp3 =
       nextChapters[0]?.mp3_url ||
       (track.mp3_url && track.mp3_url.startsWith('/uploads/audio/')
-        ? normalizeLocalChapterAudioSlug(nextChapters[0]?.title || track.title, track.mp3_url)
+        ? normalizeLocalChapterAudioSlug(nextChapters[0]?.title || track.title, track.mp3_url, track.title)
         : track.mp3_url);
 
     return {

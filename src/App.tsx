@@ -342,7 +342,7 @@ export default function App() {
 
   useEffect(() => {
     fetchBootstrapData().then(({ tracks: loadedTracks, siteSettings: loadedSettings }) => {
-      if (loadedTracks && loadedTracks.length > 0) {
+      if (Array.isArray(loadedTracks)) {
         setTracks(loadedTracks);
       }
       if (loadedSettings) {
