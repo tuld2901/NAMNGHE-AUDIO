@@ -50,205 +50,439 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
 
-    <!-- In-App Browser Blocker (Chặn trình duyệt mạng xã hội, yêu cầu mở Chrome / Safari) -->
+    <!-- In-App Browser Blocker (Chia 2 trường hợp: iOS mở Safari như ảnh, Android mở Chrome) -->
     <div id="browser-block" style="display:none">
       <h2>Vui lòng mở bằng trình duyệt ngoài</h2>
-      <p>Website chỉ hỗ trợ Chrome trên Android và Safari trên iPhone.</p>
-      <p>Hãy bấm menu ⋯ trong ứng dụng và chọn Mở bằng trình duyệt.</p>
+      <p>Trên iPhone/iPad vui lòng mở bằng Safari. Trên Android vui lòng mở bằng Chrome.</p>
+      <p>Hãy bấm menu ⋯ trong ứng dụng và chọn Mở bằng trình duyệt ngoài.</p>
     </div>
+
+    <style>
+      #browser-blocker-overlay {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(15, 23, 42, 0.75);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        z-index: 2147483647;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+
+      /* 1. GIAO DIỆN CHUẨN DÀNH CHO IOS (CHÍNH XÁC NHƯ ẢNH CHỤP TRONG ZALO) */
+      .ios-cab-card {
+        background: #ffffff;
+        border-radius: 26px;
+        padding: 28px 22px;
+        max-width: 350px;
+        width: 100%;
+        text-align: center;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45);
+        box-sizing: border-box;
+        color: #1e293b;
+      }
+      .ios-cab-title {
+        color: #111827;
+        font-size: 19px;
+        font-weight: 700;
+        margin: 0 0 10px;
+        line-height: 1.35;
+      }
+      .ios-cab-desc {
+        color: #4b5563;
+        font-size: 13.5px;
+        line-height: 1.55;
+        margin: 0 0 16px;
+      }
+      .ios-cab-desc b {
+        color: #1f2937;
+      }
+      .ios-cab-box {
+        border: 1px solid #f97316;
+        background: #fffaf5;
+        border-radius: 14px;
+        padding: 13px 16px;
+        text-align: left;
+        margin-bottom: 16px;
+      }
+      .ios-cab-box-title {
+        color: #c2410c;
+        font-size: 14px;
+        font-weight: 700;
+        margin-bottom: 6px;
+      }
+      .ios-cab-box-step {
+        color: #431407;
+        font-size: 13.5px;
+        line-height: 1.5;
+        margin-bottom: 4px;
+        font-weight: 500;
+      }
+      .ios-cab-divider {
+        color: #94a3b8;
+        font-size: 12px;
+        margin: 12px 0 14px;
+      }
+      .ios-cab-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #1e1e24;
+        text-align: left;
+        margin-bottom: 6px;
+        display: block;
+      }
+      .ios-cab-input {
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 11px 12px;
+        font-size: 12px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        color: #334155;
+        width: 100%;
+        box-sizing: border-box;
+        margin-bottom: 10px;
+        text-align: center;
+        outline: none;
+      }
+      .ios-cab-copy-btn {
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 13px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #1e1e24;
+        width: 100%;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-sizing: border-box;
+      }
+      .ios-cab-copy-btn:active {
+        background: #e2e8f0;
+      }
+      .ios-cab-tip {
+        font-size: 12.5px;
+        color: #64748b;
+        margin: 12px 0 0;
+        line-height: 1.4;
+      }
+
+      /* 2. GIAO DIỆN CHUẨN DÀNH CHO ANDROID (MỞ BẰNG CHROME QUA INTENT) */
+      .bb-card {
+        background: #18181b;
+        border: 1px solid #27272a;
+        border-radius: 20px;
+        padding: 28px 22px;
+        max-width: 400px;
+        width: 100%;
+        text-align: center;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.85);
+        color: #f4f4f5;
+      }
+      .bb-icon { font-size: 38px; margin-bottom: 12px; }
+      .bb-title { font-size: 19px; font-weight: 700; color: #ffffff; margin-bottom: 8px; line-height: 1.4; }
+      .bb-desc { color: #a1a1aa; font-size: 13px; line-height: 1.6; margin-bottom: 14px; }
+      .bb-guide {
+        background: #27272a;
+        border: 1px dashed #3f3f46;
+        border-radius: 12px;
+        padding: 12px 14px;
+        color: #fbbf24;
+        font-size: 13px;
+        font-weight: 600;
+        margin: 14px 0 16px;
+        line-height: 1.5;
+      }
+      .bb-btn-primary {
+        display: block;
+        width: 100%;
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: #000;
+        font-weight: 700;
+        font-size: 14px;
+        padding: 13px;
+        border-radius: 10px;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+        margin-bottom: 14px;
+        border: none;
+        box-sizing: border-box;
+        transition: opacity 0.2s;
+        text-decoration: none;
+      }
+      .bb-btn-primary:active { opacity: 0.85; }
+      .bb-divider {
+        display: flex;
+        align-items: center;
+        color: #52525b;
+        font-size: 11px;
+        margin: 14px 0 10px;
+      }
+      .bb-divider::before, .bb-divider::after {
+        content: '';
+        flex: 1;
+        border-bottom: 1px solid #27272a;
+      }
+      .bb-divider::before { margin-right: 10px; }
+      .bb-divider::after { margin-left: 10px; }
+      .bb-input-group {
+        display: flex;
+        background: #09090b;
+        border: 1px solid #27272a;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 8px;
+      }
+      .bb-input {
+        background: transparent;
+        border: none;
+        color: #e4e4e7;
+        padding: 10px 12px;
+        font-size: 12px;
+        width: 100%;
+        outline: none;
+        text-overflow: ellipsis;
+      }
+      .bb-btn-copy {
+        background: #27272a;
+        color: #f4f4f5;
+        border: none;
+        padding: 0 14px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all 0.2s;
+      }
+      .bb-btn-copy:hover { background: #3f3f46; }
+      .bb-tip { color: #71717a; font-size: 11px; margin: 0; line-height: 1.4; }
+    </style>
 
     <script>
       (() => {
-        try {
-          const path = (window.location.pathname || '').toLowerCase();
-          // Không chặn trang quản trị CMS
-          if (path.includes('admin') || path.includes('quan-tri')) return;
-
-          // Kiểm tra xem quản trị viên có tắt tính năng chặn này trong CMS không
+        function initBrowserBlocker() {
           try {
-            if (window.__SITE_SETTINGS__ && window.__SITE_SETTINGS__.socialBlockerEnabled === false) return;
-            const cached = localStorage.getItem('site_settings_cache');
-            if (cached && JSON.parse(cached).socialBlockerEnabled === false) return;
-          } catch (e) {}
+            const path = (window.location.pathname || '').toLowerCase();
+            // Không chặn trang quản trị CMS
+            if (path.includes('admin') || path.includes('quan-tri')) return;
 
-          const ua = navigator.userAgent || navigator.vendor || window.opera || '';
-          const inApp =
-            /FBAN|FBAV|FB_IAB|FBIOS|Messenger|Instagram|Zalo|Line\/|musical_ly|BytedanceWebview/i.test(ua);
+            // Không chặn nếu quản trị viên đã tắt tính năng này trong cài đặt CMS
+            try {
+              if (window.__SITE_SETTINGS__ && window.__SITE_SETTINGS__.socialBlockerEnabled === false) return;
+              const cached = localStorage.getItem('site_settings_cache');
+              if (cached && JSON.parse(cached).socialBlockerEnabled === false) return;
+            } catch (e) {}
 
-          const isIOS = /iPhone|iPad|iPod/i.test(ua);
-          const isAndroid = /Android/i.test(ua);
-          const isDesktop = !isIOS && !isAndroid;
+            const ua = navigator.userAgent || navigator.vendor || window.opera || '';
 
-          const isChrome = /CriOS/i.test(ua) ||
-            (isAndroid && /Chrome\//i.test(ua) && !/EdgA|OPR|SamsungBrowser/i.test(ua));
+            // 1. Nhận diện các trình duyệt In-App mạng xã hội
+            const inAppZalo = /Zalo/i.test(ua);
+            const inAppFB = /FBAN|FBAV|FB_IAB|FBIOS/i.test(ua);
+            const inAppMessenger = /Messenger/i.test(ua);
+            const inAppTikTok = /TikTok|musical_ly|BytedanceWebview/i.test(ua);
+            const inAppInstagram = /Instagram/i.test(ua);
+            const inAppOther = /Threads|Line\/|Twitter|Snapchat/i.test(ua);
 
-          const isSafari = isIOS &&
-            /Safari/i.test(ua) &&
-            !/CriOS|FxiOS|EdgiOS|OPiOS/i.test(ua);
+            const isInApp = inAppZalo || inAppFB || inAppMessenger || inAppTikTok || inAppInstagram || inAppOther;
 
-          // Cho phép máy tính (Desktop/Laptop) và chỉ cho phép Chrome (Android) hoặc Safari (iPhone) trên điện thoại
-          const allowed = !inApp && (isChrome || isSafari || isDesktop);
+            let inAppName = 'mạng xã hội';
+            if (inAppZalo) inAppName = 'Zalo';
+            else if (inAppFB) inAppName = 'Facebook';
+            else if (inAppMessenger) inAppName = 'Messenger';
+            else if (inAppTikTok) inAppName = 'TikTok';
+            else if (inAppInstagram) inAppName = 'Instagram';
 
-          if (!allowed) {
-            const currentUrl = window.location.href;
-            let openChromeUrl = currentUrl;
-            if (isAndroid) {
-              openChromeUrl = 'intent://' + window.location.host + window.location.pathname + window.location.search + '#Intent;scheme=https;package=com.android.chrome;end';
+            const isIOS = /iPhone|iPad|iPod/i.test(ua);
+            const isAndroid = /Android/i.test(ua);
+            const isDesktop = !isIOS && !isAndroid;
+
+            // ========================================================
+            // PHÂN CHIA 2 TRƯỜNG HỢP:
+            // 1: NẾU LÀ IOS (IPHONE / IPAD)
+            //    - Nếu trong Safari chuẩn hoặc Chrome ngoài (không phải inApp): CHO PHÉP DUYỆT!
+            //    - Nếu trong in-app browser (Zalo, FB, TikTok...): CHẶN và hiện hộp thoại hướng dẫn mở Safari như ảnh!
+            // 2: NẾU LÀ ANDROID
+            //    - Nếu là Chrome ngoài (không inApp, không Samsung/Opera): CHO PHÉP DUYỆT!
+            //    - Nếu in-app browser: CHẶN và hiện nút Intent 1 chạm mở app Chrome!
+            // ========================================================
+
+            if (isIOS) {
+              if (!isInApp) return; // Đang ở trong Safari chuẩn hoặc Chrome trên iOS -> Duyệt web bình thường!
+            } else if (isAndroid) {
+              const isAndroidChrome = /Chrome\//i.test(ua) && !/EdgA|OPR|SamsungBrowser|UCBrowser/i.test(ua);
+              if (!isInApp && isAndroidChrome) return; // Đang ở trong Chrome chuẩn trên Android -> Duyệt web bình thường!
+            } else if (isDesktop) {
+              return; // Máy tính duyệt web bình thường!
             }
 
-            document.documentElement.innerHTML = `
-              <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width,initial-scale=1">
-                <title>Vui lòng mở bằng Chrome hoặc Safari</title>
-                <style>
-                  * { box-sizing: border-box; margin: 0; padding: 0; }
-                  body {
-                    background: #09090b;
-                    color: #f4f4f5;
-                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    min-height: 100vh;
-                    padding: 20px;
-                  }
-                  .bb-card {
-                    background: #18181b;
-                    border: 1px solid #27272a;
-                    border-radius: 20px;
-                    padding: 28px 22px;
-                    max-width: 420px;
-                    width: 100%;
-                    text-align: center;
-                    box-shadow: 0 20px 40px rgba(0,0,0,0.8);
-                  }
-                  .bb-icon { font-size: 40px; margin-bottom: 14px; }
-                  h2 { font-size: 19px; font-weight: 700; color: #ffffff; margin-bottom: 10px; line-height: 1.4; }
-                  p { color: #a1a1aa; font-size: 13.5px; line-height: 1.6; margin-bottom: 12px; }
-                  .bb-guide {
-                    background: #27272a;
-                    border: 1px dashed #3f3f46;
-                    border-radius: 12px;
-                    padding: 12px 14px;
-                    color: #fbbf24;
-                    font-size: 13px;
-                    font-weight: 600;
-                    margin: 16px 0;
-                    line-height: 1.5;
-                  }
-                  .bb-btn-primary {
-                    display: block;
-                    width: 100%;
-                    background: linear-gradient(135deg, #f59e0b, #d97706);
-                    color: #000;
-                    font-weight: 700;
-                    font-size: 14px;
-                    padding: 13px;
-                    border-radius: 10px;
-                    text-decoration: none;
-                    margin-bottom: 14px;
-                    cursor: pointer;
-                    border: none;
-                  }
-                  .bb-divider {
-                    display: flex;
-                    align-items: center;
-                    color: #52525b;
-                    font-size: 11px;
-                    margin: 14px 0 10px;
-                  }
-                  .bb-divider::before, .bb-divider::after {
-                    content: '';
-                    flex: 1;
-                    border-bottom: 1px solid #27272a;
-                  }
-                  .bb-divider::before { margin-right: 10px; }
-                  .bb-divider::after { margin-left: 10px; }
-                  .bb-input-group {
-                    display: flex;
-                    background: #09090b;
-                    border: 1px solid #27272a;
-                    border-radius: 10px;
-                    overflow: hidden;
-                    margin-bottom: 8px;
-                  }
-                  .bb-input {
-                    background: transparent;
-                    border: none;
-                    color: #e4e4e7;
-                    padding: 10px 12px;
-                    font-size: 12px;
-                    width: 100%;
-                    outline: none;
-                  }
-                  .bb-btn-copy {
-                    background: #27272a;
-                    color: #f4f4f5;
-                    border: none;
-                    padding: 0 14px;
-                    font-size: 12px;
-                    font-weight: 600;
-                    cursor: pointer;
-                    white-space: nowrap;
-                  }
-                  .bb-tip { color: #71717a; font-size: 11px; }
-                </style>
-              </head>
-              <body>
+            // Dừng phát âm thanh ngầm nếu có
+            try {
+              document.querySelectorAll('audio, video').forEach(el => el.pause());
+            } catch (e) {}
+
+            // Ẩn nội dung web
+            const rootEl = document.getElementById('root');
+            if (rootEl) rootEl.style.display = 'none';
+            document.body.style.overflow = 'hidden';
+
+            if (document.getElementById('browser-blocker-overlay')) return;
+
+            const currentUrl = window.location.href;
+            const isHttps = window.location.protocol === 'https:';
+
+            const overlay = document.createElement('div');
+            overlay.id = 'browser-blocker-overlay';
+
+            // GIAO DIỆN TRƯỜNG HỢP 1: DÀNH CHO IOS (CHÍNH XÁC NHƯ ẢNH CHỤP MÀN HÌNH)
+            if (isIOS) {
+              overlay.innerHTML = `
+                <div class="ios-cab-card">
+                  <h3 class="ios-cab-title">Bạn đang mở trong ${inAppName}</h3>
+                  <p class="ios-cab-desc">
+                    Trình duyệt trong ${inAppName} <b>không nghe audio được</b>. Hãy mở bằng <b>Safari (trình duyệt ngoài)</b> để tiếp tục nghe.
+                  </p>
+
+                  <div class="ios-cab-box">
+                    <div class="ios-cab-box-title">Cách mở bằng Safari:</div>
+                    <div class="ios-cab-box-step">1. Bấm nút <b style="color: #c2410c;">⋯</b> ở góc trên bên phải</div>
+                    <div class="ios-cab-box-step">2. Chọn <b style="color: #c2410c;">“Mở trong trình duyệt”</b></div>
+                  </div>
+
+                  <div class="ios-cab-divider">– hoặc –</div>
+
+                  <div class="ios-cab-label">Sao chép liên kết:</div>
+                  <input type="text" class="ios-cab-input" id="ios-cab-url-box" value="${currentUrl}" readonly />
+                  <button type="button" class="ios-cab-copy-btn" id="ios-cab-copy-btn">Sao chép liên kết</button>
+                  <p class="ios-cab-tip" id="ios-cab-copy-status">Rồi dán vào Safari để mở.</p>
+                </div>
+              `;
+            } 
+            // GIAO DIỆN TRƯỜNG HỢP 2: DÀNH CHO ANDROID (MỞ BẰNG GOOGLE CHROME VỚI INTENT 1 CHẠM)
+            else {
+              const androidChromeUrl = 'intent://' + window.location.host + window.location.pathname + window.location.search + '#Intent;scheme=' + (isHttps ? 'https' : 'http') + ';package=com.android.chrome;end';
+
+              overlay.innerHTML = `
                 <div class="bb-card">
                   <div class="bb-icon">🎧</div>
-                  <h2>Vui lòng mở bằng Chrome hoặc Safari</h2>
-                  <p>Trình duyệt hiện tại không được hỗ trợ.</p>
-                  <p style="font-size: 12.5px; color: #71717a;">Website chỉ hỗ trợ <b>Chrome trên Android</b> và <b>Safari trên iPhone</b> để đảm bảo phát âm thanh ổn định.</p>
-                  
+                  <h2 class="bb-title">Bạn đang mở trong ${inAppName}</h2>
+                  <p class="bb-desc">
+                    Trình duyệt trong ${inAppName} không hỗ trợ phát âm thanh ngầm.<br>
+                    Vui lòng mở bằng ứng dụng <b>Google Chrome</b> để nghe liên tục.
+                  </p>
+
                   <div class="bb-guide">
-                    👉 Hãy bấm menu <b>⋯</b> (3 chấm) trong ứng dụng và chọn <b>Mở bằng trình duyệt</b>
+                    👉 Bấm nút <b>"Mở bằng Google Chrome"</b> bên dưới<br>hoặc bấm menu <b>⋯</b> (3 chấm) ➔ chọn <b>Mở bằng trình duyệt ngoài</b>
                   </div>
 
-                  <a href="${openChromeUrl}" style="text-decoration: none;">
-                    <button type="button" class="bb-btn-primary">Mở bằng Trình duyệt Ngoài (Chrome)</button>
+                  <a href="${androidChromeUrl}" class="bb-btn-primary" id="bb-open-chrome-btn">
+                    Mở bằng Google Chrome
                   </a>
 
-                  <div class="bb-divider">hoặc sao chép liên kết</div>
+                  <div class="bb-divider">hoặc sao chép liên kết nhanh</div>
 
                   <div class="bb-input-group">
-                    <input type="text" class="bb-input" id="bb-url-box" value="${currentUrl}" readonly />
-                    <button type="button" class="bb-btn-copy" onclick="copyLink()">Sao chép</button>
+                    <input type="text" class="bb-input" id="android-url-input" value="${currentUrl}" readonly />
+                    <button type="button" class="bb-btn-copy" id="android-copy-btn">Sao chép</button>
                   </div>
-                  <p class="bb-tip" id="bb-status">Dán link vào Chrome hoặc Safari để nghe nhé!</p>
+                  <p class="bb-tip" id="android-copy-status">Dán link vào Google Chrome để nghe nhé!</p>
                 </div>
+              `;
+            }
 
-                <script>
-                  function copyLink() {
-                    const input = document.getElementById('bb-url-box');
-                    input.select();
-                    input.setSelectionRange(0, 99999);
-                    const updateTip = () => {
-                      const tip = document.getElementById('bb-status');
-                      if (tip) {
-                        tip.style.color = '#22c55e';
-                        tip.innerText = 'Đã sao chép liên kết thành công!';
-                        setTimeout(() => {
-                          tip.style.color = '#71717a';
-                          tip.innerText = 'Dán link vào Chrome hoặc Safari để nghe nhé!';
-                        }, 2500);
-                      }
-                    };
-                    if (navigator.clipboard && navigator.clipboard.writeText) {
-                      navigator.clipboard.writeText(input.value).then(updateTip).catch(() => {
-                        try { document.execCommand('copy'); updateTip(); } catch (e) {}
-                      });
-                    } else {
-                      try { document.execCommand('copy'); updateTip(); } catch (e) {}
-                    }
-                  }
-                <\\/script>
-              </body>
-            `;
+            document.body.appendChild(overlay);
+
+            // ==========================================
+            // KỸ THUẬT SAO CHÉP LIÊN KẾT TỐI ƯU HÓA 100% CHO IOS VÀ ANDROID
+            // ==========================================
+            const copyUrlToClipboard = (inputEl, btnEl, statusEl, successTip) => {
+              let copied = false;
+
+              // 1. Thử qua Navigator Clipboard API hiện đại
+              if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(currentUrl).then(() => {
+                  copied = true;
+                }).catch(() => {});
+              }
+
+              // 2. Kỹ thuật textarea chuẩn tối ưu cho iOS WebKit & Safari
+              try {
+                const tempTextarea = document.createElement('textarea');
+                tempTextarea.value = currentUrl;
+                tempTextarea.style.fontSize = '16px';
+                tempTextarea.style.position = 'fixed';
+                tempTextarea.style.left = '-9999px';
+                tempTextarea.style.top = '0';
+                tempTextarea.setAttribute('readonly', '');
+                document.body.appendChild(tempTextarea);
+                tempTextarea.focus();
+                tempTextarea.select();
+                tempTextarea.setSelectionRange(0, tempTextarea.value.length);
+                const execSuccess = document.execCommand('copy');
+                if (execSuccess) copied = true;
+                document.body.removeChild(tempTextarea);
+              } catch (e) {}
+
+              // 3. Highlight text trong ô input trên giao diện
+              if (inputEl) {
+                try {
+                  inputEl.focus();
+                  inputEl.select();
+                  inputEl.setSelectionRange(0, inputEl.value.length);
+                } catch (e) {}
+              }
+
+              // 4. Cập nhật UI phản hồi tức thì
+              if (btnEl) {
+                btnEl.textContent = '✓ Đã sao chép liên kết!';
+                btnEl.style.background = '#22c55e';
+                btnEl.style.color = '#ffffff';
+                btnEl.style.borderColor = '#16a34a';
+              }
+              if (statusEl) {
+                statusEl.style.color = '#16a34a';
+                statusEl.innerHTML = `<b>✓ Đã sao chép!</b> ${successTip}`;
+              }
+
+              setTimeout(() => {
+                if (btnEl) {
+                  btnEl.textContent = isIOS ? 'Sao chép liên kết' : 'Sao chép';
+                  btnEl.style.background = isIOS ? '#f1f5f9' : '#27272a';
+                  btnEl.style.color = isIOS ? '#1e1e24' : '#f4f4f5';
+                  btnEl.style.borderColor = isIOS ? '#e2e8f0' : '';
+                }
+              }, 3000);
+            };
+
+            if (isIOS) {
+              const iosBtn = document.getElementById('ios-cab-copy-btn');
+              const iosInput = document.getElementById('ios-cab-url-box');
+              const iosStatus = document.getElementById('ios-cab-copy-status');
+              if (iosBtn) iosBtn.addEventListener('click', () => copyUrlToClipboard(iosInput, iosBtn, iosStatus, 'Hãy mở Safari và dán vào thanh địa chỉ nhé!'));
+              if (iosInput) iosInput.addEventListener('click', () => copyUrlToClipboard(iosInput, iosBtn, iosStatus, 'Hãy mở Safari và dán vào thanh địa chỉ nhé!'));
+            } else {
+              const androidBtn = document.getElementById('android-copy-btn');
+              const androidInput = document.getElementById('android-url-input');
+              const androidStatus = document.getElementById('android-copy-status');
+              if (androidBtn) androidBtn.addEventListener('click', () => copyUrlToClipboard(androidInput, androidBtn, androidStatus, 'Hãy mở Chrome và dán vào để nghe nhé!'));
+              if (androidInput) androidInput.addEventListener('click', () => copyUrlToClipboard(androidInput, androidBtn, androidStatus, 'Hãy mở Chrome và dán vào để nghe nhé!'));
+            }
+
+          } catch (err) {
+            console.warn('Browser block check error:', err);
           }
-        } catch (err) {
-          console.warn('Browser block check error:', err);
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', initBrowserBlocker);
+        } else {
+          initBrowserBlocker();
         }
       })();
     </script>

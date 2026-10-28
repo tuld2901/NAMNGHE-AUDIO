@@ -1316,9 +1316,9 @@ export function saveSiteSettings(settings: Partial<SiteSettings>): SiteSettings 
     apiKey: settings.apiKey !== undefined ? String(settings.apiKey) : (dbData.siteSettings.apiKey || DEFAULT_SITE_SETTINGS.apiKey || 'goiom_api_secret_2025'),
     requireApiKey: settings.requireApiKey !== undefined ? Boolean(settings.requireApiKey) : Boolean(dbData.siteSettings.requireApiKey),
     socialBlockerEnabled: settings.socialBlockerEnabled !== undefined ? Boolean(settings.socialBlockerEnabled) : (dbData.siteSettings.socialBlockerEnabled ?? true),
-    socialBlockerTitle: settings.socialBlockerTitle !== undefined ? String(settings.socialBlockerTitle) : (dbData.siteSettings.socialBlockerTitle || DEFAULT_SITE_SETTINGS.socialBlockerTitle || 'Mở bằng Trình duyệt Ngoài'),
-    socialBlockerDesc: settings.socialBlockerDesc !== undefined ? String(settings.socialBlockerDesc) : (dbData.siteSettings.socialBlockerDesc || DEFAULT_SITE_SETTINGS.socialBlockerDesc || 'Trình duyệt mạng xã hội chặn phát âm thanh và bảo lưu phiên nghe. Vui lòng mở bằng Chrome hoặc Safari để tiếp tục!'),
-    socialBlockerBtnText: settings.socialBlockerBtnText !== undefined ? String(settings.socialBlockerBtnText) : (dbData.siteSettings.socialBlockerBtnText || DEFAULT_SITE_SETTINGS.socialBlockerBtnText || 'Mở bằng Chrome / Safari'),
+    socialBlockerTitle: settings.socialBlockerTitle !== undefined ? String(settings.socialBlockerTitle) : (dbData.siteSettings.socialBlockerTitle || DEFAULT_SITE_SETTINGS.socialBlockerTitle || 'Vui lòng mở bằng Google Chrome'),
+    socialBlockerDesc: settings.socialBlockerDesc !== undefined ? String(settings.socialBlockerDesc) : (dbData.siteSettings.socialBlockerDesc || DEFAULT_SITE_SETTINGS.socialBlockerDesc || 'Website được tối ưu phát âm thanh và nghe liên tục trên ứng dụng Google Chrome. Vui lòng mở bằng Google Chrome để tiếp tục!'),
+    socialBlockerBtnText: settings.socialBlockerBtnText !== undefined ? String(settings.socialBlockerBtnText) : (dbData.siteSettings.socialBlockerBtnText || DEFAULT_SITE_SETTINGS.socialBlockerBtnText || 'Mở bằng Google Chrome'),
   };
   saveDatabase(dbData);
   return dbData.siteSettings;

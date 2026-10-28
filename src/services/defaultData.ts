@@ -88,9 +88,9 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   apiKey: 'goiom_api_secret_2025',
   requireApiKey: false,
   socialBlockerEnabled: true,
-  socialBlockerTitle: 'Mở bằng Trình duyệt Ngoài',
-  socialBlockerDesc: 'Trình duyệt mạng xã hội chặn phát âm thanh và bảo lưu phiên nghe. Vui lòng mở bằng Chrome hoặc Safari để tiếp tục!',
-  socialBlockerBtnText: 'Mở bằng Chrome / Safari'
+  socialBlockerTitle: 'Vui lòng mở bằng Google Chrome',
+  socialBlockerDesc: 'Website được tối ưu phát âm thanh và nghe liên tục trên ứng dụng Google Chrome. Vui lòng mở bằng Google Chrome để tiếp tục!',
+  socialBlockerBtnText: 'Mở bằng Google Chrome'
 };
 
 export const DEFAULT_ADMIN_ACCOUNTS: AdminAccount[] = [

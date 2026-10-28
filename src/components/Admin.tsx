@@ -3691,9 +3691,9 @@ https://s.lazada.vn/s.flashsale_deal`}
                     </label>
                     <input
                       type="text"
-                      value={settingsForm.socialBlockerTitle || 'Mở bằng Trình duyệt Ngoài'}
+                      value={settingsForm.socialBlockerTitle || 'Vui lòng mở bằng Google Chrome'}
                       onChange={(e) => setSettingsForm({ ...settingsForm, socialBlockerTitle: e.target.value })}
-                      placeholder="Mở bằng Trình duyệt Ngoài"
+                      placeholder="Vui lòng mở bằng Google Chrome"
                       className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-400 font-medium"
                     />
                   </div>
@@ -3704,9 +3704,9 @@ https://s.lazada.vn/s.flashsale_deal`}
                     </label>
                     <input
                       type="text"
-                      value={settingsForm.socialBlockerBtnText || 'Mở bằng Chrome / Safari'}
+                      value={settingsForm.socialBlockerBtnText || 'Mở bằng Google Chrome'}
                       onChange={(e) => setSettingsForm({ ...settingsForm, socialBlockerBtnText: e.target.value })}
-                      placeholder="Mở bằng Chrome / Safari"
+                      placeholder="Mở bằng Google Chrome"
                       className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-400 font-medium"
                     />
                   </div>

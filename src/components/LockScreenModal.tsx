@@ -81,45 +81,38 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
     isActive: true,
   };
 
-  const sanitizeWebAffiliateUrl = (rawUrl: string | undefined): string => {
+  // Bảo toàn 100% link affiliate (kể cả tham số deep link af_dp, universal link, custom scheme)
+  // để khi bấm sẽ nhảy thẳng vào app Shopee / Lazada / TikTok trên điện thoại
+  const getCleanAffiliateUrl = (rawUrl: string | undefined): string => {
     if (!rawUrl || typeof rawUrl !== 'string') return 'https://shopee.vn';
     const trimmed = rawUrl.trim();
-    if (/^(intent|shopeevn|shopee|lazada|tiktok|market|itms-apps|android-app|ios-app):\/\//i.test(trimmed)) {
-      return 'https://shopee.vn';
-    }
-    if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
-      return 'https://shopee.vn';
-    }
-    try {
-      const parsed = new URL(trimmed);
-      // Loại bỏ các tham số ép mở ứng dụng (deep link) nếu có
-      parsed.searchParams.delete('deep_and_deferred');
-      parsed.searchParams.delete('af_dp');
-      parsed.searchParams.delete('af_force_deeplink');
-      parsed.searchParams.delete('is_retargeting');
-      return parsed.toString();
-    } catch {
-      return trimmed;
-    }
+    if (!trimmed) return 'https://shopee.vn';
+    if (trimmed.startsWith('//')) return `https:${trimmed}`;
+    if (!trimmed.includes('://')) return `https://${trimmed}`;
+    return trimmed;
   };
 
-  const targetUrl = sanitizeWebAffiliateUrl(currentAffiliate.url);
+  const targetUrl = getCleanAffiliateUrl(currentAffiliate.url);
 
   const handleUnlockClick = () => {
-    // 1. Ghi nhận lượt click thống kê
+    // 1. Ghi nhận lượt click affiliate
     incrementAffiliateClick(currentAffiliate.id);
 
     // 2. Đánh dấu đã mở khóa trong ngày hôm nay
     markDailyUnlockedToday();
 
-    // 3. Kích hoạt phát audio tập truyện
+    // 3. Kích hoạt mở khóa và phát audio tập truyện
     if (targetChapter) {
       onUnlockSuccess(targetTrack, targetChapter);
     }
 
-    // 4. Đóng modal
+    // 4. Đóng modal mở khóa
     onClose();
   };
+
+  const appName = currentAffiliate.platform === 'Lazada' 
+    ? 'Lazada' 
+    : (currentAffiliate.platform === 'TikTok' ? 'TikTok' : 'Shopee');
 
   return (
     <div 
@@ -130,7 +123,7 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
         className="relative w-full max-w-[390px] sm:max-w-[420px] bg-white rounded-[26px] p-5 sm:p-6 shadow-2xl text-center overflow-hidden animate-scale-up"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Nút X ở góc trên bên phải để người nghe có thể bấm thoát */}
+        {/* Nút X ở góc trên bên phải để người nghe thoát ra và không mở khóa */}
         <button
           type="button"
           onClick={onClose}
@@ -140,9 +133,9 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
           <X size={19} className="stroke-[2.5]" />
         </button>
 
-        {/* Nội dung cố định fix cứng theo yêu cầu */}
+        {/* Nội dung cố định chuẩn quy định */}
         <p className="text-[13px] sm:text-[14px] font-bold text-slate-900 leading-snug px-2 pr-10 mt-1">
-          Bạn xác nhận bấm “Đồng Ý mở Shopee và tham khảo sản phẩm” là hoàn toàn tình nguyện. Bạn cũng có thể bấm X ở góc và thoát khỏi website.
+          Bạn xác nhận bấm “Đồng Ý mở ${appName} và tham khảo sản phẩm” là hoàn toàn tình nguyện. Bạn cũng có thể bấm X ở góc và thoát khỏi website.
         </p>
 
         {/* Link URL pill badge: hiển thị link affiliate bất kỳ vừa được bốc ngẫu nhiên */}
@@ -173,7 +166,7 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
           )}
         </div>
 
-        {/* Nút bấm mở Shopee dạng thẻ <a> chuẩn: Trình duyệt mở tab mới tự nhiên, không bị tính là popup ẩn và không bao giờ hỏi quyền */}
+        {/* Nút bấm mở ứng dụng Shopee / Lazada / TikTok: Mở app để người dùng tham khảo sản phẩm và mở khóa nghe truyện */}
         <a
           href={targetUrl}
           target="_blank"
@@ -181,7 +174,7 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
           onClick={handleUnlockClick}
           className="w-full py-3.5 px-5 rounded-2xl font-bold text-sm sm:text-base text-slate-950 bg-gradient-to-r from-[#ff6b3d] to-[#ffaa48] hover:from-[#ff5c2a] hover:to-[#ff9f3a] transition-all duration-200 shadow-lg shadow-orange-500/25 flex items-center justify-center text-center cursor-pointer no-underline select-none active:scale-[0.99]"
         >
-          Đồng Ý mở Shopee và tham khảo sản phẩm
+          Đồng Ý mở ${appName} và tham khảo sản phẩm
         </a>
 
         {/* Lưu ý cố định dưới cùng */}
