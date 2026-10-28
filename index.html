@@ -2,7 +2,7 @@
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="mobile-web-app-capable" content="no" />
     <meta name="apple-mobile-web-app-capable" content="no" />
     <title>Gối Ôm Audio - Web Nghe Truyện Audio Online Miễn Phí</title>
@@ -142,7 +142,7 @@
         border: 1px solid #e2e8f0;
         border-radius: 10px;
         padding: 11px 12px;
-        font-size: 12px;
+        font-size: 16px; /* Bắt buộc tối thiểu 16px trên iOS để không bao giờ bị auto zoom màn hình */
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
         color: #334155;
         width: 100%;
@@ -150,6 +150,9 @@
         margin-bottom: 10px;
         text-align: center;
         outline: none;
+        touch-action: manipulation;
+        -webkit-user-select: all;
+        user-select: all;
       }
       .ios-cab-copy-btn {
         background: #f1f5f9;
@@ -163,6 +166,8 @@
         cursor: pointer;
         transition: all 0.2s ease;
         box-sizing: border-box;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
       }
       .ios-cab-copy-btn:active {
         background: #e2e8f0;
@@ -399,29 +404,36 @@
             document.body.appendChild(overlay);
 
             // ==========================================
-            // KỸ THUẬT SAO CHÉP LIÊN KẾT TỐI ƯU HÓA 100% CHO IOS VÀ ANDROID
+            // KỸ THUẬT SAO CHÉP LIÊN KẾT TỐI ƯU HÓA 100% CHO IOS VÀ ANDROID (CHỐNG ZOOM TUYỆT ĐỐI)
             // ==========================================
             const copyUrlToClipboard = (inputEl, btnEl, statusEl, successTip) => {
               let copied = false;
 
-              // 1. Thử qua Navigator Clipboard API hiện đại
+              // 1. Thử qua Navigator Clipboard API hiện đại trước
               if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(currentUrl).then(() => {
                   copied = true;
                 }).catch(() => {});
               }
 
-              // 2. Kỹ thuật textarea chuẩn tối ưu cho iOS WebKit & Safari
+              // 2. Kỹ thuật sao chép textarea ẩn chuẩn iOS - KHÔNG GÂY ZOOM MÀN HÌNH
               try {
                 const tempTextarea = document.createElement('textarea');
                 tempTextarea.value = currentUrl;
-                tempTextarea.style.fontSize = '16px';
-                tempTextarea.style.position = 'fixed';
-                tempTextarea.style.left = '-9999px';
-                tempTextarea.style.top = '0';
                 tempTextarea.setAttribute('readonly', '');
+                // font-size 16px bắt buộc để iOS không bao giờ tự zoom
+                tempTextarea.style.position = 'fixed';
+                tempTextarea.style.top = '0';
+                tempTextarea.style.left = '-9999px';
+                tempTextarea.style.width = '2em';
+                tempTextarea.style.height = '2em';
+                tempTextarea.style.padding = '0';
+                tempTextarea.style.border = 'none';
+                tempTextarea.style.outline = 'none';
+                tempTextarea.style.boxShadow = 'none';
+                tempTextarea.style.background = 'transparent';
+                tempTextarea.style.fontSize = '16px';
                 document.body.appendChild(tempTextarea);
-                tempTextarea.focus();
                 tempTextarea.select();
                 tempTextarea.setSelectionRange(0, tempTextarea.value.length);
                 const execSuccess = document.execCommand('copy');
@@ -429,12 +441,10 @@
                 document.body.removeChild(tempTextarea);
               } catch (e) {}
 
-              // 3. Highlight text trong ô input trên giao diện
+              // 3. KHÔNG gọi inputEl.focus() để tránh kích hoạt bàn phím và tự động phóng to màn hình iOS
               if (inputEl) {
                 try {
-                  inputEl.focus();
-                  inputEl.select();
-                  inputEl.setSelectionRange(0, inputEl.value.length);
+                  inputEl.blur();
                 } catch (e) {}
               }
 
@@ -464,14 +474,36 @@
               const iosBtn = document.getElementById('ios-cab-copy-btn');
               const iosInput = document.getElementById('ios-cab-url-box');
               const iosStatus = document.getElementById('ios-cab-copy-status');
-              if (iosBtn) iosBtn.addEventListener('click', () => copyUrlToClipboard(iosInput, iosBtn, iosStatus, 'Hãy mở Safari và dán vào thanh địa chỉ nhé!'));
-              if (iosInput) iosInput.addEventListener('click', () => copyUrlToClipboard(iosInput, iosBtn, iosStatus, 'Hãy mở Safari và dán vào thanh địa chỉ nhé!'));
+              if (iosBtn) {
+                iosBtn.addEventListener('click', (e) => {
+                  e.preventDefault();
+                  copyUrlToClipboard(iosInput, iosBtn, iosStatus, 'Hãy mở Safari và dán vào thanh địa chỉ nhé!');
+                });
+              }
+              if (iosInput) {
+                iosInput.addEventListener('click', (e) => {
+                  e.preventDefault();
+                  iosInput.blur();
+                  copyUrlToClipboard(iosInput, iosBtn, iosStatus, 'Hãy mở Safari và dán vào thanh địa chỉ nhé!');
+                });
+              }
             } else {
               const androidBtn = document.getElementById('android-copy-btn');
               const androidInput = document.getElementById('android-url-input');
               const androidStatus = document.getElementById('android-copy-status');
-              if (androidBtn) androidBtn.addEventListener('click', () => copyUrlToClipboard(androidInput, androidBtn, androidStatus, 'Hãy mở Chrome và dán vào để nghe nhé!'));
-              if (androidInput) androidInput.addEventListener('click', () => copyUrlToClipboard(androidInput, androidBtn, androidStatus, 'Hãy mở Chrome và dán vào để nghe nhé!'));
+              if (androidBtn) {
+                androidBtn.addEventListener('click', (e) => {
+                  e.preventDefault();
+                  copyUrlToClipboard(androidInput, androidBtn, androidStatus, 'Hãy mở Chrome và dán vào để nghe nhé!');
+                });
+              }
+              if (androidInput) {
+                androidInput.addEventListener('click', (e) => {
+                  e.preventDefault();
+                  androidInput.blur();
+                  copyUrlToClipboard(androidInput, androidBtn, androidStatus, 'Hãy mở Chrome và dán vào để nghe nhé!');
+                });
+              }
             }
 
           } catch (err) {
