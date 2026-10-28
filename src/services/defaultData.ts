@@ -86,7 +86,11 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   headerCode: '',
   bodyCode: '',
   apiKey: 'goiom_api_secret_2025',
-  requireApiKey: false
+  requireApiKey: false,
+  socialBlockerEnabled: true,
+  socialBlockerTitle: 'Mở bằng Trình duyệt Ngoài',
+  socialBlockerDesc: 'Trình duyệt mạng xã hội chặn phát âm thanh và bảo lưu phiên nghe. Vui lòng mở bằng Chrome hoặc Safari để tiếp tục!',
+  socialBlockerBtnText: 'Mở bằng Chrome / Safari'
 };
 
 export const DEFAULT_ADMIN_ACCOUNTS: AdminAccount[] = [

@@ -50,6 +50,17 @@ function AppContent({
     });
   }, [siteSettings.headerCode, siteSettings.bodyCode]);
 
+  // Đồng bộ cấu hình website & thương hiệu vào popup chặn trình duyệt mạng xã hội
+  useEffect(() => {
+    try {
+      (window as any).__SITE_SETTINGS__ = siteSettings;
+      localStorage.setItem('site_settings_cache', JSON.stringify(siteSettings));
+      if (typeof (window as any).refreshCustomBlockerUI === 'function') {
+        (window as any).refreshCustomBlockerUI(siteSettings);
+      }
+    } catch (e) {}
+  }, [siteSettings]);
+
   // Lock Screen Modal State
   const [isLockModalOpen, setIsLockModalOpen] = useState<boolean>(false);
   const [pendingTrack, setPendingTrack] = useState<Track | null>(null);

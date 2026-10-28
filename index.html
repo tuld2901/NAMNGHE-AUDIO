@@ -46,9 +46,300 @@
     }
     </script>
   </head>
-  <body>
+  <body class="bg-zinc-950 text-zinc-100 antialiased selection:bg-amber-500 selection:text-black min-h-screen">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+
+    <!-- Custom In-App Browser Blocker (Chặn trình duyệt mạng xã hội, yêu cầu mở Chrome / Safari) -->
+    <style>
+      #custom-audio-blocker {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(5, 5, 5, 0.96);
+        z-index: 999999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      .cab-card {
+        background: #121214;
+        border: 1px solid #27272a;
+        border-radius: 20px;
+        padding: 28px 22px;
+        max-width: 360px;
+        width: 100%;
+        text-align: center;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.7);
+        position: relative;
+      }
+      .cab-icon {
+        font-size: 36px;
+        margin-bottom: 12px;
+      }
+      .cab-title {
+        color: #ffffff;
+        font-size: 18px;
+        font-weight: 700;
+        margin: 0 0 8px;
+      }
+      .cab-desc {
+        color: #94a3b8;
+        font-size: 13px;
+        line-height: 1.5;
+        margin-bottom: 20px;
+      }
+      .cab-btn-primary {
+        background: linear-gradient(135deg, #f97316, #ea580c);
+        color: #fff;
+        border: none;
+        width: 100%;
+        padding: 13px;
+        font-size: 14px;
+        font-weight: 600;
+        border-radius: 10px;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(234, 88, 12, 0.3);
+        margin-bottom: 16px;
+        transition: opacity 0.2s;
+        display: block;
+      }
+      .cab-btn-primary:active { opacity: 0.85; }
+      .cab-divider {
+        display: flex;
+        align-items: center;
+        text-align: center;
+        color: #52525b;
+        font-size: 11px;
+        margin: 12px 0;
+      }
+      .cab-divider::before, .cab-divider::after {
+        content: '';
+        flex: 1;
+        border-bottom: 1px solid #27272a;
+      }
+      .cab-divider::before { margin-right: 10px; }
+      .cab-divider::after { margin-left: 10px; }
+      
+      .cab-input-group {
+        display: flex;
+        background: #18181b;
+        border: 1px solid #27272a;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 8px;
+      }
+      .cab-input {
+        background: transparent;
+        border: none;
+        color: #d4d4d8;
+        padding: 10px 12px;
+        font-size: 12px;
+        width: 100%;
+        outline: none;
+        text-overflow: ellipsis;
+      }
+      .cab-btn-copy {
+        background: #27272a;
+        color: #e4e4e7;
+        border: none;
+        padding: 0 14px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background 0.2s;
+      }
+      .cab-btn-copy:hover { background: #3f3f46; }
+      .cab-tip {
+        color: #71717a;
+        font-size: 11px;
+        margin: 0;
+      }
+      .cab-skip {
+        display: inline-block;
+        margin-top: 14px;
+        color: #71717a;
+        font-size: 11px;
+        text-decoration: underline;
+        cursor: pointer;
+        background: none;
+        border: none;
+        padding: 0;
+      }
+      .cab-skip:hover {
+        color: #a1a1aa;
+      }
+    </style>
+
+    <script>
+      function getCachedSiteSettings() {
+        try {
+          if (window.__SITE_SETTINGS__) return window.__SITE_SETTINGS__;
+          const cached = localStorage.getItem('site_settings_cache');
+          if (cached) return JSON.parse(cached);
+        } catch (e) {}
+        return null;
+      }
+
+      function checkCustomBrowser() {
+        try {
+          // Bỏ qua nếu đang ở trang quản trị CMS
+          const path = (window.location.pathname || '').toLowerCase();
+          if (path.includes('admin') || path.includes('quan-tri')) return;
+
+          const settings = getCachedSiteSettings();
+          if (settings && settings.socialBlockerEnabled === false) {
+            return; // Người quản trị đã tắt tính năng chặn
+          }
+
+          const ua = navigator.userAgent || navigator.vendor || window.opera || '';
+          
+          // Nhận diện trình duyệt in-app mạng xã hội phổ biến
+          const isInApp = /Instagram|FBAN|FBAV|Messenger|TikTok|musical_ly|Threads|Zalo|Line|Twitter|Snapchat/i.test(ua);
+
+          // Whitelist: Chỉ cho phép Chrome và Safari chuẩn
+          const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+          const isMac = /Macintosh/.test(ua);
+          const isSafari = (isIOS || isMac) && /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS/i.test(ua) && !isInApp;
+          const isChrome = /Chrome|CriOS/.test(ua) && !/Edge|Edg|OPR|SamsungBrowser|UCBrowser|Whale|Yandex|Opera/i.test(ua) && !isInApp;
+
+          if (!isSafari && !isChrome) {
+            showCustomPopup(settings);
+          }
+        } catch (e) {
+          console.warn('Browser detection error:', e);
+        }
+      }
+
+      function showCustomPopup(settings) {
+        if (document.getElementById('custom-audio-blocker')) return;
+
+        const currentSettings = settings || getCachedSiteSettings();
+        if (currentSettings && currentSettings.socialBlockerEnabled === false) return;
+
+        // Tự động nhận diện Tên Miền thực tế từ trình duyệt (hoạt động đúng 100% khi đổi domain)
+        const currentUrl = window.location.href;
+        let openChromeUrl = currentUrl;
+        if (/android/i.test(navigator.userAgent)) {
+          openChromeUrl = 'intent://' + window.location.host + window.location.pathname + window.location.search + '#Intent;scheme=https;package=com.android.chrome;end';
+        }
+
+        const brandName = (currentSettings && currentSettings.siteName) || '';
+        const popupTitle = (currentSettings && currentSettings.socialBlockerTitle) || 'Mở bằng Trình duyệt Ngoài';
+        const defaultDesc = brandName
+          ? `Trình duyệt mạng xã hội chặn phát âm thanh và bảo lưu phiên nghe trên <b>${brandName}</b>. Vui lòng mở bằng <b>Chrome</b> hoặc <b>Safari</b> để tiếp tục!`
+          : 'Trình duyệt mạng xã hội chặn phát âm thanh và bảo lưu phiên nghe. Vui lòng mở bằng <b>Chrome</b> hoặc <b>Safari</b> để tiếp tục!';
+        const popupDesc = (currentSettings && currentSettings.socialBlockerDesc) || defaultDesc;
+        const popupBtn = (currentSettings && currentSettings.socialBlockerBtnText) || 'Mở bằng Chrome / Safari';
+
+        const overlay = document.createElement('div');
+        overlay.id = 'custom-audio-blocker';
+        overlay.innerHTML = `
+          <div class="cab-card">
+            <div class="cab-icon">🎧</div>
+            <h3 class="cab-title">${popupTitle}</h3>
+            <p class="cab-desc">${popupDesc}</p>
+            
+            <a href="${openChromeUrl}" style="text-decoration: none; display: block;">
+              <button type="button" class="cab-btn-primary">${popupBtn}</button>
+            </a>
+
+            <div class="cab-divider">hoặc sao chép liên kết</div>
+
+            <div class="cab-input-group">
+              <input type="text" class="cab-input" id="cab-url-box" value="${currentUrl}" readonly />
+              <button type="button" class="cab-btn-copy" onclick="window.copyCustomLink()">Sao chép</button>
+            </div>
+            <p class="cab-tip" id="cab-status">Dán link vào Chrome hoặc Safari để nghe nhé!</p>
+            <div>
+              <button type="button" class="cab-skip" onclick="window.closeCustomPopup()">Tiếp tục xem trang</button>
+            </div>
+          </div>
+        `;
+        
+        document.body.appendChild(overlay);
+        document.body.style.overflow = 'hidden';
+      }
+
+      window.refreshCustomBlockerUI = function(settings) {
+        window.__SITE_SETTINGS__ = settings;
+        try {
+          localStorage.setItem('site_settings_cache', JSON.stringify(settings));
+        } catch (e) {}
+
+        const overlay = document.getElementById('custom-audio-blocker');
+        if (settings && settings.socialBlockerEnabled === false) {
+          if (overlay) overlay.remove();
+          document.body.style.overflow = '';
+          return;
+        }
+
+        if (overlay) {
+          const titleEl = overlay.querySelector('.cab-title');
+          const descEl = overlay.querySelector('.cab-desc');
+          const btnEl = overlay.querySelector('.cab-btn-primary');
+          const brandName = (settings && settings.siteName) || '';
+          const defaultDesc = brandName
+            ? `Trình duyệt mạng xã hội chặn phát âm thanh và bảo lưu phiên nghe trên <b>${brandName}</b>. Vui lòng mở bằng <b>Chrome</b> hoặc <b>Safari</b> để tiếp tục!`
+            : 'Trình duyệt mạng xã hội chặn phát âm thanh và bảo lưu phiên nghe. Vui lòng mở bằng <b>Chrome</b> hoặc <b>Safari</b> để tiếp tục!';
+
+          if (titleEl && settings.socialBlockerTitle) titleEl.textContent = settings.socialBlockerTitle;
+          if (descEl) descEl.innerHTML = settings.socialBlockerDesc || defaultDesc;
+          if (btnEl && settings.socialBlockerBtnText) btnEl.textContent = settings.socialBlockerBtnText;
+        }
+      };
+
+      window.copyCustomLink = function() {
+        const copyText = document.getElementById("cab-url-box");
+        if (!copyText) return;
+        copyText.select();
+        copyText.setSelectionRange(0, 99999);
+        
+        const updateStatus = () => {
+          const status = document.getElementById("cab-status");
+          if (status) {
+            status.style.color = "#22c55e";
+            status.innerText = "Đã sao chép liên kết thành công!";
+            setTimeout(() => {
+              status.style.color = "#71717a";
+              status.innerText = "Dán link vào Chrome hoặc Safari để nghe nhé!";
+            }, 2500);
+          }
+        };
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(copyText.value).then(updateStatus).catch(() => {
+            try {
+              document.execCommand('copy');
+              updateStatus();
+            } catch (err) {}
+          });
+        } else {
+          try {
+            document.execCommand('copy');
+            updateStatus();
+          } catch (err) {}
+        }
+      };
+
+      window.closeCustomPopup = function() {
+        const overlay = document.getElementById('custom-audio-blocker');
+        if (overlay) overlay.remove();
+        document.body.style.overflow = '';
+      };
+
+      if (document.readyState === 'loading') {
+        window.addEventListener('DOMContentLoaded', checkCustomBrowser);
+      } else {
+        checkCustomBrowser();
+      }
+    </script>
   </body>
 </html>
 

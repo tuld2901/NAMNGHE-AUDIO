@@ -3632,6 +3632,115 @@ https://s.lazada.vn/s.flashsale_deal`}
                 </div>
               </div>
 
+              {/* 6. CẤU HÌNH CHẶN TRÌNH DUYỆT MẠNG XÃ HỘI (IN-APP BROWSER BLOCKER) */}
+              <div className="col-span-1 lg:col-span-2 p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                  <div>
+                    <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+                      <ShieldCheck size={16} />
+                      <span>6. Cấu Hình Chặn Trình Duyệt Mạng Xã Hội (In-App Browser Blocker)</span>
+                    </h4>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      Tự động phát hiện khi khách truy cập từ Facebook, Messenger, TikTok, Instagram, Zalo... và hiển thị hộp thoại hướng dẫn mở bằng Chrome hoặc Safari để đảm bảo nghe audio ngầm không bị ngắt.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={settingsForm.socialBlockerEnabled ?? true}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, socialBlockerEnabled: e.target.checked })}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                      <span className="ml-2.5 text-xs font-bold text-slate-200">
+                        {settingsForm.socialBlockerEnabled ?? true ? 'Đang Bật Chặn' : 'Đã Tắt Chặn'}
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Giải thích về Domain & Thương hiệu */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-3.5 rounded-xl bg-slate-950/80 border border-amber-500/20 space-y-1.5">
+                    <div className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                      <Globe size={14} />
+                      <span>🌐 Tự động nhận diện Tên Miền (Không lo khi đổi Domain)</span>
+                    </div>
+                    <p className="text-[11px] text-slate-300 leading-relaxed">
+                      Đường dẫn mở Chrome và liên kết sao chép được nhận diện trực tiếp qua trình duyệt (<strong className="text-amber-200 font-mono">window.location.host</strong>). Dù bạn đổi sang bất kỳ tên miền nào hay chạy nhiều domain, hệ thống luôn tự động tạo link chuẩn xác 100%.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-slate-950/80 border border-emerald-500/20 space-y-1.5">
+                    <div className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
+                      <Palette size={14} />
+                      <span>🏷️ Tự động đồng bộ Thương Hiệu & Tên Website</span>
+                    </div>
+                    <p className="text-[11px] text-slate-300 leading-relaxed">
+                      Khi bạn đổi tên website ở Mục 1 (<strong className="text-emerald-200">{settingsForm.siteName || 'Gối Ôm Audio'}</strong>), popup thông báo sẽ tự động cập nhật tên thương hiệu mới để nhắc nhở người nghe một cách chuyên nghiệp.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                  <div>
+                    <label className="text-xs text-slate-200 font-semibold block mb-1.5">
+                      Tiêu Đề Thông Báo Popup
+                    </label>
+                    <input
+                      type="text"
+                      value={settingsForm.socialBlockerTitle || 'Mở bằng Trình duyệt Ngoài'}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, socialBlockerTitle: e.target.value })}
+                      placeholder="Mở bằng Trình duyệt Ngoài"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-400 font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-slate-200 font-semibold block mb-1.5">
+                      Chữ Hiển Thị Trên Nút Mở Trình Duyệt
+                    </label>
+                    <input
+                      type="text"
+                      value={settingsForm.socialBlockerBtnText || 'Mở bằng Chrome / Safari'}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, socialBlockerBtnText: e.target.value })}
+                      placeholder="Mở bằng Chrome / Safari"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-400 font-medium"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-xs text-slate-200 font-semibold">
+                        Nội Dung Hướng Dẫn / Lời Nhắc Trong Popup
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setSettingsForm({
+                          ...settingsForm,
+                          socialBlockerDesc: `Trình duyệt mạng xã hội chặn phát âm thanh và bảo lưu phiên nghe trên <b>${settingsForm.siteName || 'Gối Ôm Audio'}</b>. Vui lòng mở bằng <b>Chrome</b> hoặc <b>Safari</b> để tiếp tục!`
+                        })}
+                        className="text-[10px] text-amber-400 hover:text-amber-300 underline cursor-pointer"
+                      >
+                        Chèn mẫu theo tên web hiện tại
+                      </button>
+                    </div>
+                    <textarea
+                      rows={2}
+                      value={settingsForm.socialBlockerDesc || 'Trình duyệt mạng xã hội chặn phát âm thanh và bảo lưu phiên nghe. Vui lòng mở bằng Chrome hoặc Safari để tiếp tục!'}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, socialBlockerDesc: e.target.value })}
+                      placeholder="Nhập nội dung lời nhắc hiển thị trong popup..."
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-400 leading-relaxed"
+                    />
+                    <span className="text-[10px] text-slate-400 block mt-1">
+                      Hỗ trợ thẻ HTML đơn giản như &lt;b&gt;in đậm&lt;/b&gt;.
+                    </span>
+                  </div>
+                </div>
+              </div>
+
             </div>
 
           <div className="pt-2 flex items-center justify-end gap-3">

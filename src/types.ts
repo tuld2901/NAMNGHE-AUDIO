@@ -77,6 +77,10 @@ export interface SiteSettings {
   bodyCode?: string;   // Mã chèn trước thẻ </body> (Facebook Chat Plugin, TikTok Pixel, v.v.)
   apiKey?: string;     // Khóa bảo mật cho cổng API đăng/sửa/xóa truyện
   requireApiKey?: boolean; // Bật/tắt yêu cầu xác thực x-api-key khi gọi cổng API
+  socialBlockerEnabled?: boolean; // Bật/tắt popup chặn trình duyệt mạng xã hội (Facebook, TikTok, Zalo...)
+  socialBlockerTitle?: string;    // Tiêu đề popup chặn trình duyệt
+  socialBlockerDesc?: string;     // Nội dung / Mô tả popup chặn
+  socialBlockerBtnText?: string;  // Tên nút bấm mở trình duyệt chuẩn
 }
 
 export interface AdminAccount {

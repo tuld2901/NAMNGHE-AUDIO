@@ -1315,6 +1315,10 @@ export function saveSiteSettings(settings: Partial<SiteSettings>): SiteSettings 
     bodyCode: settings.bodyCode !== undefined ? String(settings.bodyCode) : (dbData.siteSettings.bodyCode || ''),
     apiKey: settings.apiKey !== undefined ? String(settings.apiKey) : (dbData.siteSettings.apiKey || DEFAULT_SITE_SETTINGS.apiKey || 'goiom_api_secret_2025'),
     requireApiKey: settings.requireApiKey !== undefined ? Boolean(settings.requireApiKey) : Boolean(dbData.siteSettings.requireApiKey),
+    socialBlockerEnabled: settings.socialBlockerEnabled !== undefined ? Boolean(settings.socialBlockerEnabled) : (dbData.siteSettings.socialBlockerEnabled ?? true),
+    socialBlockerTitle: settings.socialBlockerTitle !== undefined ? String(settings.socialBlockerTitle) : (dbData.siteSettings.socialBlockerTitle || DEFAULT_SITE_SETTINGS.socialBlockerTitle || 'Mở bằng Trình duyệt Ngoài'),
+    socialBlockerDesc: settings.socialBlockerDesc !== undefined ? String(settings.socialBlockerDesc) : (dbData.siteSettings.socialBlockerDesc || DEFAULT_SITE_SETTINGS.socialBlockerDesc || 'Trình duyệt mạng xã hội chặn phát âm thanh và bảo lưu phiên nghe. Vui lòng mở bằng Chrome hoặc Safari để tiếp tục!'),
+    socialBlockerBtnText: settings.socialBlockerBtnText !== undefined ? String(settings.socialBlockerBtnText) : (dbData.siteSettings.socialBlockerBtnText || DEFAULT_SITE_SETTINGS.socialBlockerBtnText || 'Mở bằng Chrome / Safari'),
   };
   saveDatabase(dbData);
   return dbData.siteSettings;
