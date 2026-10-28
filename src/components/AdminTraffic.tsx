@@ -2,7 +2,7 @@ import React from 'react';
 import { 
   Activity, RefreshCw, Trash2, Users, Eye, MousePointerClick, 
   TrendingUp, BarChart3, Globe, Smartphone, Monitor, Tablet,
-  Compass, ArrowUpRight, ShieldCheck, CheckCircle2
+  Compass, ArrowUpRight
 } from 'lucide-react';
 import { TrafficAnalyticsResponse } from '../services/api';
 

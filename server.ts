@@ -45,6 +45,9 @@ import {
   createAdminAccount,
   updateAdminAccount,
   deleteAdminAccount,
+  generateAdmin2FASetup,
+  enableAdmin2FA,
+  disableAdmin2FA,
   getBackupStatusInfo,
   getRawDatabaseData,
   createServerSnapshot,
@@ -1154,18 +1157,93 @@ async function startServer() {
     }
   });
 
-  // --- ADMIN ACCOUNTS & AUTH API (CREATE, UPDATE, DELETE INCLUDING DEFAULT ACCOUNT) ---
+  // --- ADMIN ACCOUNTS & AUTH API (CREATE, UPDATE, DELETE INCLUDING DEFAULT ACCOUNT & GOOGLE AUTHENTICATOR 2FA) ---
+  // Giới hạn 5 lần đăng nhập / 1 phút theo IP
+  const loginRateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
   app.post('/api/admin/login', (req, res) => {
     try {
+      const clientIp =
+        (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+        (req.headers['x-real-ip'] as string) ||
+        req.socket.remoteAddress ||
+        'unknown';
+
+      const now = Date.now();
+      const windowMs = 60 * 1000; // 1 phút
+      const maxAttempts = 5;
+
+      let record = loginRateLimitMap.get(clientIp);
+      if (!record || now > record.resetAt) {
+        record = { count: 0, resetAt: now + windowMs };
+      }
+
+      if (record.count >= maxAttempts) {
+        const waitSec = Math.max(1, Math.ceil((record.resetAt - now) / 1000));
+        return res.status(429).json({
+          success: false,
+          error: `Bạn đã thử đăng nhập quá 5 lần/phút. Vui lòng đợi ${waitSec} giây nữa rồi thử lại!`
+        });
+      }
+
       const identifier = req.body?.email || req.body?.username || req.body?.identifier || '';
       const password = req.body?.password || '';
-      const result = verifyAdminCredentials(identifier, password);
+      const twoFactorToken = req.body?.twoFactorToken || req.body?.token || req.body?.otp || '';
+      const result = verifyAdminCredentials(identifier, password, twoFactorToken);
       if (!result.success) {
+        if (result.require2FA) {
+          return res.status(200).json(result);
+        }
+        record.count += 1;
+        loginRateLimitMap.set(clientIp, record);
         return res.status(401).json(result);
       }
+
+      // Đăng nhập thành công -> xóa bộ đếm lỗi của IP này
+      loginRateLimitMap.delete(clientIp);
       return res.json(result);
     } catch (err: any) {
       return res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // --- GOOGLE AUTHENTICATOR (TOTP 2FA) ENDPOINTS ---
+  app.post('/api/admin/2fa/generate', async (req, res) => {
+    try {
+      const accountId = req.body?.accountId || '';
+      const result = await generateAdmin2FASetup(accountId);
+      if (!result.success) {
+        return res.status(400).json(result);
+      }
+      res.json(result);
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  app.post('/api/admin/2fa/enable', (req, res) => {
+    try {
+      const { accountId, secret, token } = req.body || {};
+      const result = enableAdmin2FA(accountId, secret, token);
+      if (!result.success) {
+        return res.status(400).json(result);
+      }
+      res.json(result);
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  app.post('/api/admin/2fa/disable', (req, res) => {
+    try {
+      const { accountId } = req.body || {};
+      const result = disableAdmin2FA(accountId);
+      if (!result.success) {
+        return res.status(400).json(result);
+      }
+      res.json(result);
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message });
     }
   });
 

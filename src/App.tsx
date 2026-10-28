@@ -92,10 +92,17 @@ function AppContent({
         pathname = normalizedPath;
       }
 
+      // Ẩn hoàn toàn đường dẫn quản trị cũ: Nếu ai cố tình vào /admin hoặc /quan-tri -> tự động chuyển về trang chủ /
+      const rawSegment = pathname.replace(/^\/+/, '').replace(/\/+$/, '').trim().toLowerCase();
+      if (rawSegment === 'admin' || rawSegment === 'quan-tri' || rawSegment === 'system-secret-admin') {
+        window.history.replaceState({}, '', '/');
+        pathname = '/';
+      }
+
       setCurrentPath(pathname);
 
-      // Ghi nhận traffic đo lường khách truy cập (trừ trang quản trị)
-      if (!pathname.includes('admin') && !pathname.includes('quan-tri')) {
+      // Ghi nhận traffic đo lường khách truy cập (trừ trang quản trị /app-config)
+      if (!pathname.includes('app-config')) {
         recordClientVisit(pathname, document.referrer, window.innerWidth);
       }
 
@@ -105,9 +112,7 @@ function AppContent({
       if (
         !cleanSegment ||
         lowerSegment === 'index.html' ||
-        lowerSegment === 'admin' ||
-        lowerSegment === 'quan-tri' ||
-        lowerSegment === 'system-secret-admin'
+        lowerSegment === 'app-config'
       ) {
         setActiveStoryParam(null);
         if (!cleanSegment || lowerSegment === 'index.html') {
@@ -127,12 +132,9 @@ function AppContent({
     };
   }, []);
 
-  // Determine current view - supports /admin, /quan-tri, and /system-secret-admin
+  // Determine current view - CHỈ áp dụng cho đường dẫn /app-config để bảo mật tuyệt đối
   const normalizedPath = currentPath.replace(/^\/+/, '').replace(/\/+$/, '').toLowerCase();
-  const isAdminView =
-    normalizedPath === 'admin' ||
-    normalizedPath === 'quan-tri' ||
-    normalizedPath === 'system-secret-admin';
+  const isAdminView = normalizedPath === 'app-config';
 
   // Find active track using selected track or clean SEO slug/ID (/ten-truyen)
   const currentViewingStory = useMemo(() => {
@@ -184,8 +186,8 @@ function AppContent({
   const handleNavigateToAdmin = useCallback(() => {
     setSelectedStoryTrack(null);
     setActiveStoryParam(null);
-    setCurrentPath('/admin');
-    window.history.pushState({}, '', '/admin');
+    setCurrentPath('/app-config');
+    window.history.pushState({}, '', '/app-config');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 

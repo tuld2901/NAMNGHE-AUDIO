@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
-  Lock, ShieldCheck, Upload, Image as ImageIcon, Plus, 
+  Lock, ShieldCheck, Upload, Plus, 
   Trash2, Edit3, CheckCircle2, AlertCircle, Database, RefreshCw, 
   ArrowLeft, ExternalLink, Play, Copy, Check, Shuffle, Sparkles,
   Sliders, Globe, Palette, BookmarkCheck, Folder, FolderPlus, Layers, Share2,
   AlertTriangle, Power, Filter, Search, Code2, Terminal, Download, PlayCircle,
-  CheckSquare, Square, Zap, Users, UserPlus, Key, Eye, EyeOff,
+  CheckSquare, Zap, Users, UserPlus, Key, Eye, EyeOff,
   HardDrive, Archive, FileJson, FileAudio, RotateCcw, Server, Clock, Activity,
-  ChevronDown, LayoutGrid, Wrench, Radio
+  ChevronDown, LayoutGrid, Wrench, Radio, QrCode, Smartphone
 } from 'lucide-react';
 import { Track, Chapter, AffiliateItem, AffiliateCategory, SiteSettings, AdminAccount } from '../types';
 import { getStoryPath } from '../services/seo';
@@ -28,7 +28,6 @@ import {
   uploadAudioFile, 
   uploadCoverImage,
   slugifyChapterTitle,
-  DEFAULT_TRACKS,
   fetchAffiliateCategories,
   getAffiliateCategories,
   createAffiliateCategory,
@@ -42,7 +41,6 @@ import {
   toggleAffiliateStatus,
   fetchSiteSettings,
   saveSiteSettings,
-  resetDefaultTracks,
   getSupabaseConfig,
   saveSupabaseConfig,
   detectPlatformFromUrl,
@@ -54,6 +52,9 @@ import {
   createAdminAccountOnServer,
   updateAdminAccountOnServer,
   deleteAdminAccountOnServer,
+  generate2FASetupApi,
+  enable2FAApi,
+  disable2FAApi,
   BackupStatusResponse,
   fetchBackupStatusInfo,
   createServerBackupSnapshot,
@@ -90,6 +91,9 @@ export const Admin: React.FC<AdminProps> = ({
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
   const [authInputEmail, setAuthInputEmail] = useState<string>('');
   const [authInputPassword, setAuthInputPassword] = useState<string>('');
+  const [loginStep, setLoginStep] = useState<'credentials' | '2fa'>('credentials');
+  const [twoFactorTokenInput, setTwoFactorTokenInput] = useState<string>('');
+  const [pending2FAEmail, setPending2FAEmail] = useState<string>('');
   const [authError, setAuthError] = useState<string | null>(null);
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState<boolean>(false);
@@ -184,6 +188,16 @@ export const Admin: React.FC<AdminProps> = ({
   const [visiblePasswordsMap, setVisiblePasswordsMap] = useState<Record<string, boolean>>({});
   const [accountFormMsg, setAccountFormMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isSavingAccount, setIsSavingAccount] = useState<boolean>(false);
+  const [setup2FAModal, setSetup2FAModal] = useState<{
+    isOpen: boolean;
+    account: AdminAccount | null;
+    secret: string;
+    qrCode: string;
+    tokenInput: string;
+    error?: string;
+    isSubmitting: boolean;
+    copied?: boolean;
+  } | null>(null);
 
   // Backup & Restore State (Server-backed)
   const [backupInfo, setBackupInfo] = useState<BackupStatusResponse | null>(null);
@@ -605,7 +619,6 @@ export const Admin: React.FC<AdminProps> = ({
   const [isSavingSettings, setIsSavingSettings] = useState<boolean>(false);
   const [logoUploading, setLogoUploading] = useState<boolean>(false);
   const [faviconUploading, setFaviconUploading] = useState<boolean>(false);
-  const [bannerImageUploading, setBannerImageUploading] = useState<boolean>(false);
   const [ogImageUploading, setOgImageUploading] = useState<boolean>(false);
 
   useEffect(() => {
@@ -1084,7 +1097,7 @@ export const Admin: React.FC<AdminProps> = ({
         isAuthorizedAdminEmail(currentUserEmail))
   );
 
-  // Handle Login (Verified directly against Server Admin Accounts)
+  // Handle Login (Verified directly against Server Admin Accounts, with TOTP 2FA support)
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError(null);
@@ -1093,6 +1106,7 @@ export const Admin: React.FC<AdminProps> = ({
 
     const cleanIdentifier = authInputEmail.trim();
     const cleanPassword = authInputPassword.trim();
+    const cleanToken = twoFactorTokenInput.trim();
 
     if (!cleanIdentifier || !cleanPassword) {
       setAuthError('Vui lòng nhập đầy đủ Email/Tên đăng nhập và Mật khẩu quản trị.');
@@ -1100,13 +1114,24 @@ export const Admin: React.FC<AdminProps> = ({
       return;
     }
 
-    const loginRes = await loginAdminOnServer(cleanIdentifier, cleanPassword);
+    const loginRes = await loginAdminOnServer(cleanIdentifier, cleanPassword, cleanToken || undefined);
+
+    if (loginRes.require2FA) {
+      setLoginStep('2fa');
+      setPending2FAEmail(cleanIdentifier);
+      setAuthError(null);
+      setIsAuthLoading(false);
+      return;
+    }
+
     if (loginRes.success && loginRes.account) {
       sessionStorage.setItem('phuba_admin_authenticated', loginRes.account.email);
       setCurrentUserEmail(loginRes.account.email);
       const latestAccounts = await fetchAdminAccounts();
       setAdminAccounts(latestAccounts);
       setAuthSuccess('Đăng nhập thành công vào Quản Trị CMS!');
+      setLoginStep('credentials');
+      setTwoFactorTokenInput('');
       setIsAuthLoading(false);
       return;
     }
@@ -1123,6 +1148,8 @@ export const Admin: React.FC<AdminProps> = ({
           sessionStorage.setItem('phuba_admin_authenticated', data.user.email);
           setCurrentUserEmail(data.user.email);
           setAuthSuccess('Đăng nhập Supabase Auth thành công!');
+          setLoginStep('credentials');
+          setTwoFactorTokenInput('');
           setIsAuthLoading(false);
           return;
         }
@@ -1135,12 +1162,106 @@ export const Admin: React.FC<AdminProps> = ({
     setIsAuthLoading(false);
   };
 
+  const handleBackToCredentials = () => {
+    setLoginStep('credentials');
+    setTwoFactorTokenInput('');
+    setAuthError(null);
+  };
+
   const handleLogout = async () => {
     sessionStorage.removeItem('phuba_admin_authenticated');
     setCurrentUserEmail(null);
+    setLoginStep('credentials');
+    setTwoFactorTokenInput('');
     if (supabase) {
       await supabase.auth.signOut();
     }
+  };
+
+  // --- GOOGLE AUTHENTICATOR (2FA) HANDLERS ---
+  const handleOpen2FASetup = async (acc: AdminAccount) => {
+    setAccountFormMsg(null);
+    try {
+      const res = await generate2FASetupApi(acc.id);
+      if (!res.success || !res.secret || !res.qrCode) {
+        setAccountFormMsg({ type: 'error', text: res.error || 'Không thể tạo mã QR xác thực.' });
+        return;
+      }
+      setSetup2FAModal({
+        isOpen: true,
+        account: acc,
+        secret: res.secret,
+        qrCode: res.qrCode,
+        tokenInput: '',
+        isSubmitting: false
+      });
+    } catch (err: any) {
+      setAccountFormMsg({ type: 'error', text: err.message || 'Lỗi kết nối máy chủ.' });
+    }
+  };
+
+  const handleConfirmEnable2FA = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!setup2FAModal || !setup2FAModal.account) return;
+    if (!setup2FAModal.tokenInput || setup2FAModal.tokenInput.trim().length < 6) {
+      setSetup2FAModal((prev) =>
+        prev ? { ...prev, error: 'Vui lòng nhập đủ 6 chữ số từ ứng dụng Google Authenticator.' } : null
+      );
+      return;
+    }
+    setSetup2FAModal((prev) => (prev ? { ...prev, isSubmitting: true, error: undefined } : null));
+
+    try {
+      const res = await enable2FAApi(
+        setup2FAModal.account.id,
+        setup2FAModal.secret,
+        setup2FAModal.tokenInput.trim()
+      );
+      if (!res.success) {
+        setSetup2FAModal((prev) =>
+          prev ? { ...prev, isSubmitting: false, error: res.error || 'Mã xác thực không hợp lệ.' } : null
+        );
+        return;
+      }
+      const latest = await fetchAdminAccounts();
+      setAdminAccounts(latest);
+      setAccountFormMsg({
+        type: 'success',
+        text: `Đã BẬT Google Authenticator cho tài khoản "${setup2FAModal.account.email}" thành công!`
+      });
+      setSetup2FAModal(null);
+    } catch (err: any) {
+      setSetup2FAModal((prev) =>
+        prev ? { ...prev, isSubmitting: false, error: err.message || 'Lỗi kích hoạt.' } : null
+      );
+    }
+  };
+
+  const handleDisable2FA = (acc: AdminAccount) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Tắt Google Authenticator (TOTP 2FA)',
+      message: `Bạn có chắc chắn muốn TẮT tính năng xác thực 2 bước Google Authenticator cho tài khoản "${acc.email}" không?\n\nSau khi tắt, tài khoản này sẽ chỉ cần mật khẩu để đăng nhập vào trang quản trị.`,
+      confirmLabel: 'Tắt Google Authenticator',
+      isDestructive: true,
+      onConfirm: async () => {
+        try {
+          const res = await disable2FAApi(acc.id);
+          if (!res.success) {
+            setAccountFormMsg({ type: 'error', text: res.error || 'Không thể tắt 2FA.' });
+            return;
+          }
+          const latest = await fetchAdminAccounts();
+          setAdminAccounts(latest);
+          setAccountFormMsg({
+            type: 'success',
+            text: `Đã TẮT Google Authenticator cho tài khoản "${acc.email}" thành công!`
+          });
+        } catch (err: any) {
+          setAccountFormMsg({ type: 'error', text: err.message || 'Lỗi khi tắt 2FA.' });
+        }
+      }
+    });
   };
 
   // --- ADMIN ACCOUNTS CRUD HANDLERS ---
@@ -1542,46 +1663,97 @@ export const Admin: React.FC<AdminProps> = ({
             </div>
           )}
 
-          <form onSubmit={handleLogin} className="space-y-4 text-left">
-            <div>
-              <label className="text-xs text-[#d1d1d1] font-medium block mb-1.5">
-                Email Hoặc Tên Đăng Nhập Quản Trị
-              </label>
-              <input
-                type="text"
-                value={authInputEmail}
-                onChange={(e) => setAuthInputEmail(e.target.value)}
-                required
-                autoComplete="username"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-[#181818] border border-[#333333] text-sm text-white focus:outline-none focus:border-[#1ed760]"
-                placeholder="Nhập tài khoản quản trị"
-              />
-            </div>
+          {loginStep === 'credentials' ? (
+            <form onSubmit={handleLogin} className="space-y-4 text-left">
+              <div>
+                <label className="text-xs text-[#d1d1d1] font-medium block mb-1.5">
+                  Email Hoặc Tên Đăng Nhập Quản Trị
+                </label>
+                <input
+                  type="text"
+                  value={authInputEmail}
+                  onChange={(e) => setAuthInputEmail(e.target.value)}
+                  required
+                  autoComplete="username"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#181818] border border-[#333333] text-sm text-white focus:outline-none focus:border-[#1ed760]"
+                  placeholder="Nhập tài khoản quản trị"
+                />
+              </div>
 
-            <div>
-              <label className="text-xs text-[#d1d1d1] font-medium block mb-1.5">
-                Mật Khẩu Quản Trị
-              </label>
-              <input
-                type="password"
-                value={authInputPassword}
-                onChange={(e) => setAuthInputPassword(e.target.value)}
-                required
-                autoComplete="current-password"
-                placeholder="••••••••"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-[#181818] border border-[#333333] text-sm text-white focus:outline-none focus:border-[#1ed760] font-mono"
-              />
-            </div>
+              <div>
+                <label className="text-xs text-[#d1d1d1] font-medium block mb-1.5">
+                  Mật Khẩu Quản Trị
+                </label>
+                <input
+                  type="password"
+                  value={authInputPassword}
+                  onChange={(e) => setAuthInputPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#181818] border border-[#333333] text-sm text-white focus:outline-none focus:border-[#1ed760] font-mono"
+                />
+              </div>
 
-            <button
-              type="submit"
-              disabled={isAuthLoading}
-              className="w-full py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-[#1ed760] to-[#1db954] text-black font-bold hover:brightness-110 shadow-lg shadow-[#1ed760]/20 transition cursor-pointer flex items-center justify-center gap-2"
-            >
-              <ShieldCheck size={18} />
-              <span>{isAuthLoading ? 'Đang xác thực...' : 'Đăng Nhập Trang Quản Trị'}</span>
-            </button>
-          </form>
+              <button
+                type="submit"
+                disabled={isAuthLoading}
+                className="w-full py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-[#1ed760] to-[#1db954] text-black hover:brightness-110 shadow-lg shadow-[#1ed760]/20 transition cursor-pointer flex items-center justify-center gap-2"
+              >
+                <ShieldCheck size={18} />
+                <span>{isAuthLoading ? 'Đang xác thực...' : 'Đăng Nhập Trang Quản Trị'}</span>
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleLogin} className="space-y-4 text-left animate-fade-in">
+              <div className="p-3.5 rounded-xl bg-[#121212] border border-[#1ed760]/30 text-center space-y-1">
+                <span className="text-[11px] font-bold text-[#1ed760] uppercase tracking-wider block flex items-center justify-center gap-1.5">
+                  <Smartphone size={14} /> Xác Thực 2 Bước (Google Authenticator)
+                </span>
+                <p className="text-xs text-white">
+                  Tài khoản: <span className="text-[#1ed760] font-mono font-bold">{pending2FAEmail}</span>
+                </p>
+                <p className="text-[11px] text-[#b3b3b3]">
+                  Nhập mã gồm <b>6 chữ số</b> từ ứng dụng <b>Google Authenticator</b> trên điện thoại để xác nhận đăng nhập:
+                </p>
+              </div>
+
+              <div>
+                <label className="text-xs text-[#d1d1d1] font-medium block mb-1.5 text-center">
+                  Mã Xác Thực 6 Số (TOTP OTP)
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={6}
+                  autoFocus
+                  value={twoFactorTokenInput}
+                  onChange={(e) => setTwoFactorTokenInput(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  required
+                  placeholder="••••••"
+                  className="w-full px-3.5 py-3 rounded-xl bg-[#121212] border border-[#333333] text-center text-2xl font-mono font-bold tracking-[0.35em] text-[#1ed760] focus:outline-none focus:border-[#1ed760]"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isAuthLoading || twoFactorTokenInput.length < 6}
+                className="w-full py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-[#1ed760] to-[#1db954] text-black hover:brightness-110 shadow-lg shadow-[#1ed760]/20 transition cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ShieldCheck size={18} />
+                <span>{isAuthLoading ? 'Đang kiểm tra mã...' : 'Xác Nhận & Đăng Nhập'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleBackToCredentials}
+                className="w-full py-2 text-xs text-[#b3b3b3] hover:text-white transition cursor-pointer text-center block"
+              >
+                ← Quay lại đổi tài khoản hoặc mật khẩu
+              </button>
+            </form>
+          )}
 
           <div className="pt-2 border-t border-[#282828] text-center">
             <button
@@ -2510,6 +2682,8 @@ export const Admin: React.FC<AdminProps> = ({
                     <option value="Tiên Hiệp">Tiên Hiệp</option>
                     <option value="Kiếm Hiệp">Kiếm Hiệp</option>
                     <option value="Ngôn Tình">Ngôn Tình</option>
+                    <option value="Hiện Đại">Hiện Đại</option>
+                    <option value="Cổ Trang">Cổ Trang</option>
                     <option value="Trinh Thám">Trinh Thám</option>
                     <option value="Đời Thực">Đời Thực</option>
                     <option value="Truyện Ngắn">Truyện Ngắn</option>
@@ -4654,6 +4828,44 @@ https://s.lazada.vn/s.flashsale_deal`}
                               </button>
                             </div>
                           </div>
+
+                          {/* Trạng Thái Google Authenticator (TOTP 2FA) */}
+                          <div className="sm:col-span-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-[#282828]/80">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[#b3b3b3] font-sans text-[11px] shrink-0">Google Authenticator:</span>
+                              {acc.twoFactorEnabled ? (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#1ed760]/20 text-[#1ed760] border border-[#1ed760]/30 flex items-center gap-1">
+                                  <ShieldCheck size={12} className="text-[#1ed760]" />
+                                  <span>Đang BẬT</span>
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#242424] text-[#b3b3b3] border border-[#333333]">
+                                  Chưa kích hoạt
+                                </span>
+                              )}
+                            </div>
+
+                            {acc.twoFactorEnabled ? (
+                              <button
+                                type="button"
+                                onClick={() => handleDisable2FA(acc)}
+                                className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 transition cursor-pointer self-start sm:self-auto flex items-center gap-1"
+                                title="Tắt bảo mật 2 bước Google Authenticator cho tài khoản này"
+                              >
+                                ✕ Tắt Google Authenticator
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleOpen2FASetup(acc)}
+                                className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-[#1ed760]/15 hover:bg-[#1ed760]/25 text-[#1ed760] border border-[#1ed760]/30 transition cursor-pointer self-start sm:self-auto flex items-center gap-1"
+                                title="Bật bảo mật 2 bước bằng Google Authenticator"
+                              >
+                                <QrCode size={13} />
+                                <span>Bật Google Authenticator</span>
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
 
@@ -4684,6 +4896,131 @@ https://s.lazada.vn/s.flashsale_deal`}
               </div>
             </div>
           </div>
+
+          {/* MODAL CẤU HÌNH GOOGLE AUTHENTICATOR (TOTP 2FA) */}
+          {setup2FAModal?.isOpen && setup2FAModal.account && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+              <div className="w-full max-w-lg rounded-2xl bg-[#181818] border border-[#1ed760]/30 p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+                <div className="flex items-center justify-between border-b border-[#282828] pb-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-[#1ed760]/15 border border-[#1ed760]/30 flex items-center justify-center text-[#1ed760]">
+                      <QrCode size={20} />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-white">
+                        Cấu Hình Google Authenticator (TOTP 2FA)
+                      </h3>
+                      <p className="text-[11px] text-[#b3b3b3]">
+                        Tài khoản: <span className="text-[#1ed760] font-mono font-semibold">{setup2FAModal.account.email}</span>
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSetup2FAModal(null)}
+                    className="w-8 h-8 rounded-lg bg-[#242424] hover:bg-[#333333] text-[#b3b3b3] hover:text-white flex items-center justify-center text-sm cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="space-y-4 text-xs">
+                  {setup2FAModal.error && (
+                    <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+                      <AlertCircle size={16} className="shrink-0 text-rose-400" />
+                      <span>{setup2FAModal.error}</span>
+                    </div>
+                  )}
+
+                  {/* Bước 1: Quét mã QR */}
+                  <div className="p-4 rounded-xl bg-[#121212] border border-[#282828] space-y-3 text-center">
+                    <span className="text-[11px] font-bold text-[#1ed760] uppercase tracking-wider block">
+                      Bước 1: Quét Mã QR Bằng Ứng Dụng
+                    </span>
+                    <p className="text-[#b3b3b3] text-[11px]">
+                      Mở ứng dụng <b>Google Authenticator</b> (hoặc Authy / Microsoft Authenticator) trên điện thoại và chọn <b>Quét mã QR</b>:
+                    </p>
+                    <div className="inline-block p-3 rounded-2xl bg-white shadow-xl mx-auto">
+                      <img
+                        src={setup2FAModal.qrCode}
+                        alt="Google Authenticator QR Code"
+                        className="w-44 h-44 object-contain"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Bước 2: Hoặc nhập mã bí mật */}
+                  <div className="p-3.5 rounded-xl bg-[#121212] border border-[#282828] space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-slate-200">
+                        Bước 2: Hoặc Nhập Mã Khóa Thủ Công (Secret Key)
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleCopyText(setup2FAModal.secret, '2fa-secret');
+                          setSetup2FAModal((prev) => (prev ? { ...prev, copied: true } : null));
+                          setTimeout(() => setSetup2FAModal((prev) => (prev ? { ...prev, copied: false } : null)), 2500);
+                        }}
+                        className="px-2 py-1 rounded text-[10px] font-semibold bg-[#242424] hover:bg-[#333333] text-[#1ed760] border border-[#333333] flex items-center gap-1 cursor-pointer"
+                      >
+                        {setup2FAModal.copied ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
+                        <span>{setup2FAModal.copied ? 'Đã chép' : 'Sao chép khóa'}</span>
+                      </button>
+                    </div>
+                    <div className="p-2.5 rounded-lg bg-[#181818] border border-[#333333] font-mono text-center text-xs font-bold text-[#1ed760] select-all tracking-wider break-all">
+                      {setup2FAModal.secret}
+                    </div>
+                  </div>
+
+                  {/* Bước 3: Xác thực 6 số */}
+                  <form onSubmit={handleConfirmEnable2FA} className="p-4 rounded-xl bg-[#121212] border border-[#1ed760]/30 space-y-3">
+                    <div className="text-center space-y-1">
+                      <span className="text-[11px] font-bold text-[#1ed760] uppercase tracking-wider block">
+                        Bước 3: Nhập Mã 6 Số Từ Điện Thoại Để Kích Hoạt
+                      </span>
+                      <p className="text-[#b3b3b3] text-[11px]">
+                        Nhập 6 chữ số đang hiển thị trong app Google Authenticator:
+                      </p>
+                    </div>
+
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={6}
+                      autoFocus
+                      value={setup2FAModal.tokenInput}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                        setSetup2FAModal((prev) => (prev ? { ...prev, tokenInput: val, error: undefined } : null));
+                      }}
+                      placeholder="••••••"
+                      className="w-full px-4 py-3 rounded-xl bg-[#181818] border border-[#333333] text-center text-2xl font-mono font-bold tracking-[0.35em] text-[#1ed760] focus:outline-none focus:border-[#1ed760]"
+                    />
+
+                    <div className="pt-2 flex items-center justify-end gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => setSetup2FAModal(null)}
+                        className="px-4 py-2.5 rounded-xl bg-[#242424] hover:bg-[#333333] text-[#d1d1d1] font-semibold transition cursor-pointer"
+                      >
+                        Hủy Bỏ
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={setup2FAModal.isSubmitting || setup2FAModal.tokenInput.length < 6}
+                        className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#1ed760] to-[#1db954] hover:from-[#1db954] hover:to-[#1db954] text-slate-950 font-bold flex items-center gap-1.5 transition cursor-pointer shadow-lg shadow-[#1ed760]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <ShieldCheck size={16} />
+                        <span>{setup2FAModal.isSubmitting ? 'Đang kích hoạt...' : 'Xác Nhận & Bật 2FA'}</span>
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

@@ -225,6 +225,9 @@ pm2 startup
 # CẤU HÌNH NGINX CHUẨN CHO DỰ ÁN NAMNGHE-AUDIO (NGHE TRUYỆN AUDIO ONLINE)
 # ==============================================================================
 
+# KHAI BÁO VÙNG NHỚ GIỚI HẠN ĐĂNG NHẬP ADMIN: TỐI ĐA 5 LẦN / 1 PHÚT THEO IP
+limit_req_zone $binary_remote_addr zone=admin_login_limit:10m rate=5r/m;
+
 server {
     listen 80;
     listen [::]:80;
@@ -270,6 +273,25 @@ server {
         location ~* \.(php|pl|py|jsp|asp|sh|cgi)$ {
             deny all;
         }
+    }
+
+    # 3A. GIỚI HẠN 5 LẦN ĐĂNG NHẬP / 1 PHÚT CHO TRANG QUẢN TRỊ (/app-config)
+    location = /api/admin/login {
+        limit_req zone=admin_login_limit burst=4 nodelay;
+        limit_req_status 429;
+        error_page 429 = @login_rate_limited;
+
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location @login_rate_limited {
+        default_type application/json;
+        return 429 '{"success":false,"error":"Bạn đã thử đăng nhập quá 5 lần trong 1 phút. Vui lòng đợi 1 phút rồi thử lại!"}';
     }
 
     # 3B. ƯU TIÊN TUYỆT ĐỐI CHO TOÀN BỘ CỔNG API (/api/gateway, /api/upload-audio, /api/stream-audio, /api/tracks)
@@ -449,10 +471,48 @@ pm2 logs audio-cms --lines 50
 
 ---
 
-## 9. THÔNG TIN TÀI KHOẢN QUẢN TRỊ MẶC ĐỊNH
+## 9. BẢO MẬT QUẢN TRỊ (`/app-config`), GOOGLE AUTHENTICATOR (2FA) & GIỚI HẠN NGINX 5 LẦN LOGIN / PHÚT
 
-- **URL đăng nhập CMS**: `https://tenmien.com/admin` (hoặc `http://localhost:3000/admin`)
-- **Tài khoản mặc định**: `tuld2901@gmail.com` (hoặc `admin`)
-- **Mật khẩu mặc định**: `admin123`
-- Sau khi đăng nhập, vào mục **Tài Khoản Quản Trị** để đổi mật khẩu, thêm tài khoản mới hoặc xóa tài khoản mặc định.
+### 9.1. Đường dẫn Quản trị bí mật (`/app-config`)
+- **URL đăng nhập Quản trị CMS**: `https://tenmien.com/app-config` (hoặc `http://localhost:3000/app-config`).
+- **Tự động ẩn đường dẫn cũ**: Bất kỳ ai cố tình truy cập `/admin` hoặc `/quan-tri` sẽ được hệ thống tự động chuyển hướng thẳng về trang chủ `/`.
+- **Tài khoản mặc định**: `tuld2901@gmail.com` (hoặc `admin`) / **Mật khẩu**: `admin123`.
+
+### 9.2. Xác thực 2 bước Google Authenticator (`speakeasy` + `qrcode`)
+1. Đăng nhập vào `/app-config` -> Chọn tab **Tài Khoản Quản Trị**.
+2. Tại tài khoản của bạn, bấm nút **Bật Google Authenticator**.
+3. Dùng ứng dụng **Google Authenticator** (hoặc Authy) trên điện thoại quét **Mã QR** hiển thị trên màn hình (hoặc nhập mã khóa Secret Key thủ công).
+4. Nhập mã gồm **6 chữ số** từ điện thoại vào ô xác nhận và bấm **Xác Nhận & Bật 2FA**.
+5. Có thể bật hoặc tắt Google Authenticator bất cứ lúc nào ngay trong mục **Tài Khoản Quản Trị**.
+
+### 9.3. Cấu hình Nginx giới hạn 5 lần Login / 1 phút (Chống Brute-Force)
+- Khai báo ở đầu file cấu hình Nginx (hoặc trong khối `http { ... }` của `/etc/nginx/nginx.conf`):
+  ```nginx
+  limit_req_zone $binary_remote_addr zone=admin_login_limit:10m rate=5r/m;
+  ```
+- Thêm khối `location = /api/admin/login` vào trong `server { ... }`:
+  ```nginx
+  location = /api/admin/login {
+      limit_req zone=admin_login_limit burst=4 nodelay;
+      limit_req_status 429;
+      error_page 429 = @login_rate_limited;
+
+      proxy_pass http://127.0.0.1:3000;
+      proxy_http_version 1.1;
+      proxy_set_header Host $host;
+      proxy_set_header X-Real-IP $remote_addr;
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto $scheme;
+  }
+
+  location @login_rate_limited {
+      default_type application/json;
+      return 429 '{"success":false,"error":"Bạn đã thử đăng nhập quá 5 lần trong 1 phút. Vui lòng đợi 1 phút rồi thử lại!"}';
+  }
+  ```
+- Kiểm tra và tải lại Nginx:
+  ```bash
+  sudo nginx -t && sudo systemctl reload nginx
+  ```
+
 

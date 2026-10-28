@@ -985,17 +985,34 @@ export const fetchAdminAccounts = async (): Promise<AdminAccount[]> => {
 
 export const loginAdminOnServer = async (
   identifier: string,
-  password: string
-): Promise<{ success: boolean; account?: AdminAccount; error?: string }> => {
+  password: string,
+  twoFactorToken?: string
+): Promise<{ success: boolean; account?: AdminAccount; require2FA?: boolean; accountId?: string; email?: string; error?: string; message?: string }> => {
   try {
     const res = await fetch('/api/admin/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ identifier, password })
+      body: JSON.stringify({ identifier, password, twoFactorToken })
     });
+
+    if (res.status === 429) {
+      let customErr = 'Bạn đã thử đăng nhập quá 5 lần trong 1 phút. Vui lòng đợi 1 phút rồi thử lại!';
+      try {
+        const errJson = await res.json();
+        if (errJson?.error) customErr = errJson.error;
+      } catch {}
+      return {
+        success: false,
+        error: customErr
+      };
+    }
+
     const data = await res.json();
     if (res.ok && data.success) {
       await fetchAdminAccounts();
+      return data;
+    }
+    if (data.require2FA) {
       return data;
     }
     return {
@@ -1003,21 +1020,65 @@ export const loginAdminOnServer = async (
       error: data.error || 'Sai thông tin tài khoản hoặc mật khẩu quản trị!'
     };
   } catch (err: any) {
-    // Fallback check against cachedAdminAccounts if server unreachable
-    const cleanId = identifier.trim().toLowerCase();
-    const cleanPass = password.trim();
-    const matched = cachedAdminAccounts.find(
-      a =>
-        (a.email.toLowerCase() === cleanId || (a.username && a.username.toLowerCase() === cleanId)) &&
-        a.password === cleanPass
-    );
-    if (matched) {
-      return { success: true, account: matched };
-    }
     return {
       success: false,
-      error: 'Không thể xác thực tài khoản quản trị: ' + (err.message || 'Lỗi kết nối')
+      error: 'Không thể kết nối máy chủ xác thực: ' + (err.message || 'Lỗi kết nối')
     };
+  }
+};
+
+export const generate2FASetupApi = async (
+  accountId: string
+): Promise<{ success: boolean; secret?: string; qrCode?: string; otpauthUrl?: string; error?: string }> => {
+  try {
+    const res = await fetch('/api/admin/2fa/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accountId })
+    });
+    return await res.json();
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Lỗi kết nối Server khi tạo mã QR 2FA' };
+  }
+};
+
+export const enable2FAApi = async (
+  accountId: string,
+  secret: string,
+  token: string
+): Promise<{ success: boolean; accounts?: AdminAccount[]; account?: AdminAccount; error?: string }> => {
+  try {
+    const res = await fetch('/api/admin/2fa/enable', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accountId, secret, token })
+    });
+    const data = await res.json();
+    if (data.accounts) {
+      cachedAdminAccounts = data.accounts;
+    }
+    return data;
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Lỗi kết nối Server khi kích hoạt 2FA' };
+  }
+};
+
+export const disable2FAApi = async (
+  accountId: string
+): Promise<{ success: boolean; accounts?: AdminAccount[]; account?: AdminAccount; error?: string }> => {
+  try {
+    const res = await fetch('/api/admin/2fa/disable', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accountId })
+    });
+    const data = await res.json();
+    if (data.accounts) {
+      cachedAdminAccounts = data.accounts;
+    }
+    return data;
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Lỗi kết nối Server khi tắt 2FA' };
   }
 };
 

@@ -2,9 +2,10 @@ import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import speakeasy from 'speakeasy';
+import QRCode from 'qrcode';
 import { Track, AffiliateCategory, AffiliateItem, SiteSettings, AdminAccount } from './src/types';
 import { 
-  DEFAULT_TRACKS, 
   DEFAULT_AFFILIATE_CATEGORIES, 
   DEFAULT_AFFILIATE_LINKS, 
   DEFAULT_SITE_SETTINGS,
@@ -1389,8 +1390,9 @@ export function getAdminAccounts(): AdminAccount[] {
 
 export function verifyAdminCredentials(
   identifier: string,
-  password: string
-): { success: boolean; account?: AdminAccount; error?: string } {
+  password: string,
+  twoFactorToken?: string
+): { success: boolean; account?: AdminAccount; require2FA?: boolean; accountId?: string; email?: string; error?: string } {
   const accounts = getAdminAccounts();
   // Ensure at least default account exists if array became completely empty
   if (accounts.length === 0) {
@@ -1423,6 +1425,36 @@ export function verifyAdminCredentials(
       success: false,
       error: 'Mật khẩu không chính xác! Vui lòng kiểm tra lại.'
     };
+  }
+
+  // Kiểm tra nếu tài khoản đã bật Google Authenticator (TOTP)
+  if (matched.twoFactorEnabled && matched.twoFactorSecret) {
+    const cleanToken = (twoFactorToken || '').trim();
+    if (!cleanToken) {
+      return {
+        success: false,
+        require2FA: true,
+        accountId: matched.id,
+        email: matched.email
+      };
+    }
+
+    const isTokenValid = speakeasy.totp.verify({
+      secret: matched.twoFactorSecret,
+      encoding: 'base32',
+      token: cleanToken,
+      window: 1 // Cho phép sai lệch +/- 30 giây để tránh lệch đồng hồ
+    });
+
+    if (!isTokenValid) {
+      return {
+        success: false,
+        require2FA: true,
+        accountId: matched.id,
+        email: matched.email,
+        error: 'Mã xác thực Google Authenticator (6 số) không đúng hoặc đã hết hạn!'
+      };
+    }
   }
 
   return {
@@ -1584,6 +1616,117 @@ export function deleteAdminAccount(id: string): {
 
   return {
     success: true,
+    accounts: dbData.adminAccounts
+  };
+}
+
+/**
+ * Tạo mã bí mật Google Authenticator (TOTP) và tạo QR Code dạng Data URL
+ */
+export async function generateAdmin2FASetup(accountId: string): Promise<{
+  success: boolean;
+  secret?: string;
+  qrCode?: string;
+  otpauthUrl?: string;
+  error?: string;
+}> {
+  const accounts = getAdminAccounts();
+  const target = accounts.find((a) => a.id === accountId);
+  if (!target) {
+    return { success: false, error: 'Không tìm thấy tài khoản quản trị.' };
+  }
+
+  const siteSettings = getSiteSettings();
+  const issuer = (siteSettings.siteName || 'Phú Bà Audio').trim() || 'Phú Bà Audio';
+
+  // Sinh mã bí mật mới
+  const secretObj = speakeasy.generateSecret({
+    name: `${issuer} (${target.email})`,
+    issuer: issuer,
+    length: 20
+  });
+
+  const otpauthUrl = secretObj.otpauth_url || '';
+  let qrCodeDataUrl = '';
+  try {
+    qrCodeDataUrl = await QRCode.toDataURL(otpauthUrl);
+  } catch (err: any) {
+    return { success: false, error: 'Lỗi tạo mã QR Code: ' + err.message };
+  }
+
+  return {
+    success: true,
+    secret: secretObj.base32,
+    otpauthUrl,
+    qrCode: qrCodeDataUrl
+  };
+}
+
+/**
+ * Xác thực mã OTP 6 số và kích hoạt Google Authenticator cho tài khoản
+ */
+export function enableAdmin2FA(
+  accountId: string,
+  secret: string,
+  token: string
+): { success: boolean; accounts?: AdminAccount[]; account?: AdminAccount; error?: string } {
+  const accounts = getAdminAccounts();
+  const target = accounts.find((a) => a.id === accountId);
+  if (!target) {
+    return { success: false, error: 'Không tìm thấy tài khoản quản trị.' };
+  }
+
+  const cleanToken = (token || '').trim();
+  if (!cleanToken || cleanToken.length !== 6) {
+    return { success: false, error: 'Mã xác thực phải gồm 6 chữ số.' };
+  }
+
+  const isTokenValid = speakeasy.totp.verify({
+    secret: secret.trim(),
+    encoding: 'base32',
+    token: cleanToken,
+    window: 1 // Cho phép sai lệch +/- 30s
+  });
+
+  if (!isTokenValid) {
+    return {
+      success: false,
+      error: 'Mã xác nhận 6 số không đúng hoặc đã hết hạn. Hãy kiểm tra lại ứng dụng Google Authenticator trên điện thoại!'
+    };
+  }
+
+  target.twoFactorEnabled = true;
+  target.twoFactorSecret = secret.trim();
+  target.updatedAt = new Date().toISOString();
+  saveDatabase(dbData);
+
+  return {
+    success: true,
+    account: target,
+    accounts: dbData.adminAccounts
+  };
+}
+
+/**
+ * Tắt bảo mật Google Authenticator cho tài khoản
+ */
+export function disableAdmin2FA(
+  accountId: string
+): { success: boolean; accounts?: AdminAccount[]; account?: AdminAccount; error?: string } {
+  const accounts = getAdminAccounts();
+  const target = accounts.find((a) => a.id === accountId);
+  if (!target) {
+    return { success: false, error: 'Không tìm thấy tài khoản quản trị.' };
+  }
+
+  target.twoFactorEnabled = false;
+  target.twoFactorSecret = undefined;
+  target.updatedAt = new Date().toISOString();
+  saveDatabase(dbData);
+
+  return {
+    success: true,
+    account: target,
     accounts: dbData.adminAccounts
   };
 }

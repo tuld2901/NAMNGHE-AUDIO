@@ -77,7 +77,7 @@ npm run build
 npm run dev
 ```
 - App URL: `http://localhost:3000`
-- Admin CMS URL: `http://localhost:3000/admin`
+- Admin CMS URL: `http://localhost:3000/app-config`
 
 ### Production Mode (Standard Node.js)
 ```bash
@@ -107,15 +107,18 @@ pm2 stop namnghe-cms      # Stop application
 
 ---
 
-## 4. Nginx Reverse Proxy Configuration (Production)
+## 4. Nginx Reverse Proxy & Rate Limit Configuration (5 Logins / 1 Minute)
 
 Create file `/etc/nginx/sites-available/namnghe-cms` (or simply copy the included `nginx.conf` template):
 ```bash
 sudo cp /root/NAMNGHE-AUDIO/nginx.conf /etc/nginx/sites-available/namnghe-cms
 ```
 
-Full configuration content:
+Full configuration content (including **5 logins / 1 minute rate limiting** on `/api/admin/login`):
 ```nginx
+# Rate limit zone: 5 login requests per 1 minute per IP address
+limit_req_zone $binary_remote_addr zone=admin_login_limit:10m rate=5r/m;
+
 server {
     listen 80;
     listen [::]:80;
@@ -159,6 +162,25 @@ server {
         location ~* \.(php|pl|py|jsp|asp|sh|cgi)$ {
             deny all;
         }
+    }
+
+    # Limit Admin Login to 5 attempts / 1 minute per IP
+    location = /api/admin/login {
+        limit_req zone=admin_login_limit burst=4 nodelay;
+        limit_req_status 429;
+        error_page 429 = @login_rate_limited;
+
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location @login_rate_limited {
+        default_type application/json;
+        return 429 '{"success":false,"error":"Bạn đã thử đăng nhập quá 5 lần trong 1 phút. Vui lòng đợi 1 phút rồi thử lại!"}';
     }
 
     # High-priority proxy for all API routes (/api/gateway, /api/upload-audio, /api/stream-audio, /api/tracks)
@@ -225,15 +247,14 @@ sudo certbot --nginx -d your-domain.com -d www.your-domain.com
 
 ---
 
-## 5. Admin CMS Credentials
+## 5. Admin CMS Credentials & Google Authenticator (2FA)
 
-The login button is hidden from public view for security. Access directly:
+The admin route is hidden from public view (`/admin` and `/quan-tri` automatically redirect to `/`). Access directly via `/app-config`:
 
-- **CMS URL**: `https://your-domain.com/admin` (or `http://localhost:3000/admin`)
+- **CMS URL**: `https://your-domain.com/app-config` (or `http://localhost:3000/app-config`)
 - **Email / Username**: `tuld2901@gmail.com` (or `admin`)
 - **Password**: `admin123`
-
-*(You can update or delete this account anytime inside Admin CMS -> Admin Accounts tab).*
+- **Google Authenticator (TOTP 2FA)**: Powered by `speakeasy` + `qrcode`. Can be enabled or disabled anytime inside **Admin CMS -> Tài Khoản Quản Trị**.
 
 ---
 

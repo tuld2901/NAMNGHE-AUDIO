@@ -94,5 +94,7 @@ export interface AdminAccount {
   isDefault?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  twoFactorEnabled?: boolean;
+  twoFactorSecret?: string;
 }
 
