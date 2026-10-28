@@ -13,6 +13,15 @@ interface HomeProps {
   siteSettings?: SiteSettings;
 }
 
+const removeVietnameseTones = (str: string): string => {
+  return (str || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toLowerCase();
+};
+
 export const Home: React.FC<HomeProps> = React.memo(({
   tracks,
   currentTrack,
@@ -49,11 +58,13 @@ export const Home: React.FC<HomeProps> = React.memo(({
 
   const handleClearSearch = () => {
     setInternalSearch('');
+    setVisibleCount(25);
     if (onSearchChange) onSearchChange('');
   };
 
   const handleSearchChange = (val: string) => {
     setInternalSearch(val);
+    setVisibleCount(25);
     if (onSearchChange) onSearchChange(val);
   };
 
@@ -88,16 +99,32 @@ export const Home: React.FC<HomeProps> = React.memo(({
       .slice(0, 16);
   }, [tracks, topTimeFilter]);
 
-  // 4. Tất cả audio filtered list
+  // 4. Tất cả audio filtered list (Tìm kiếm tức thì gõ đến đâu hiển thị ngay danh sách đến đó)
   const filteredAllTracks = useMemo(() => {
+    if (!activeSearch) return tracks;
+    const rawQuery = activeSearch.toLowerCase().trim();
+    const normalizedQuery = removeVietnameseTones(activeSearch.trim());
+
     return tracks.filter((t) => {
-      const matchSearch =
-        !activeSearch ||
-        t.title.toLowerCase().includes(activeSearch.toLowerCase()) ||
-        t.author.toLowerCase().includes(activeSearch.toLowerCase()) ||
-        t.category.toLowerCase().includes(activeSearch.toLowerCase()) ||
-        (t.description && t.description.toLowerCase().includes(activeSearch.toLowerCase()));
-      return matchSearch;
+      const titleLower = t.title.toLowerCase();
+      const titleNorm = removeVietnameseTones(t.title);
+      const authorLower = (t.author || '').toLowerCase();
+      const authorNorm = removeVietnameseTones(t.author || '');
+      const categoryLower = (t.category || '').toLowerCase();
+      const categoryNorm = removeVietnameseTones(t.category || '');
+      const descLower = (t.description || '').toLowerCase();
+      const descNorm = removeVietnameseTones(t.description || '');
+
+      return (
+        titleLower.includes(rawQuery) ||
+        titleNorm.includes(normalizedQuery) ||
+        authorLower.includes(rawQuery) ||
+        authorNorm.includes(normalizedQuery) ||
+        categoryLower.includes(rawQuery) ||
+        categoryNorm.includes(normalizedQuery) ||
+        descLower.includes(rawQuery) ||
+        descNorm.includes(normalizedQuery)
+      );
     });
   }, [tracks, activeSearch]);
 
@@ -105,62 +132,66 @@ export const Home: React.FC<HomeProps> = React.memo(({
   const hasMore = visibleCount < filteredAllTracks.length;
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-7 pb-10">
-      {/* Hero Banner / Website Header Configured from Admin Server Settings */}
-      {siteSettings?.showHeroBanner !== false ? (
-        <div className="relative rounded-3xl overflow-hidden border border-[#282828] bg-gradient-to-r from-[#1db954]/20 via-[#181818] to-[#121212] p-5 sm:p-7 shadow-2xl">
-          {siteSettings?.heroBannerImage && (
-            <div className="absolute inset-0 z-0">
-              <img
-                src={siteSettings.heroBannerImage}
-                alt={siteSettings.heroTitle || 'Banner'}
-                className="w-full h-full object-cover opacity-25"
-              />
-              <div className="absolute inset-0 bg-gradient-to-r from-[#121212]/90 via-[#121212]/75 to-[#121212]/50" />
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6 pb-10">
+      {/* Hero Banner: ẨN KHI ĐANG GÕ TÌM KIẾM ĐỂ ƯU TIÊN TUYỆT ĐỐI CHO Ô TÌM KIẾM VÀ DANH SÁCH */}
+      {!isSearching && (
+        <>
+          {siteSettings?.showHeroBanner !== false ? (
+            <div className="relative rounded-3xl overflow-hidden border border-[#282828] bg-gradient-to-r from-[#1db954]/20 via-[#181818] to-[#121212] p-5 sm:p-7 shadow-2xl">
+              {siteSettings?.heroBannerImage && (
+                <div className="absolute inset-0 z-0">
+                  <img
+                    src={siteSettings.heroBannerImage}
+                    alt={siteSettings.heroTitle || 'Banner'}
+                    className="w-full h-full object-cover opacity-25"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#121212]/90 via-[#121212]/75 to-[#121212]/50" />
+                </div>
+              )}
+
+              <div className="relative z-10 max-w-3xl space-y-2.5">
+                {siteSettings?.heroBadge && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1db954]/15 border border-[#1db954]/30 text-[#1ed760] text-xs font-semibold">
+                    <span>✨</span>
+                    <span>{siteSettings.heroBadge}</span>
+                  </span>
+                )}
+
+                <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
+                  {siteSettings?.heroTitle || 'Nghe gì hôm nay?'}
+                </h1>
+
+                <p className="text-xs sm:text-sm text-[#b3b3b3] leading-relaxed">
+                  {siteSettings?.heroDescription || `${tracks.length} audio • nghe miễn phí, không cần tài khoản`}
+                </p>
+
+                {siteSettings?.heroButtonText && (
+                  <div className="pt-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        allTracksSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      className="px-4 py-2 rounded-full text-xs sm:text-sm font-bold bg-[#1ed760] hover:bg-[#1db954] text-black shadow-md shadow-[#1ed760]/20 transition cursor-pointer inline-flex items-center gap-1.5 active:scale-95"
+                    >
+                      <span>{siteSettings.heroButtonText}</span>
+                      <span>→</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-1">
+              <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+                {siteSettings?.heroTitle || 'Nghe gì hôm nay?'}
+              </h1>
+              <p className="text-xs sm:text-sm text-[#b3b3b3] font-mono">
+                {siteSettings?.heroDescription || `${tracks.length} audio • nghe miễn phí, không cần tài khoản`}
+              </p>
             </div>
           )}
-
-          <div className="relative z-10 max-w-3xl space-y-2.5">
-            {siteSettings?.heroBadge && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1db954]/15 border border-[#1db954]/30 text-[#1ed760] text-xs font-semibold">
-                <span>✨</span>
-                <span>{siteSettings.heroBadge}</span>
-              </span>
-            )}
-
-            <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
-              {siteSettings?.heroTitle || 'Nghe gì hôm nay?'}
-            </h1>
-
-            <p className="text-xs sm:text-sm text-[#b3b3b3] leading-relaxed">
-              {siteSettings?.heroDescription || `${tracks.length} audio • nghe miễn phí, không cần tài khoản`}
-            </p>
-
-            {siteSettings?.heroButtonText && (
-              <div className="pt-1.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    allTracksSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                  className="px-4 py-2 rounded-full text-xs sm:text-sm font-bold bg-[#1ed760] hover:bg-[#1db954] text-black shadow-md shadow-[#1ed760]/20 transition cursor-pointer inline-flex items-center gap-1.5 active:scale-95"
-                >
-                  <span>{siteSettings.heroButtonText}</span>
-                  <span>→</span>
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-1">
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-            {siteSettings?.heroTitle || 'Nghe gì hôm nay?'}
-          </h1>
-          <p className="text-xs sm:text-sm text-[#b3b3b3] font-mono">
-            {siteSettings?.heroDescription || `${tracks.length} audio • nghe miễn phí, không cần tài khoản`}
-          </p>
-        </div>
+        </>
       )}
 
       {/* Rounded Search Bar */}
@@ -175,6 +206,7 @@ export const Home: React.FC<HomeProps> = React.memo(({
         />
         {activeSearch && (
           <button
+            type="button"
             onClick={handleClearSearch}
             className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#b3b3b3] hover:text-white text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full hover:bg-[#333333] transition cursor-pointer"
             title="Xóa tìm kiếm"
