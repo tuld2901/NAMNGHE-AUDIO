@@ -1432,17 +1432,17 @@ export const Admin: React.FC<AdminProps> = ({
   if (!isAuthorized) {
     return (
       <div className="min-h-[85vh] flex items-center justify-center p-4">
-        <div className="w-full max-w-md rounded-2xl border border-amber-500/30 bg-[#121723] p-6 sm:p-8 shadow-2xl text-center space-y-6">
-          <div className="w-16 h-16 mx-auto rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+        <div className="w-full max-w-md rounded-2xl border border-[#1ed760]/30 bg-[#181818] p-6 sm:p-8 shadow-2xl text-center space-y-6">
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-[#1ed760]/10 border border-[#1ed760]/30 flex items-center justify-center text-[#1ed760]">
             <Lock size={32} />
           </div>
 
           <div>
-            <span className="text-xs font-bold text-amber-400 uppercase tracking-wider block mb-1">
+            <span className="text-xs font-bold text-[#1ed760] uppercase tracking-wider block mb-1">
               Admin CMS Control Panel
             </span>
             <h2 className="text-2xl font-black text-white">Quản Trị CMS</h2>
-            <p className="text-xs text-slate-400 mt-2">
+            <p className="text-xs text-[#b3b3b3] mt-2">
               Hệ thống quản lý Audio, Banner, Favicon & Phân loại Danh mục Affiliate
             </p>
           </div>
@@ -1463,7 +1463,7 @@ export const Admin: React.FC<AdminProps> = ({
 
           <form onSubmit={handleLogin} className="space-y-4 text-left">
             <div>
-              <label className="text-xs text-slate-300 font-medium block mb-1.5">
+              <label className="text-xs text-[#d1d1d1] font-medium block mb-1.5">
                 Email Hoặc Tên Đăng Nhập Quản Trị
               </label>
               <input
@@ -1472,13 +1472,13 @@ export const Admin: React.FC<AdminProps> = ({
                 onChange={(e) => setAuthInputEmail(e.target.value)}
                 required
                 autoComplete="username"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-amber-400"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#181818] border border-[#333333] text-sm text-white focus:outline-none focus:border-[#1ed760]"
                 placeholder="Nhập tài khoản quản trị"
               />
             </div>
 
             <div>
-              <label className="text-xs text-slate-300 font-medium block mb-1.5">
+              <label className="text-xs text-[#d1d1d1] font-medium block mb-1.5">
                 Mật Khẩu Quản Trị
               </label>
               <input
@@ -1488,24 +1488,24 @@ export const Admin: React.FC<AdminProps> = ({
                 required
                 autoComplete="current-password"
                 placeholder="••••••••"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-amber-400 font-mono"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#181818] border border-[#333333] text-sm text-white focus:outline-none focus:border-[#1ed760] font-mono"
               />
             </div>
 
             <button
               type="submit"
               disabled={isAuthLoading}
-              className="w-full py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 hover:brightness-110 shadow-lg shadow-amber-500/20 transition cursor-pointer flex items-center justify-center gap-2"
+              className="w-full py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-[#1ed760] to-[#1db954] text-black font-bold hover:brightness-110 shadow-lg shadow-[#1ed760]/20 transition cursor-pointer flex items-center justify-center gap-2"
             >
               <ShieldCheck size={18} />
               <span>{isAuthLoading ? 'Đang xác thực...' : 'Đăng Nhập Trang Quản Trị'}</span>
             </button>
           </form>
 
-          <div className="pt-2 border-t border-slate-800 text-center">
+          <div className="pt-2 border-t border-[#282828] text-center">
             <button
               onClick={onExitAdmin}
-              className="text-xs text-slate-400 hover:text-white transition cursor-pointer"
+              className="text-xs text-[#b3b3b3] hover:text-white transition cursor-pointer"
             >
               ← Quay lại trang chủ nghe truyện
             </button>
@@ -1519,28 +1519,28 @@ export const Admin: React.FC<AdminProps> = ({
   return (
     <div className="space-y-6 pb-28 animate-fade-in">
       {/* Top Admin Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-[#141a29] to-[#0f1422] border border-amber-500/20 shadow-xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-[#141a29] to-[#0f1422] border border-[#1ed760]/20 shadow-xl">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+          <div className="w-10 h-10 rounded-xl bg-[#1ed760]/10 border border-[#1ed760]/30 flex items-center justify-center text-[#1ed760]">
             <ShieldCheck size={22} />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-black text-white">Quản Trị CMS</h1>
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#1ed760]/20 text-[#1ed760] border border-[#1ed760]/30">
                 Authorized
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Đăng nhập dưới quyền: <span className="text-amber-300 font-semibold">{currentUserEmail}</span>
+            <p className="text-xs text-[#b3b3b3] mt-0.5">
+              Đăng nhập dưới quyền: <span className="text-[#1ed760] font-semibold">{currentUserEmail}</span>
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="px-3 py-1.5 rounded-lg bg-slate-800 text-xs font-medium border border-slate-700 flex items-center gap-1.5">
-            <Database size={14} className={isSupabaseServerConnected ? 'text-emerald-400' : 'text-amber-400'} />
-            <span className="text-slate-300">
+          <div className="px-3 py-1.5 rounded-lg bg-[#242424] text-xs font-medium border border-[#333333] flex items-center gap-1.5">
+            <Database size={14} className={isSupabaseServerConnected ? 'text-emerald-400' : 'text-[#1ed760]'} />
+            <span className="text-[#d1d1d1]">
               {isSupabaseServerConnected ? 'Supabase Live Connected' : 'Server Database Mode'}
             </span>
           </div>
@@ -1554,7 +1554,7 @@ export const Admin: React.FC<AdminProps> = ({
 
           <button
             onClick={onExitAdmin}
-            className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-white flex items-center gap-1.5 border border-slate-700 transition cursor-pointer"
+            className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-[#242424] hover:bg-[#333333] text-white flex items-center gap-1.5 border border-[#333333] transition cursor-pointer"
           >
             <ArrowLeft size={14} />
             <span>Xem Website</span>
@@ -1563,7 +1563,7 @@ export const Admin: React.FC<AdminProps> = ({
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-800 pb-3 flex-wrap">
+      <div className="flex items-center gap-2 border-b border-[#282828] pb-3 flex-wrap">
         <button
           onClick={() => {
             setActiveTab('manage');
@@ -1571,8 +1571,8 @@ export const Admin: React.FC<AdminProps> = ({
           }}
           className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition cursor-pointer ${
             activeTab === 'manage'
-              ? 'bg-amber-400 text-slate-950 shadow-md shadow-amber-500/20'
-              : 'bg-slate-800/60 text-slate-300 hover:bg-slate-800'
+              ? 'bg-[#1ed760] text-black font-bold shadow-md shadow-[#1ed760]/20'
+              : 'bg-[#242424]/60 text-[#d1d1d1] hover:bg-[#242424]'
           }`}
         >
           <span>Danh Sách Truyện ({tracks.length})</span>
@@ -1585,8 +1585,8 @@ export const Admin: React.FC<AdminProps> = ({
           }}
           className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition cursor-pointer ${
             activeTab === 'add'
-              ? 'bg-amber-400 text-slate-950 shadow-md shadow-amber-500/20'
-              : 'bg-slate-800/60 text-slate-300 hover:bg-slate-800'
+              ? 'bg-[#1ed760] text-black font-bold shadow-md shadow-[#1ed760]/20'
+              : 'bg-[#242424]/60 text-[#d1d1d1] hover:bg-[#242424]'
           }`}
         >
           <Plus size={16} />
@@ -1597,8 +1597,8 @@ export const Admin: React.FC<AdminProps> = ({
           onClick={() => setActiveTab('affiliate')}
           className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition cursor-pointer ${
             activeTab === 'affiliate'
-              ? 'bg-amber-400 text-slate-950 shadow-md shadow-amber-500/20'
-              : 'bg-slate-800/60 text-slate-300 hover:bg-slate-800'
+              ? 'bg-[#1ed760] text-black font-bold shadow-md shadow-[#1ed760]/20'
+              : 'bg-[#242424]/60 text-[#d1d1d1] hover:bg-[#242424]'
           }`}
         >
           <Shuffle size={16} />
@@ -1612,8 +1612,8 @@ export const Admin: React.FC<AdminProps> = ({
           }}
           className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition cursor-pointer ${
             activeTab === 'settings'
-              ? 'bg-amber-400 text-slate-950 shadow-md shadow-amber-500/20'
-              : 'bg-slate-800/60 text-slate-300 hover:bg-slate-800'
+              ? 'bg-[#1ed760] text-black font-bold shadow-md shadow-[#1ed760]/20'
+              : 'bg-[#242424]/60 text-[#d1d1d1] hover:bg-[#242424]'
           }`}
         >
           <Sliders size={16} />
@@ -1627,8 +1627,8 @@ export const Admin: React.FC<AdminProps> = ({
           }}
           className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition cursor-pointer ${
             activeTab === 'accounts'
-              ? 'bg-amber-400 text-slate-950 shadow-md shadow-amber-500/20'
-              : 'bg-slate-800/60 text-slate-300 hover:bg-slate-800'
+              ? 'bg-[#1ed760] text-black font-bold shadow-md shadow-[#1ed760]/20'
+              : 'bg-[#242424]/60 text-[#d1d1d1] hover:bg-[#242424]'
           }`}
         >
           <Users size={16} />
@@ -1642,8 +1642,8 @@ export const Admin: React.FC<AdminProps> = ({
           }}
           className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition cursor-pointer ${
             activeTab === 'backup'
-              ? 'bg-amber-400 text-slate-950 shadow-md shadow-amber-500/20'
-              : 'bg-slate-800/60 text-slate-300 hover:bg-slate-800'
+              ? 'bg-[#1ed760] text-black font-bold shadow-md shadow-[#1ed760]/20'
+              : 'bg-[#242424]/60 text-[#d1d1d1] hover:bg-[#242424]'
           }`}
         >
           <HardDrive size={16} />
@@ -1657,8 +1657,8 @@ export const Admin: React.FC<AdminProps> = ({
           }}
           className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition cursor-pointer ${
             activeTab === 'api'
-              ? 'bg-amber-400 text-slate-950 shadow-md shadow-amber-500/20'
-              : 'bg-slate-800/60 text-slate-300 hover:bg-slate-800'
+              ? 'bg-[#1ed760] text-black font-bold shadow-md shadow-[#1ed760]/20'
+              : 'bg-[#242424]/60 text-[#d1d1d1] hover:bg-[#242424]'
           }`}
         >
           <Code2 size={16} />
@@ -1669,8 +1669,8 @@ export const Admin: React.FC<AdminProps> = ({
           onClick={() => setActiveTab('sql')}
           className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition cursor-pointer ${
             activeTab === 'sql'
-              ? 'bg-amber-400 text-slate-950 shadow-md shadow-amber-500/20'
-              : 'bg-slate-800/60 text-slate-300 hover:bg-slate-800'
+              ? 'bg-[#1ed760] text-black font-bold shadow-md shadow-[#1ed760]/20'
+              : 'bg-[#242424]/60 text-[#d1d1d1] hover:bg-[#242424]'
           }`}
         >
           <Database size={16} />
@@ -1690,10 +1690,10 @@ export const Admin: React.FC<AdminProps> = ({
                 </div>
                 <div>
                   <h4 className="text-xs sm:text-sm font-bold text-white">
-                    Phát hiện {backupInfo?.uploadsDir.orphanAudioFilesCount} file MP3 rác ({formatBytes(backupInfo?.uploadsDir.orphanAudioSizeBytes || 0)}) trong <code className="text-amber-300 font-mono">uploads/audio/</code>
+                    Phát hiện {backupInfo?.uploadsDir.orphanAudioFilesCount} file MP3 rác ({formatBytes(backupInfo?.uploadsDir.orphanAudioSizeBytes || 0)}) trong <code className="text-[#1ed760] font-mono">uploads/audio/</code>
                   </h4>
-                  <p className="text-[11px] text-slate-300 mt-0.5">
-                    Đây là các file của những truyện/tập đã xóa trước đây hoặc upload nháp nhưng không còn nằm trong <code className="text-amber-300 font-mono">data/db.json</code>.
+                  <p className="text-[11px] text-[#d1d1d1] mt-0.5">
+                    Đây là các file của những truyện/tập đã xóa trước đây hoặc upload nháp nhưng không còn nằm trong <code className="text-[#1ed760] font-mono">data/db.json</code>.
                   </p>
                 </div>
               </div>
@@ -1705,7 +1705,7 @@ export const Admin: React.FC<AdminProps> = ({
                     setActiveTab('backup');
                     loadBackupInfo();
                   }}
-                  className="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer"
+                  className="px-3 py-2 rounded-xl text-xs font-semibold bg-[#242424] hover:bg-[#333333] text-slate-200 border border-[#333333] transition cursor-pointer"
                 >
                   Xem danh sách file
                 </button>
@@ -1735,7 +1735,7 @@ export const Admin: React.FC<AdminProps> = ({
               <button
                 type="button"
                 onClick={() => setManageCleanupMsg(null)}
-                className="text-slate-400 hover:text-white text-xs cursor-pointer"
+                className="text-[#b3b3b3] hover:text-white text-xs cursor-pointer"
               >
                 ✕
               </button>
@@ -1749,7 +1749,7 @@ export const Admin: React.FC<AdminProps> = ({
               placeholder="Tìm kiếm truyện theo tiêu đề, tác giả, thể loại..."
               value={tableSearch}
               onChange={(e) => setTableSearch(e.target.value)}
-              className="max-w-md w-full px-4 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-400"
+              className="max-w-md w-full px-4 py-2 rounded-xl bg-[#181818] border border-[#333333] text-xs text-white focus:outline-none focus:border-[#1ed760]"
             />
 
             <div className="flex items-center gap-2 flex-wrap">
@@ -1760,7 +1760,7 @@ export const Admin: React.FC<AdminProps> = ({
                 className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer border ${
                   (backupInfo?.uploadsDir.orphanAudioFilesCount ?? 0) > 0
                     ? 'bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border-rose-500/30'
-                    : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                    : 'bg-[#242424] hover:bg-[#333333] text-[#d1d1d1] border-[#333333]'
                 }`}
                 title="Quét dựa vào data/db.json và xóa toàn bộ file MP3 thừa trong uploads/audio/"
               >
@@ -1778,7 +1778,7 @@ export const Admin: React.FC<AdminProps> = ({
                   resetForm();
                   setActiveTab('add');
                 }}
-                className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-400 hover:bg-amber-300 text-slate-950 flex items-center gap-1.5 transition cursor-pointer"
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-[#1ed760] hover:bg-[#1db954] text-black font-bold flex items-center gap-1.5 transition cursor-pointer"
               >
                 <Plus size={14} />
                 <span>Thêm Truyện</span>
@@ -1787,10 +1787,10 @@ export const Admin: React.FC<AdminProps> = ({
           </div>
 
           {/* Tracks Table */}
-          <div className="rounded-2xl border border-slate-800 overflow-hidden bg-slate-900/60">
+          <div className="rounded-2xl border border-[#282828] overflow-hidden bg-[#181818]/60">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-950 text-slate-400 uppercase font-semibold border-b border-slate-800">
+                <thead className="bg-[#121212] text-[#b3b3b3] uppercase font-semibold border-b border-[#282828]">
                   <tr>
                     <th className="p-3.5">Truyện</th>
                     <th className="p-3.5">Thể loại</th>
@@ -1801,9 +1801,9 @@ export const Admin: React.FC<AdminProps> = ({
                     <th className="p-3.5 text-right">Thao tác</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60 text-slate-300">
+                <tbody className="divide-y divide-slate-800/60 text-[#d1d1d1]">
                   {filteredTracks.map((t) => (
-                    <tr key={t.id} className="hover:bg-slate-800/30 transition">
+                    <tr key={t.id} className="hover:bg-[#242424]/30 transition">
                       <td className="p-3.5">
                         <div>
                           <span className="font-bold text-white block truncate max-w-xs">{t.title}</span>
@@ -1811,36 +1811,36 @@ export const Admin: React.FC<AdminProps> = ({
                             <button
                               type="button"
                               onClick={() => handleCopyText(t.id, `id-${t.id}`)}
-                              className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center gap-1 cursor-pointer"
+                              className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#242424] hover:bg-[#333333] text-[#d1d1d1] border border-[#333333] flex items-center gap-1 cursor-pointer"
                               title="Click để sao chép ID truyện dùng cho API"
                             >
                               <span>ID: {t.id}</span>
-                              {apiCopiedKey === `id-${t.id}` ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} className="text-slate-400" />}
+                              {apiCopiedKey === `id-${t.id}` ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} className="text-[#b3b3b3]" />}
                             </button>
                             <button
                               type="button"
                               onClick={() => handleCopyText(`${window.location.origin}${getStoryPath(t)}`, `url-${t.id}`)}
-                              className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 flex items-center gap-1 cursor-pointer max-w-[180px] truncate"
+                              className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#242424] hover:bg-[#333333] text-[#1ed760] border border-[#333333] flex items-center gap-1 cursor-pointer max-w-[180px] truncate"
                               title={`Click để copy link chuẩn: ${window.location.origin}${getStoryPath(t)}`}
                             >
                               <span className="truncate">{getStoryPath(t)}</span>
-                              {apiCopiedKey === `url-${t.id}` ? <Check size={10} className="text-emerald-400 shrink-0" /> : <Copy size={10} className="text-slate-400 shrink-0" />}
+                              {apiCopiedKey === `url-${t.id}` ? <Check size={10} className="text-emerald-400 shrink-0" /> : <Copy size={10} className="text-[#b3b3b3] shrink-0" />}
                             </button>
-                            {t.is_featured && <span className="text-[10px] text-amber-400 font-semibold">Gợi ý</span>}
+                            {t.is_featured && <span className="text-[10px] text-[#1ed760] font-semibold">Gợi ý</span>}
                             {t.is_hot && <span className="text-[10px] text-rose-400 font-semibold">Hot</span>}
                           </div>
                         </div>
                       </td>
                       <td className="p-3.5">
-                        <span className="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-amber-300">
+                        <span className="px-2 py-0.5 rounded bg-[#242424] border border-[#333333] text-[#1ed760]">
                           {t.category}
                         </span>
                       </td>
                       <td className="p-3.5">
                         <span className="block text-slate-200">{t.author}</span>
-                        <span className="text-[10px] text-slate-400">{t.narrator || 'Phú Bà Audio'}</span>
+                        <span className="text-[10px] text-[#b3b3b3]">{t.narrator || 'Phú Bà Audio'}</span>
                       </td>
-                      <td className="p-3.5 font-mono text-amber-400">
+                      <td className="p-3.5 font-mono text-[#1ed760]">
                         {(t.play_count || 0).toLocaleString('vi-VN')}
                       </td>
                       <td className="p-3.5">
@@ -1851,7 +1851,7 @@ export const Admin: React.FC<AdminProps> = ({
                           href={t.affiliate_link || 'https://shopee.vn'}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-amber-400 hover:underline flex items-center gap-1 max-w-[120px] truncate"
+                          className="text-[#1ed760] hover:underline flex items-center gap-1 max-w-[120px] truncate"
                         >
                           <span className="truncate">{t.affiliate_link || 'https://shopee.vn'}</span>
                           <ExternalLink size={12} className="shrink-0" />
@@ -1861,14 +1861,14 @@ export const Admin: React.FC<AdminProps> = ({
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => onPreviewTrack(t)}
-                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition cursor-pointer"
+                            className="p-1.5 rounded-lg bg-[#242424] hover:bg-[#333333] text-[#d1d1d1] hover:text-white transition cursor-pointer"
                             title="Nghe thử"
                           >
                             <Play size={14} className="fill-current" />
                           </button>
                           <button
                             onClick={() => handleEditTrack(t)}
-                            className="p-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 transition cursor-pointer"
+                            className="p-1.5 rounded-lg bg-[#1ed760]/10 hover:bg-[#1ed760]/20 text-[#1ed760] border border-[#1ed760]/20 transition cursor-pointer"
                             title="Sửa"
                           >
                             <Edit3 size={14} />
@@ -1906,20 +1906,20 @@ export const Admin: React.FC<AdminProps> = ({
           )}
 
           <div className="max-w-4xl mx-auto space-y-5">
-            <div className="p-6 sm:p-7 rounded-2xl bg-slate-900 border border-slate-800 space-y-5 shadow-xl">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="p-6 sm:p-7 rounded-2xl bg-[#181818] border border-[#282828] space-y-5 shadow-xl">
+              <div className="flex items-center justify-between border-b border-[#282828] pb-3">
                 <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
-                  <Edit3 size={18} className="text-amber-400" />
+                  <Edit3 size={18} className="text-[#1ed760]" />
                   <span>{editingTrackId ? 'Chỉnh Sửa Thông Tin Truyện' : 'Thêm Truyện Audio Mới'}</span>
                 </h3>
-                <span className="text-xs text-amber-400/90 font-medium">
+                <span className="text-xs text-[#1ed760] font-medium">
                   {editingTrackId ? 'Cập nhật trực tiếp trên Server' : 'Lưu trữ trực tiếp trên Server'}
                 </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-2">
-                  <label className="text-xs text-slate-300 font-medium block mb-1">
+                  <label className="text-xs text-[#d1d1d1] font-medium block mb-1">
                     Tên / Tiêu đề truyện *
                   </label>
                   <input
@@ -1928,38 +1928,38 @@ export const Admin: React.FC<AdminProps> = ({
                     value={formTitle}
                     onChange={(e) => setFormTitle(e.target.value)}
                     placeholder="VD: Gặp Ma Ở Quán Trọ Vùng Cao"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-amber-400"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#121212] border border-[#333333] text-sm text-white focus:outline-none focus:border-[#1ed760]"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs text-slate-300 font-medium block mb-1">Tác giả</label>
+                  <label className="text-xs text-[#d1d1d1] font-medium block mb-1">Tác giả</label>
                   <input
                     type="text"
                     value={formAuthor}
                     onChange={(e) => setFormAuthor(e.target.value)}
                     placeholder="VD: Nguyễn Huy"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-400"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#121212] border border-[#333333] text-xs text-white focus:outline-none focus:border-[#1ed760]"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs text-slate-300 font-medium block mb-1">Diễn đọc / MC</label>
+                  <label className="text-xs text-[#d1d1d1] font-medium block mb-1">Diễn đọc / MC</label>
                   <input
                     type="text"
                     value={formNarrator}
                     onChange={(e) => setFormNarrator(e.target.value)}
                     placeholder="Phú Bà Audio"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-400"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#121212] border border-[#333333] text-xs text-white focus:outline-none focus:border-[#1ed760]"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs text-slate-300 font-medium block mb-1">Thể loại</label>
+                  <label className="text-xs text-[#d1d1d1] font-medium block mb-1">Thể loại</label>
                   <select
                     value={formCategory}
                     onChange={(e) => setFormCategory(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-400 cursor-pointer"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#121212] border border-[#333333] text-xs text-white focus:outline-none focus:border-[#1ed760] cursor-pointer"
                   >
                     <option value="Truyện Ma">Truyện Ma</option>
                     <option value="Tiên Hiệp">Tiên Hiệp</option>
@@ -1972,7 +1972,7 @@ export const Admin: React.FC<AdminProps> = ({
                 </div>
 
                 <div>
-                  <label className="text-xs text-slate-300 font-medium block mb-1">
+                  <label className="text-xs text-[#d1d1d1] font-medium block mb-1">
                     Lượt nghe (Play Count)
                   </label>
                   <input
@@ -1981,7 +1981,7 @@ export const Admin: React.FC<AdminProps> = ({
                     value={formPlayCount}
                     onChange={(e) => setFormPlayCount(Math.max(0, parseInt(e.target.value) || 0))}
                     placeholder="VD: 1200"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-400 font-mono"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#121212] border border-[#333333] text-xs text-white focus:outline-none focus:border-[#1ed760] font-mono"
                   />
                 </div>
 
@@ -1991,7 +1991,7 @@ export const Admin: React.FC<AdminProps> = ({
                       type="checkbox"
                       checked={formIsFeatured}
                       onChange={(e) => setFormIsFeatured(e.target.checked)}
-                      className="rounded accent-amber-400"
+                      className="rounded accent-[#1ed760]"
                     />
                     <span>Gợi ý hôm nay (Slider 1)</span>
                   </label>
@@ -2008,7 +2008,7 @@ export const Admin: React.FC<AdminProps> = ({
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="text-xs text-slate-300 font-medium block mb-1">
+                  <label className="text-xs text-[#d1d1d1] font-medium block mb-1">
                     Giới thiệu tóm tắt nội dung
                   </label>
                   <textarea
@@ -2016,26 +2016,26 @@ export const Admin: React.FC<AdminProps> = ({
                     value={formDescription}
                     onChange={(e) => setFormDescription(e.target.value)}
                     placeholder="Mô tả tóm tắt nội dung truyện lôi cuốn..."
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-400 resize-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#121212] border border-[#333333] text-xs text-white focus:outline-none focus:border-[#1ed760] resize-none"
                   />
                 </div>
               </div>
 
               {/* Chapters / Tập truyện Builder (Upload File MP3 Lên Server - Tự Động Chuẩn Hóa Slug) */}
-              <div className="pt-4 border-t border-slate-800 space-y-3">
+              <div className="pt-4 border-t border-[#282828] space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
                     <h4 className="text-xs font-bold text-white uppercase tracking-wider">
                       Danh Sách Tập / Phần ({formChapters.length})
                     </h4>
-                    <p className="text-[11px] text-slate-400">
-                      Khi upload file .mp3, hệ thống tự động ghép <strong className="text-amber-300">Tên truyện + Tên tập</strong> vào thư mục <code className="text-amber-300 font-mono">uploads/audio/</code> (VD: <code className="text-emerald-300 font-mono">ten-truyen-phan-1.mp3</code>). Bạn có thể thoải mái đặt tên tập là <code className="text-amber-300">phan_1</code>, <code className="text-amber-300">phan_2</code> ở mọi truyện mà không lo bị trùng hay ghi đè mất file!
+                    <p className="text-[11px] text-[#b3b3b3]">
+                      Khi upload file .mp3, hệ thống tự động ghép <strong className="text-[#1ed760]">Tên truyện + Tên tập</strong> vào thư mục <code className="text-[#1ed760] font-mono">uploads/audio/</code> (VD: <code className="text-emerald-300 font-mono">ten-truyen-phan-1.mp3</code>). Bạn có thể thoải mái đặt tên tập là <code className="text-[#1ed760]">phan_1</code>, <code className="text-[#1ed760]">phan_2</code> ở mọi truyện mà không lo bị trùng hay ghi đè mất file!
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={handleAddChapter}
-                    className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 flex items-center gap-1.5 transition cursor-pointer"
+                    className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-[#242424] hover:bg-[#333333] text-[#1ed760] border border-[#333333] flex items-center gap-1.5 transition cursor-pointer"
                   >
                     <Plus size={14} /> Thêm Tập Mới
                   </button>
@@ -2055,32 +2055,32 @@ export const Admin: React.FC<AdminProps> = ({
                       : '';
 
                     return (
-                      <div key={idx} className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2">
+                      <div key={idx} className="p-3.5 rounded-xl bg-[#121212]/80 border border-[#282828] space-y-2">
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
                           <div className="flex items-center gap-2 flex-1 min-w-0">
-                            <span className="text-xs font-bold text-amber-400 w-6 text-center shrink-0">{idx + 1}</span>
+                            <span className="text-xs font-bold text-[#1ed760] w-6 text-center shrink-0">{idx + 1}</span>
                             <input
                               type="text"
                               value={ch.title}
                               onChange={(e) => handleUpdateChapter(idx, 'title', e.target.value)}
                               placeholder="VD: Tập 1: Tiếng Gõ Cửa Đêm Khuya"
-                              className="flex-1 min-w-[140px] px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white focus:border-amber-400 focus:outline-none"
+                              className="flex-1 min-w-[140px] px-3 py-2 rounded-lg bg-[#181818] border border-[#333333] text-xs text-white focus:border-[#1ed760] focus:outline-none"
                             />
                           </div>
 
                           <div className="flex items-center gap-2 justify-end shrink-0 flex-wrap">
                             {/* Thời lượng hiển thị và chỉnh sửa trực tiếp */}
                             <div
-                              className="flex items-center gap-1.5 shrink-0 bg-slate-900 border border-slate-700 px-2.5 py-1.5 rounded-lg"
+                              className="flex items-center gap-1.5 shrink-0 bg-[#181818] border border-[#333333] px-2.5 py-1.5 rounded-lg"
                               title="Thời lượng tập truyện: Tự động tính toán khi tải file MP3 lên, hoặc bạn có thể chỉnh sửa thủ công"
                             >
-                              <Clock size={12} className="text-amber-400 shrink-0" />
+                              <Clock size={12} className="text-[#1ed760] shrink-0" />
                               <input
                                 type="text"
                                 value={ch.duration || ''}
                                 onChange={(e) => handleUpdateChapter(idx, 'duration', e.target.value)}
                                 placeholder="Thời lượng"
-                                className="w-16 bg-transparent text-xs text-amber-300 font-mono focus:outline-none focus:text-white"
+                                className="w-16 bg-transparent text-xs text-[#1ed760] font-mono focus:outline-none focus:text-white"
                               />
                             </div>
 
@@ -2093,7 +2093,7 @@ export const Admin: React.FC<AdminProps> = ({
                             />
 
                             {isUploadingThis ? (
-                              <span className="px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-semibold flex items-center gap-1.5">
+                              <span className="px-3 py-2 rounded-lg bg-[#1ed760]/10 border border-[#1ed760]/30 text-[#1ed760] text-xs font-semibold flex items-center gap-1.5">
                                 <RefreshCw size={13} className="animate-spin" />
                                 <span>Đang tính thời lượng & lưu {expectedDiskFile}...</span>
                               </span>
@@ -2108,7 +2108,7 @@ export const Admin: React.FC<AdminProps> = ({
                                 </span>
                                 <label
                                   htmlFor={`chapter-mp3-upload-${idx}`}
-                                  className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white text-[11px] font-semibold flex items-center gap-1 cursor-pointer transition"
+                                  className="px-2.5 py-1.5 rounded-lg bg-[#242424] hover:bg-[#333333] border border-[#333333] text-[#d1d1d1] hover:text-white text-[11px] font-semibold flex items-center gap-1 cursor-pointer transition"
                                   title="Đổi file MP3 khác"
                                 >
                                   <Upload size={12} />
@@ -2118,7 +2118,7 @@ export const Admin: React.FC<AdminProps> = ({
                             ) : (
                               <label
                                 htmlFor={`chapter-mp3-upload-${idx}`}
-                                className="px-3.5 py-2 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition"
+                                className="px-3.5 py-2 rounded-lg bg-[#1ed760]/15 hover:bg-[#1ed760]/25 border border-[#1ed760]/40 text-[#1ed760] text-xs font-bold flex items-center gap-1.5 cursor-pointer transition"
                               >
                                 <Upload size={14} />
                                 <span>Upload File .MP3 Lên Server</span>
@@ -2139,13 +2139,13 @@ export const Admin: React.FC<AdminProps> = ({
                         </div>
 
                         {/* Live Slug Filename & DB Path & Duration Preview */}
-                        <div className="pl-8 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-400">
+                        <div className="pl-8 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[#b3b3b3]">
                           <span>
-                            Thời lượng: <strong className="text-amber-300 font-mono">{ch.duration || 'Chưa gắn'}</strong>
+                            Thời lượng: <strong className="text-[#1ed760] font-mono">{ch.duration || 'Chưa gắn'}</strong>
                           </span>
                           <span>•</span>
                           <span>
-                            Tên file đĩa: <code className="text-slate-300 font-mono">{expectedDiskFile}</code>
+                            Tên file đĩa: <code className="text-[#d1d1d1] font-mono">{expectedDiskFile}</code>
                           </span>
                           <span>•</span>
                           <span>
@@ -2159,14 +2159,14 @@ export const Admin: React.FC<AdminProps> = ({
               </div>
 
               {/* Form Buttons */}
-              <div className="pt-4 border-t border-slate-800 flex items-center justify-end gap-3">
+              <div className="pt-4 border-t border-[#282828] flex items-center justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => {
                     resetForm();
                     setActiveTab('manage');
                   }}
-                  className="px-5 py-2.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 transition cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl text-xs font-semibold bg-[#242424] hover:bg-[#333333] text-[#d1d1d1] transition cursor-pointer"
                 >
                   Hủy bỏ
                 </button>
@@ -2174,7 +2174,7 @@ export const Admin: React.FC<AdminProps> = ({
                 <button
                   type="submit"
                   disabled={formSubmitLoading}
-                  className="px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 shadow-lg shadow-amber-500/20 flex items-center gap-2 transition cursor-pointer"
+                  className="px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm bg-gradient-to-r from-[#1ed760] to-[#1db954] hover:from-[#1db954] hover:to-[#1db954] text-slate-950 shadow-lg shadow-[#1ed760]/20 flex items-center gap-2 transition cursor-pointer"
                 >
                   <CheckCircle2 size={16} />
                   <span>{formSubmitLoading ? 'Đang lưu...' : (editingTrackId ? 'Cập Nhật Truyện' : 'Lưu Truyện Mới')}</span>
@@ -2190,18 +2190,18 @@ export const Admin: React.FC<AdminProps> = ({
       {activeTab === 'affiliate' && (
         <div className="space-y-8">
           {/* Explanation Banner & Stats Overview */}
-          <div className="p-5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-slate-900 to-slate-900 border border-amber-500/30 space-y-4">
+          <div className="p-5 rounded-2xl bg-gradient-to-r from-[#1ed760]/10 via-slate-900 to-slate-900 border border-[#1ed760]/30 space-y-4">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0">
+                <div className="w-12 h-12 rounded-xl bg-[#1ed760]/20 border border-[#1ed760]/40 flex items-center justify-center text-[#1ed760] shrink-0">
                   <Shuffle size={24} />
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-white flex items-center gap-2">
                     <span>Hệ Thống Phân Phối Link Affiliate Random Vào Popup</span>
-                    <span className="px-2 py-0.5 rounded text-[10px] bg-amber-400 text-slate-950 font-bold uppercase">Tự động</span>
+                    <span className="px-2 py-0.5 rounded text-[10px] bg-[#1ed760] text-black font-bold font-bold uppercase">Tự động</span>
                   </h3>
-                  <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                  <p className="text-xs text-[#d1d1d1] mt-1 leading-relaxed">
                     Hệ thống tự động <strong>lấy ngẫu nhiên (random)</strong> một liên kết đang hoạt động từ các tài khoản còn sống để gắn vào Popup khóa màn hình khi người nghe bấm chọn tập truyện.
                   </p>
                 </div>
@@ -2209,57 +2209,57 @@ export const Admin: React.FC<AdminProps> = ({
             </div>
 
             {/* Quick Metrics Bar */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-slate-800/80">
-              <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Tài khoản / Danh mục</span>
-                <span className="text-base font-black text-amber-400 mt-0.5 block">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-[#282828]/80">
+              <div className="p-3 rounded-xl bg-[#121212]/70 border border-[#282828]/80">
+                <span className="text-[10px] uppercase font-bold text-[#b3b3b3] block">Tài khoản / Danh mục</span>
+                <span className="text-base font-black text-[#1ed760] mt-0.5 block">
                   {affiliateCategories.length} Tài khoản
                 </span>
               </div>
-              <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Đang hoạt động</span>
+              <div className="p-3 rounded-xl bg-[#121212]/70 border border-[#282828]/80">
+                <span className="text-[10px] uppercase font-bold text-[#b3b3b3] block">Đang hoạt động</span>
                 <span className="text-base font-black text-emerald-400 mt-0.5 block">
                   {affiliateCategories.filter(c => c.isActive).length} / {affiliateCategories.length} Tài khoản
                 </span>
               </div>
-              <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Tổng số liên kết</span>
+              <div className="p-3 rounded-xl bg-[#121212]/70 border border-[#282828]/80">
+                <span className="text-[10px] uppercase font-bold text-[#b3b3b3] block">Tổng số liên kết</span>
                 <span className="text-base font-black text-white mt-0.5 block">
                   {affiliateList.length} Links deal
                 </span>
               </div>
-              <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Tổng lượt click ủng hộ</span>
-                <span className="text-base font-black text-amber-400 mt-0.5 block">
+              <div className="p-3 rounded-xl bg-[#121212]/70 border border-[#282828]/80">
+                <span className="text-[10px] uppercase font-bold text-[#b3b3b3] block">Tổng lượt click ủng hộ</span>
+                <span className="text-base font-black text-[#1ed760] mt-0.5 block">
                   {affiliateList.reduce((acc, item) => acc + (item.clicks || 0), 0)} Clicks
                 </span>
               </div>
             </div>
 
             {/* Live Interactive Random Link Tester */}
-            <div className="p-3.5 sm:p-4 rounded-xl bg-slate-950/90 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="p-3.5 sm:p-4 rounded-xl bg-[#121212]/90 border border-[#1ed760]/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <Shuffle className="text-amber-400" size={16} />
+                  <Shuffle className="text-[#1ed760]" size={16} />
                   <span className="text-xs font-bold text-white uppercase tracking-wider">
                     Kiểm Tra Xoay Vòng Random ({getEligibleAffiliateLinks().length} link hợp lệ trong vòng quay)
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-400 leading-relaxed">
+                <p className="text-[11px] text-[#b3b3b3] leading-relaxed">
                   Bấm nút bên cạnh để kiểm tra thuật toán: lấy ngẫu nhiên công bằng từ các tài khoản đang chạy, không lặp lại 2 lần liên tiếp.
                 </p>
                 {randomTestResult && (
                   <div className="pt-1.5 text-xs flex items-center gap-2 flex-wrap">
-                    <span className="text-slate-400">Kết quả vừa chọn:</span>
+                    <span className="text-[#b3b3b3]">Kết quả vừa chọn:</span>
                     <span className={`px-2 py-0.5 rounded font-bold text-[10px] ${
                       randomTestResult.platform === 'Shopee' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' :
                       randomTestResult.platform === 'TikTok' ? 'bg-pink-500/20 text-pink-400 border border-pink-500/30' :
                       randomTestResult.platform === 'Lazada' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
-                      'bg-slate-800 text-slate-300'
+                      'bg-[#242424] text-[#d1d1d1]'
                     }`}>
                       {randomTestResult.platform}
                     </span>
-                    <strong className="text-amber-300 font-medium">"{randomTestResult.title}"</strong>
+                    <strong className="text-[#1ed760] font-medium">"{randomTestResult.title}"</strong>
                     <span className="text-slate-500 font-mono text-[11px] truncate max-w-[200px]">({randomTestResult.url})</span>
                     <span className="text-emerald-400 font-mono text-[11px]">✓ Hợp lệ</span>
                   </div>
@@ -2269,7 +2269,7 @@ export const Admin: React.FC<AdminProps> = ({
               <button
                 type="button"
                 onClick={handleTestRandomAffiliate}
-                className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition cursor-pointer shrink-0 shadow-sm"
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-[#1ed760]/20 hover:bg-[#1ed760]/30 text-[#1ed760] border border-[#1ed760]/40 flex items-center gap-1.5 transition cursor-pointer shrink-0 shadow-sm"
               >
                 <Shuffle size={14} /> 🎲 Bấm Quay Thử Ngay
               </button>
@@ -2285,13 +2285,13 @@ export const Admin: React.FC<AdminProps> = ({
 
           {/* PHẦN 1: QUẢN LÝ DANH MỤC / TÀI KHOẢN AFFILIATE */}
           <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#282828] pb-3">
               <div>
                 <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Folder className="text-amber-400" size={18} />
+                  <Folder className="text-[#1ed760]" size={18} />
                   <span>Danh Mục Tài Khoản Affiliate ({affiliateCategories.length})</span>
                 </h4>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <p className="text-xs text-[#b3b3b3] mt-0.5">
                   Phân chia riêng biệt theo từng tài khoản tiếp thị (Shopee, TikTok, Lazada...). Nếu tài khoản bị khóa/chết, bạn có thể xóa danh mục đó đi để xóa sạch toàn bộ link liên quan.
                 </p>
               </div>
@@ -2299,7 +2299,7 @@ export const Admin: React.FC<AdminProps> = ({
               <button
                 type="button"
                 onClick={() => setShowAddCatForm(!showAddCatForm)}
-                className="px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-400 hover:bg-amber-300 text-slate-950 flex items-center gap-1.5 transition cursor-pointer self-start sm:self-auto shadow-md shadow-amber-500/20"
+                className="px-3.5 py-2 rounded-xl text-xs font-bold bg-[#1ed760] hover:bg-[#1db954] text-black font-bold flex items-center gap-1.5 transition cursor-pointer self-start sm:self-auto shadow-md shadow-[#1ed760]/20"
               >
                 <FolderPlus size={15} />
                 <span>{showAddCatForm ? 'Đóng form thêm' : '+ Thêm Danh Mục / Tài Khoản'}</span>
@@ -2308,15 +2308,15 @@ export const Admin: React.FC<AdminProps> = ({
 
             {/* Form Thêm Danh Mục / Tài Khoản Mới */}
             {showAddCatForm && (
-              <form onSubmit={handleCreateCategory} className="p-4 sm:p-5 rounded-2xl bg-slate-900 border border-amber-500/40 space-y-4 animate-fade-in">
-                <div className="flex items-center gap-2 text-xs font-bold text-amber-300 uppercase tracking-wider">
+              <form onSubmit={handleCreateCategory} className="p-4 sm:p-5 rounded-2xl bg-[#181818] border border-[#1ed760]/40 space-y-4 animate-fade-in">
+                <div className="flex items-center gap-2 text-xs font-bold text-[#1ed760] uppercase tracking-wider">
                   <FolderPlus size={16} />
                   <span>Tạo Danh Mục / Tài Khoản Affiliate Mới</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
                   <div className="sm:col-span-5">
-                    <label className="text-[11px] text-slate-300 block mb-1">
+                    <label className="text-[11px] text-[#d1d1d1] block mb-1">
                       Tên Tài Khoản / Danh Mục *
                     </label>
                     <input
@@ -2325,18 +2325,18 @@ export const Admin: React.FC<AdminProps> = ({
                       value={newCatName}
                       onChange={(e) => setNewCatName(e.target.value)}
                       placeholder="VD: Tài khoản Shopee 2 (Shop Sách & Tai Nghe)"
-                      className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-400"
+                      className="w-full px-3 py-2 rounded-xl bg-[#121212] border border-[#333333] text-xs text-white focus:outline-none focus:border-[#1ed760]"
                     />
                   </div>
 
                   <div className="sm:col-span-3">
-                    <label className="text-[11px] text-slate-300 block mb-1">
+                    <label className="text-[11px] text-[#d1d1d1] block mb-1">
                       Nền Tảng
                     </label>
                     <select
                       value={newCatPlatform}
                       onChange={(e) => setNewCatPlatform(e.target.value as any)}
-                      className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-400 cursor-pointer"
+                      className="w-full px-3 py-2 rounded-xl bg-[#121212] border border-[#333333] text-xs text-white focus:outline-none focus:border-[#1ed760] cursor-pointer"
                     >
                       <option value="Shopee">Shopee</option>
                       <option value="TikTok">TikTok</option>
@@ -2346,7 +2346,7 @@ export const Admin: React.FC<AdminProps> = ({
                   </div>
 
                   <div className="sm:col-span-4">
-                    <label className="text-[11px] text-slate-300 block mb-1">
+                    <label className="text-[11px] text-[#d1d1d1] block mb-1">
                       Mô Tả / Ghi Chú Tài Khoản
                     </label>
                     <input
@@ -2354,22 +2354,22 @@ export const Admin: React.FC<AdminProps> = ({
                       value={newCatDescription}
                       onChange={(e) => setNewCatDescription(e.target.value)}
                       placeholder="VD: Tài khoản dự phòng, gắn deal công nghệ"
-                      className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-400"
+                      className="w-full px-3 py-2 rounded-xl bg-[#121212] border border-[#333333] text-xs text-white focus:outline-none focus:border-[#1ed760]"
                     />
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800">
+                <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-[#282828]">
                   <button
                     type="button"
                     onClick={() => setShowAddCatForm(false)}
-                    className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 transition cursor-pointer"
+                    className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#242424] hover:bg-[#333333] text-[#d1d1d1] transition cursor-pointer"
                   >
                     Hủy
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 rounded-xl text-xs font-bold bg-amber-400 hover:bg-amber-300 text-slate-950 transition cursor-pointer shadow-md shadow-amber-500/20"
+                    className="px-5 py-2 rounded-xl text-xs font-bold bg-[#1ed760] hover:bg-[#1db954] text-black font-bold transition cursor-pointer shadow-md shadow-[#1ed760]/20"
                   >
                     Lưu Tài Khoản
                   </button>
@@ -2388,8 +2388,8 @@ export const Admin: React.FC<AdminProps> = ({
                     key={cat.id}
                     className={`p-4 rounded-2xl border transition-all flex flex-col justify-between ${
                       cat.isActive
-                        ? 'bg-slate-900/90 border-slate-800 hover:border-slate-700'
-                        : 'bg-slate-950/60 border-slate-800/50 opacity-75'
+                        ? 'bg-[#181818]/90 border-[#282828] hover:border-[#333333]'
+                        : 'bg-[#121212]/60 border-[#282828]/50 opacity-75'
                     }`}
                   >
                     <div>
@@ -2399,7 +2399,7 @@ export const Admin: React.FC<AdminProps> = ({
                           cat.platform === 'Shopee' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' :
                           cat.platform === 'TikTok' ? 'bg-pink-500/20 text-pink-400 border border-pink-500/30' :
                           cat.platform === 'Lazada' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
-                          'bg-slate-800 text-slate-300 border border-slate-700'
+                          'bg-[#242424] text-[#d1d1d1] border border-[#333333]'
                         }`}>
                           {cat.platform}
                         </span>
@@ -2415,34 +2415,34 @@ export const Admin: React.FC<AdminProps> = ({
 
                       {/* Category Name */}
                       <h5 className="text-sm font-bold text-white flex items-center gap-1.5 line-clamp-1" title={cat.name}>
-                        <Folder size={15} className={cat.isActive ? 'text-amber-400 shrink-0' : 'text-slate-500 shrink-0'} />
+                        <Folder size={15} className={cat.isActive ? 'text-[#1ed760] shrink-0' : 'text-slate-500 shrink-0'} />
                         <span>{cat.name}</span>
                       </h5>
 
                       {/* Description */}
-                      <p className="text-[11px] text-slate-400 mt-1 line-clamp-2">
+                      <p className="text-[11px] text-[#b3b3b3] mt-1 line-clamp-2">
                         {cat.description || 'Chưa có ghi chú mô tả cho tài khoản này.'}
                       </p>
 
                       {/* Stats */}
-                      <div className="mt-3 py-1.5 px-2.5 rounded-lg bg-slate-950/80 border border-slate-800/80 flex items-center justify-between text-[11px]">
-                        <span className="text-slate-400">
+                      <div className="mt-3 py-1.5 px-2.5 rounded-lg bg-[#121212]/80 border border-[#282828]/80 flex items-center justify-between text-[11px]">
+                        <span className="text-[#b3b3b3]">
                           {linksInCat.length} links đang gắn
                         </span>
-                        <span className="font-bold text-amber-400 font-mono">
+                        <span className="font-bold text-[#1ed760] font-mono">
                           {clicksInCat} clicks
                         </span>
                       </div>
                     </div>
 
                     {/* Actions Row */}
-                    <div className="mt-3.5 pt-2.5 border-t border-slate-800/80 flex items-center justify-between gap-2">
+                    <div className="mt-3.5 pt-2.5 border-t border-[#282828]/80 flex items-center justify-between gap-2">
                       <button
                         type="button"
                         onClick={() => handleToggleCategory(cat.id)}
                         className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold flex items-center gap-1 transition cursor-pointer ${
                           cat.isActive
-                            ? 'bg-slate-800 hover:bg-slate-700 text-slate-300'
+                            ? 'bg-[#242424] hover:bg-[#333333] text-[#d1d1d1]'
                             : 'bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30'
                         }`}
                         title="Bật hoặc tạm tắt toàn bộ link thuộc tài khoản này"
@@ -2468,37 +2468,37 @@ export const Admin: React.FC<AdminProps> = ({
           </div>
 
           {/* PHẦN 2: QUẢN LÝ TỪNG LINK AFFILIATE TRONG DANH SÁCH XOAY VÒNG */}
-          <div className="space-y-4 pt-4 border-t border-slate-800">
+          <div className="space-y-4 pt-4 border-t border-[#282828]">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Layers className="text-amber-400" size={18} />
+                  <Layers className="text-[#1ed760]" size={18} />
                   <span>Danh Sách Link Affiliate Xoay Vòng Vào Popup</span>
                 </h4>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <p className="text-xs text-[#b3b3b3] mt-0.5">
                   Mỗi link được gán vào một danh mục tài khoản cụ thể. Khi 1 link bị lỗi, dán URL vào thanh tìm kiếm dưới đây để tìm và xóa ngay lập tức.
                 </p>
               </div>
             </div>
 
             {/* Thanh Tìm Kiếm Link Lỗi & Bộ Lọc Danh Mục Tài Khoản */}
-            <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
+            <div className="p-4 rounded-2xl bg-[#181818] border border-[#282828] space-y-3">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                 {/* Ô Search Link Lỗi */}
                 <div className="relative flex-1">
-                  <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-amber-400" />
+                  <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#1ed760]" />
                   <input
                     type="text"
                     value={affiliateSearch}
                     onChange={(e) => setAffiliateSearch(e.target.value)}
                     placeholder="Dán link lỗi (URL shopee.vn/..., tiktok...) hoặc tên deal để tìm và xóa ngay..."
-                    className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-amber-400 font-mono transition"
+                    className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-[#121212] border border-[#333333] text-xs text-white placeholder-slate-400 focus:outline-none focus:border-[#1ed760] font-mono transition"
                   />
                   {affiliateSearch && (
                     <button
                       type="button"
                       onClick={() => setAffiliateSearch('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs p-1"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#b3b3b3] hover:text-white text-xs p-1"
                       title="Xóa bộ lọc tìm kiếm"
                     >
                       ✕
@@ -2508,13 +2508,13 @@ export const Admin: React.FC<AdminProps> = ({
 
                 {/* Bộ lọc theo Danh mục / Tài khoản */}
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-xs text-slate-400 flex items-center gap-1">
+                  <span className="text-xs text-[#b3b3b3] flex items-center gap-1">
                     <Filter size={13} /> Tài khoản:
                   </span>
                   <select
                     value={selectedCategoryFilter}
                     onChange={(e) => setSelectedCategoryFilter(e.target.value)}
-                    className="bg-slate-950 border border-slate-700 text-xs text-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:border-amber-400 cursor-pointer"
+                    className="bg-[#121212] border border-[#333333] text-xs text-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:border-[#1ed760] cursor-pointer"
                   >
                     <option value="all">Tất cả tài khoản ({affiliateList.length})</option>
                     {affiliateCategories.map(cat => (
@@ -2528,7 +2528,7 @@ export const Admin: React.FC<AdminProps> = ({
 
               {/* Thông báo kết quả tìm kiếm */}
               {affiliateSearch && (
-                <div className="flex items-center justify-between text-xs text-amber-300 bg-amber-500/10 px-3 py-2 rounded-xl border border-amber-500/20">
+                <div className="flex items-center justify-between text-xs text-[#1ed760] bg-[#1ed760]/10 px-3 py-2 rounded-xl border border-[#1ed760]/20">
                   <span className="flex items-center gap-1.5">
                     <Search size={13} />
                     <span>
@@ -2538,7 +2538,7 @@ export const Admin: React.FC<AdminProps> = ({
                   <button
                     type="button"
                     onClick={() => setAffiliateSearch('')}
-                    className="text-[11px] text-amber-400 hover:text-amber-200 underline cursor-pointer"
+                    className="text-[11px] text-[#1ed760] hover:text-[#1ed760] underline cursor-pointer"
                   >
                     Hiển thị tất cả ({affiliateList.length} link)
                   </button>
@@ -2547,20 +2547,20 @@ export const Admin: React.FC<AdminProps> = ({
             </div>
 
             {/* Form Thêm Số Lượng Lớn (Chế độ duy nhất: dán 10, 20, 50 link cùng lúc) */}
-            <div className="p-5 sm:p-6 rounded-3xl bg-slate-900 border-2 border-slate-800 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+            <div className="p-5 sm:p-6 rounded-3xl bg-[#181818] border-2 border-[#282828] space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#282828] pb-3">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-400 to-amber-500 text-slate-950 flex items-center justify-center font-bold shadow-md shadow-amber-400/20 shrink-0">
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#1ed760] to-[#1db954] text-black font-bold flex items-center justify-center font-bold shadow-md shadow-[#1ed760]/20 shrink-0">
                     <Zap size={18} className="text-slate-950 fill-current" />
                   </div>
                   <div>
                     <h5 className="text-sm font-bold text-white flex items-center gap-2">
                       <span>Thêm Liên Kết Affiliate Số Lượng Lớn</span>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#1ed760]/15 text-[#1ed760] border border-[#1ed760]/30">
                         Dán nhiều link cùng lúc
                       </span>
                     </h5>
-                    <p className="text-xs text-slate-400 mt-0.5">
+                    <p className="text-xs text-[#b3b3b3] mt-0.5">
                       Dán danh sách 10, 20 hoặc 50 link (mỗi dòng 1 link). Hệ thống sẽ tự động tách thành từng link riêng biệt và xoay vòng ngẫu nhiên vào popup mở khóa khi nghe truyện.
                     </p>
                   </div>
@@ -2571,7 +2571,7 @@ export const Admin: React.FC<AdminProps> = ({
                     <button
                       type="button"
                       onClick={() => setBulkInputText('')}
-                      className="px-3 py-1.5 rounded-xl text-[11px] font-semibold bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-300 border border-slate-700 transition cursor-pointer"
+                      className="px-3 py-1.5 rounded-xl text-[11px] font-semibold bg-[#242424] hover:bg-rose-500/20 text-[#b3b3b3] hover:text-rose-300 border border-[#333333] transition cursor-pointer"
                     >
                       ✕ Xóa Trắng
                     </button>
@@ -2581,14 +2581,14 @@ export const Admin: React.FC<AdminProps> = ({
 
               <form onSubmit={handleBulkAddAffiliates} className="space-y-3.5">
                 {/* Chọn tài khoản / danh mục để gán các link này */}
-                <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800/80">
-                  <label className="text-[11px] font-bold text-slate-300 block mb-1.5">
+                <div className="p-3.5 rounded-2xl bg-[#121212]/80 border border-[#282828]/80">
+                  <label className="text-[11px] font-bold text-[#d1d1d1] block mb-1.5">
                     1. Chọn Tài Khoản / Danh Mục Để Gán Toàn Bộ Link Này Vào *
                   </label>
                   <select
                     value={newAffCategoryId}
                     onChange={(e) => setNewAffCategoryId(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-amber-400 cursor-pointer font-medium"
+                    className="w-full bg-[#181818] border border-[#333333] text-xs text-white rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#1ed760] cursor-pointer font-medium"
                   >
                     {affiliateCategories.map(cat => (
                       <option key={cat.id} value={cat.id}>
@@ -2603,13 +2603,13 @@ export const Admin: React.FC<AdminProps> = ({
 
                 {/* Header Textarea */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
-                  <label className="text-xs text-slate-300 font-bold block">
+                  <label className="text-xs text-[#d1d1d1] font-bold block">
                     3. Dán danh sách các đường link vào đây (Mỗi dòng một link URL):
                   </label>
                   <span className={`text-xs font-mono font-bold px-3 py-1 rounded-full ${
                     bulkInputText.split(/\r?\n/).filter(l => /(https?:\/\/[^\s]+)/i.test(l)).length > 0
                       ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                      : 'bg-slate-800 text-slate-400'
+                      : 'bg-[#242424] text-[#b3b3b3]'
                   }`}>
                     ⚡ Đã nhận diện: {bulkInputText.split(/\r?\n/).filter(l => /(https?:\/\/[^\s]+)/i.test(l)).length} link hợp lệ
                   </span>
@@ -2624,11 +2624,11 @@ https://shopee.vn/deal-tai-nghe-chong-on-1
 https://shopee.vn/deal-sach-noi-giam-gia-2
 https://www.tiktok.com/@affiliate_store/video/7391823
 https://s.lazada.vn/s.flashsale_deal`}
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-950 border-2 border-slate-700 text-xs text-white focus:outline-none focus:border-amber-400 font-mono leading-relaxed resize-y placeholder-slate-600 shadow-inner"
+                  className="w-full px-4 py-3 rounded-2xl bg-[#121212] border-2 border-[#333333] text-xs text-white focus:outline-none focus:border-[#1ed760] font-mono leading-relaxed resize-y placeholder-slate-600 shadow-inner"
                 />
 
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-[11px] text-[#b3b3b3]">
                     💡 Bạn có thể dán link trực tiếp từ Shopee, TikTok Shop, Lazada hoặc bất kỳ trang nào. Hệ thống tự động nhận diện nền tảng.
                   </p>
 
@@ -2637,8 +2637,8 @@ https://s.lazada.vn/s.flashsale_deal`}
                     disabled={bulkInputText.split(/\r?\n/).filter(l => /(https?:\/\/[^\s]+)/i.test(l)).length === 0}
                     className={`px-6 py-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition cursor-pointer shadow-lg w-full sm:w-auto ${
                       bulkInputText.split(/\r?\n/).filter(l => /(https?:\/\/[^\s]+)/i.test(l)).length > 0
-                        ? 'bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 shadow-amber-500/20'
-                        : 'bg-slate-800 text-slate-500 cursor-not-allowed shadow-none'
+                        ? 'bg-[#1ed760] hover:bg-[#1db954] text-black font-bold shadow-[#1ed760]/20'
+                        : 'bg-[#242424] text-slate-500 cursor-not-allowed shadow-none'
                     }`}
                   >
                     <Zap size={16} className="text-rose-600 fill-current" />
@@ -2654,8 +2654,8 @@ https://s.lazada.vn/s.flashsale_deal`}
 
             {/* Thanh thao tác hàng loạt khi có link được chọn */}
             {selectedLinkIds.length > 0 && (
-              <div className="p-3 bg-amber-500/15 border border-amber-500/40 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs animate-fade-in shadow-lg">
-                <span className="font-bold text-amber-300 flex items-center gap-1.5">
+              <div className="p-3 bg-[#1ed760]/15 border border-[#1ed760]/40 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs animate-fade-in shadow-lg">
+                <span className="font-bold text-[#1ed760] flex items-center gap-1.5">
                   <CheckSquare size={16} />
                   Đang chọn {selectedLinkIds.length} liên kết
                 </span>
@@ -2670,7 +2670,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                   <button
                     type="button"
                     onClick={() => handleBatchToggleActive(false)}
-                    className="px-2.5 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 font-semibold cursor-pointer transition"
+                    className="px-2.5 py-1.5 rounded-lg bg-[#242424] text-[#d1d1d1] hover:bg-[#333333] font-semibold cursor-pointer transition"
                   >
                     Tắt tất cả
                   </button>
@@ -2684,7 +2684,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                   <button
                     type="button"
                     onClick={() => setSelectedLinkIds([])}
-                    className="text-slate-400 hover:text-white px-2 py-1 text-xs underline cursor-pointer"
+                    className="text-[#b3b3b3] hover:text-white px-2 py-1 text-xs underline cursor-pointer"
                   >
                     Bỏ chọn
                   </button>
@@ -2693,10 +2693,10 @@ https://s.lazada.vn/s.flashsale_deal`}
             )}
 
             {/* Table of Affiliate links */}
-            <div className="rounded-2xl border border-slate-800 overflow-hidden bg-slate-900/60">
+            <div className="rounded-2xl border border-[#282828] overflow-hidden bg-[#181818]/60">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-950 text-slate-400 uppercase font-semibold border-b border-slate-800">
+                  <thead className="bg-[#121212] text-[#b3b3b3] uppercase font-semibold border-b border-[#282828]">
                     <tr>
                       <th className="p-3.5 w-10 text-center">
                         <input
@@ -2746,7 +2746,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                               setSelectedLinkIds([]);
                             }
                           }}
-                          className="rounded accent-amber-400 cursor-pointer"
+                          className="rounded accent-[#1ed760] cursor-pointer"
                           title="Chọn tất cả các link đang hiển thị"
                         />
                       </th>
@@ -2758,7 +2758,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                       <th className="p-3.5 text-right">Xóa Link Lẻ</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800/60 text-slate-300">
+                  <tbody className="divide-y divide-slate-800/60 text-[#d1d1d1]">
                     {affiliateList
                       .filter(item => {
                         const matchesCat = selectedCategoryFilter === 'all' || item.categoryId === selectedCategoryFilter;
@@ -2778,7 +2778,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                         const isSelected = selectedLinkIds.includes(item.id);
 
                         return (
-                          <tr key={item.id} className={`hover:bg-slate-800/40 transition ${isSelected ? 'bg-amber-500/5' : ''}`}>
+                          <tr key={item.id} className={`hover:bg-[#242424]/40 transition ${isSelected ? 'bg-[#1ed760]/5' : ''}`}>
                             <td className="p-3.5 text-center">
                               <input
                                 type="checkbox"
@@ -2790,7 +2790,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                                     setSelectedLinkIds(prev => prev.filter(id => id !== item.id));
                                   }
                                 }}
-                                className="rounded accent-amber-400 cursor-pointer"
+                                className="rounded accent-[#1ed760] cursor-pointer"
                               />
                             </td>
 
@@ -2799,15 +2799,15 @@ https://s.lazada.vn/s.flashsale_deal`}
                                 item.platform === 'Shopee' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' :
                                 item.platform === 'TikTok' ? 'bg-pink-500/20 text-pink-400 border border-pink-500/30' :
                                 item.platform === 'Lazada' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
-                                'bg-slate-800 text-slate-300 border border-slate-700'
+                                'bg-[#242424] text-[#d1d1d1] border border-[#333333]'
                               }`}>
                                 {item.platform}
                               </span>
                             </td>
 
                             <td className="p-3.5 font-medium text-slate-200">
-                              <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-slate-800/70 border border-slate-700/60 text-[11px]">
-                                <Folder size={12} className={parentCat?.isActive ? 'text-amber-400' : 'text-slate-500'} />
+                              <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-[#242424]/70 border border-[#333333]/60 text-[11px]">
+                                <Folder size={12} className={parentCat?.isActive ? 'text-[#1ed760]' : 'text-slate-500'} />
                                 <span className="truncate max-w-[140px]" title={parentCat?.name || item.categoryName || 'Chưa gán'}>
                                   {parentCat?.name || item.categoryName || 'Chưa gán'}
                                 </span>
@@ -2819,13 +2819,13 @@ https://s.lazada.vn/s.flashsale_deal`}
                               )}
                             </td>
 
-                            <td className="p-3.5 font-mono text-slate-300 max-w-sm truncate">
+                            <td className="p-3.5 font-mono text-[#d1d1d1] max-w-sm truncate">
                               <div className="flex items-center gap-1.5">
                                 <a
                                   href={item.url}
                                   target="_blank"
                                   rel="noreferrer"
-                                  className="hover:text-amber-400 hover:underline truncate max-w-[240px] text-slate-300"
+                                  className="hover:text-[#1ed760] hover:underline truncate max-w-[240px] text-[#d1d1d1]"
                                   title={item.url}
                                 >
                                   {item.url}
@@ -2834,7 +2834,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                                   href={item.url}
                                   target="_blank"
                                   rel="noreferrer"
-                                  className="p-1 text-slate-400 hover:text-amber-400 transition"
+                                  className="p-1 text-[#b3b3b3] hover:text-[#1ed760] transition"
                                   title="Mở link kiểm tra"
                                 >
                                   <ExternalLink size={13} />
@@ -2842,7 +2842,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                               </div>
                             </td>
 
-                            <td className="p-3.5 text-center font-mono font-bold text-amber-400">
+                            <td className="p-3.5 text-center font-mono font-bold text-[#1ed760]">
                               {item.clicks || 0}
                             </td>
 
@@ -2852,7 +2852,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                                 className={`px-2.5 py-1 rounded-full text-[10px] font-bold cursor-pointer transition ${
                                   item.isActive && !isCatInactive
                                     ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                                    : 'bg-slate-800 text-slate-500 border border-slate-700'
+                                    : 'bg-[#242424] text-slate-500 border border-[#333333]'
                                 }`}
                                 title={item.isActive ? 'Bấm để tắt link này' : 'Bấm để bật link này'}
                               >
@@ -2890,9 +2890,9 @@ https://s.lazada.vn/s.flashsale_deal`}
                     (item.platform && item.platform.toLowerCase().includes(q))
                   );
                 }).length === 0 && (
-                <div className="p-10 text-center text-slate-400 text-xs space-y-2">
+                <div className="p-10 text-center text-[#b3b3b3] text-xs space-y-2">
                   <Search size={28} className="mx-auto text-slate-600 mb-1" />
-                  <p className="font-semibold text-slate-300">
+                  <p className="font-semibold text-[#d1d1d1]">
                     {affiliateSearch 
                       ? `Không tìm thấy liên kết nào khớp với "${affiliateSearch}"` 
                       : 'Không có liên kết nào trong danh mục đã chọn'}
@@ -2900,7 +2900,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                   {affiliateSearch && (
                     <button
                       onClick={() => setAffiliateSearch('')}
-                      className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-400 text-xs font-medium transition cursor-pointer"
+                      className="px-3 py-1.5 rounded-lg bg-[#242424] hover:bg-[#333333] text-[#1ed760] text-xs font-medium transition cursor-pointer"
                     >
                       Xóa tìm kiếm và hiển thị tất cả
                     </button>
@@ -2931,13 +2931,13 @@ https://s.lazada.vn/s.flashsale_deal`}
             </div>
           )}
 
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-slate-900 to-slate-900 border border-amber-500/30">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-5 rounded-2xl bg-gradient-to-r from-[#1ed760]/10 via-slate-900 to-slate-900 border border-[#1ed760]/30">
             <div>
               <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Palette size={20} className="text-amber-400" />
+                <Palette size={20} className="text-[#1ed760]" />
                 <span>Cài Đặt Website, Banner, Logo & Favicon (Đồng Bộ Server)</span>
               </h3>
-              <p className="text-xs text-slate-300 mt-1">
+              <p className="text-xs text-[#d1d1d1] mt-1">
                 Tất cả chỉnh sửa, upload ảnh và xóa dữ liệu đều lưu trực tiếp lên Server — áp dụng ngay lập tức cho mọi người truy cập website.
               </p>
             </div>
@@ -2946,7 +2946,7 @@ https://s.lazada.vn/s.flashsale_deal`}
               <button
                 type="submit"
                 disabled={isSavingSettings}
-                className="px-5 py-2 rounded-xl text-xs font-bold bg-amber-400 hover:bg-amber-300 text-slate-950 flex items-center gap-1.5 transition cursor-pointer shadow-md shadow-amber-500/20"
+                className="px-5 py-2 rounded-xl text-xs font-bold bg-[#1ed760] hover:bg-[#1db954] text-black font-bold flex items-center gap-1.5 transition cursor-pointer shadow-md shadow-[#1ed760]/20"
               >
                 <BookmarkCheck size={15} />
                 <span>{isSavingSettings ? 'Đang Lưu Lên Server...' : 'Lưu Cài Đặt Lên Server'}</span>
@@ -2957,9 +2957,9 @@ https://s.lazada.vn/s.flashsale_deal`}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             
             {/* 1. CẤU HÌNH BANNER TRANG CHỦ */}
-            <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+            <div className="p-6 rounded-2xl bg-[#181818] border border-[#282828] space-y-4">
+              <div className="flex items-center justify-between border-b border-[#282828] pb-3">
+                <h4 className="text-xs font-bold text-[#1ed760] uppercase tracking-wider flex items-center gap-2">
                   <Sliders size={16} />
                   <span>1. Tùy Chỉnh Nội Dung Banner Trang Chủ</span>
                 </h4>
@@ -2969,16 +2969,16 @@ https://s.lazada.vn/s.flashsale_deal`}
                     type="checkbox"
                     checked={settingsForm.showHeroBanner !== false}
                     onChange={(e) => setSettingsForm({ ...settingsForm, showHeroBanner: e.target.checked })}
-                    className="rounded accent-amber-400 cursor-pointer"
+                    className="rounded accent-[#1ed760] cursor-pointer"
                   />
-                  <span className="text-slate-300 font-semibold">Hiển thị khung Banner</span>
+                  <span className="text-[#d1d1d1] font-semibold">Hiển thị khung Banner</span>
                 </label>
               </div>
 
               <div className="space-y-3 text-xs">
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-slate-300 font-semibold">
+                    <label className="text-[#d1d1d1] font-semibold">
                       Huy Hiệu Phụ Trên Banner (Badge Text)
                     </label>
                     {settingsForm.heroBadge && (
@@ -2996,13 +2996,13 @@ https://s.lazada.vn/s.flashsale_deal`}
                     value={settingsForm.heroBadge ?? ''}
                     onChange={(e) => setSettingsForm({ ...settingsForm, heroBadge: e.target.value })}
                     placeholder="VD: Kho Truyện Audio Chất Lượng Cao"
-                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white focus:outline-none focus:border-amber-400"
+                    className="w-full px-3 py-2 rounded-xl bg-[#121212] border border-[#333333] text-white focus:outline-none focus:border-[#1ed760]"
                   />
                 </div>
 
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-slate-300 font-semibold">
+                    <label className="text-[#d1d1d1] font-semibold">
                       Tiêu Đề Lớn Banner (Hero Title)
                     </label>
                     {settingsForm.heroTitle && (
@@ -3020,13 +3020,13 @@ https://s.lazada.vn/s.flashsale_deal`}
                     value={settingsForm.heroTitle ?? ''}
                     onChange={(e) => setSettingsForm({ ...settingsForm, heroTitle: e.target.value })}
                     placeholder="VD: Thưởng Thức Truyện Audio Mọi Lúc Mọi Nơi"
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white font-bold focus:outline-none focus:border-amber-400"
+                    className="w-full px-3 py-2.5 rounded-xl bg-[#121212] border border-[#333333] text-white font-bold focus:outline-none focus:border-[#1ed760]"
                   />
                 </div>
 
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-slate-300 font-semibold">
+                    <label className="text-[#d1d1d1] font-semibold">
                       Đoạn Văn Mô Tả Banner (Hero Description)
                     </label>
                     {settingsForm.heroDescription && (
@@ -3044,13 +3044,13 @@ https://s.lazada.vn/s.flashsale_deal`}
                     value={settingsForm.heroDescription ?? ''}
                     onChange={(e) => setSettingsForm({ ...settingsForm, heroDescription: e.target.value })}
                     placeholder="Nhập mô tả tóm tắt hiển thị trên Banner trang chủ..."
-                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white focus:outline-none focus:border-amber-400 leading-relaxed resize-none"
+                    className="w-full px-3 py-2 rounded-xl bg-[#121212] border border-[#333333] text-white focus:outline-none focus:border-[#1ed760] leading-relaxed resize-none"
                   />
                 </div>
 
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-slate-300 font-semibold">
+                    <label className="text-[#d1d1d1] font-semibold">
                       Chữ Trên Nút Khám Phá (Button CTA Text - Để trống nếu muốn ẩn nút)
                     </label>
                     {settingsForm.heroButtonText && (
@@ -3068,13 +3068,13 @@ https://s.lazada.vn/s.flashsale_deal`}
                     value={settingsForm.heroButtonText ?? ''}
                     onChange={(e) => setSettingsForm({ ...settingsForm, heroButtonText: e.target.value })}
                     placeholder="VD: Khám phá toàn bộ (Để trống sẽ ẩn nút)"
-                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white focus:outline-none focus:border-amber-400"
+                    className="w-full px-3 py-2 rounded-xl bg-[#121212] border border-[#333333] text-white focus:outline-none focus:border-[#1ed760]"
                   />
                 </div>
 
                 {/* Upload Ảnh Nền Banner Lên Server */}
                 <div>
-                  <label className="text-slate-300 font-semibold block mb-1">
+                  <label className="text-[#d1d1d1] font-semibold block mb-1">
                     Ảnh Nền Banner Tùy Chỉnh (Lưu trên Server - Tùy chọn)
                   </label>
                   <div className="flex items-center gap-2">
@@ -3083,9 +3083,9 @@ https://s.lazada.vn/s.flashsale_deal`}
                       value={settingsForm.heroBannerImage || ''}
                       onChange={(e) => setSettingsForm({ ...settingsForm, heroBannerImage: e.target.value })}
                       placeholder="https://... hoặc bấm Upload ảnh lên Server"
-                      className="flex-1 px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-400 font-mono"
+                      className="flex-1 px-3 py-2 rounded-xl bg-[#121212] border border-[#333333] text-xs text-white focus:outline-none focus:border-[#1ed760] font-mono"
                     />
-                    <label className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold cursor-pointer shrink-0 transition flex items-center gap-1.5">
+                    <label className="px-3 py-2 rounded-xl bg-[#242424] hover:bg-[#333333] text-slate-200 border border-[#333333] text-xs font-semibold cursor-pointer shrink-0 transition flex items-center gap-1.5">
                       <Upload size={14} />
                       <span>{bannerImageUploading ? 'Đang tải...' : 'Upload'}</span>
                       <input
@@ -3111,10 +3111,10 @@ https://s.lazada.vn/s.flashsale_deal`}
 
               {/* LIVE PREVIEW BANNER */}
               <div className="pt-2">
-                <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block mb-2">
+                <span className="text-[10px] text-[#b3b3b3] uppercase font-bold tracking-wider block mb-2">
                   Xem Trước Banner Thực Tế Ngoài Trang Chủ (Live Preview):
                 </span>
-                <div className="relative rounded-2xl overflow-hidden bg-gradient-to-r from-amber-950/40 via-slate-950 to-[#0e131d] border border-amber-500/25 p-4 space-y-2">
+                <div className="relative rounded-2xl overflow-hidden bg-gradient-to-r from-[#121212] via-slate-950 to-[#0e131d] border border-[#1ed760]/25 p-4 space-y-2">
                   {settingsForm.heroBannerImage && (
                     <div className="absolute inset-0 z-0">
                       <img
@@ -3127,19 +3127,19 @@ https://s.lazada.vn/s.flashsale_deal`}
                   )}
                   <div className="relative z-10 space-y-2">
                     {settingsForm.heroBadge && (
-                      <span className="inline-block px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] font-semibold">
+                      <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#1ed760]/15 border border-[#1ed760]/30 text-[#1ed760] text-[10px] font-semibold">
                         ✨ {settingsForm.heroBadge}
                       </span>
                     )}
                     <h5 className="text-sm font-black text-white leading-tight">
                       {settingsForm.heroTitle || 'Nghe gì hôm nay?'}
                     </h5>
-                    <p className="text-[11px] text-slate-300 leading-relaxed line-clamp-3">
+                    <p className="text-[11px] text-[#d1d1d1] leading-relaxed line-clamp-3">
                       {settingsForm.heroDescription || `${tracks.length} audio • nghe miễn phí, không cần tài khoản`}
                     </p>
                     {settingsForm.heroButtonText && (
                       <div className="pt-1">
-                        <span className="inline-block px-3 py-1 rounded-lg text-[10px] font-bold bg-amber-400 text-slate-950">
+                        <span className="inline-block px-3 py-1 rounded-lg text-[10px] font-bold bg-[#1ed760] text-black font-bold">
                           {settingsForm.heroButtonText} →
                         </span>
                       </div>
@@ -3153,15 +3153,15 @@ https://s.lazada.vn/s.flashsale_deal`}
             <div className="space-y-6">
               
               {/* LOGO */}
-              <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
-                <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2 border-b border-slate-800 pb-3">
+              <div className="p-6 rounded-2xl bg-[#181818] border border-[#282828] space-y-4">
+                <h4 className="text-xs font-bold text-[#1ed760] uppercase tracking-wider flex items-center gap-2 border-b border-[#282828] pb-3">
                   <Globe size={16} />
                   <span>2. Logo & Tên Thương Hiệu Website</span>
                 </h4>
 
                 <div className="space-y-3 text-xs">
                   <div>
-                    <label className="text-slate-300 font-semibold block mb-1">
+                    <label className="text-[#d1d1d1] font-semibold block mb-1">
                       Tên Website / Thương Hiệu (Brand Name)
                     </label>
                     <input
@@ -3169,12 +3169,12 @@ https://s.lazada.vn/s.flashsale_deal`}
                       value={settingsForm.siteName ?? ''}
                       onChange={(e) => setSettingsForm({ ...settingsForm, siteName: e.target.value })}
                       placeholder="VD: Gối Ôm Audio"
-                      className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white font-bold tracking-wider focus:outline-none focus:border-amber-400"
+                      className="w-full px-3 py-2 rounded-xl bg-[#121212] border border-[#333333] text-white font-bold tracking-wider focus:outline-none focus:border-[#1ed760]"
                     />
                   </div>
 
                   <div>
-                    <label className="text-slate-300 font-semibold block mb-1">
+                    <label className="text-[#d1d1d1] font-semibold block mb-1">
                       Khẩu Hiệu / Slogan Phụ Dưới Logo (Tagline)
                     </label>
                     <input
@@ -3182,12 +3182,12 @@ https://s.lazada.vn/s.flashsale_deal`}
                       value={settingsForm.siteTagline ?? ''}
                       onChange={(e) => setSettingsForm({ ...settingsForm, siteTagline: e.target.value })}
                       placeholder="VD: Web Nghe Truyện Audio Online Miễn Phí"
-                      className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white focus:outline-none focus:border-amber-400"
+                      className="w-full px-3 py-2 rounded-xl bg-[#121212] border border-[#333333] text-white focus:outline-none focus:border-[#1ed760]"
                     />
                   </div>
 
                   <div>
-                    <label className="text-slate-300 font-semibold block mb-1">
+                    <label className="text-[#d1d1d1] font-semibold block mb-1">
                       Ảnh Logo Tùy Chỉnh (Lưu trên Server - Tùy chọn)
                     </label>
                     <div className="flex items-center gap-2">
@@ -3196,9 +3196,9 @@ https://s.lazada.vn/s.flashsale_deal`}
                         value={settingsForm.logoUrl || ''}
                         onChange={(e) => setSettingsForm({ ...settingsForm, logoUrl: e.target.value })}
                         placeholder="https://... hoặc bấm Upload"
-                        className="flex-1 px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-400 font-mono"
+                        className="flex-1 px-3 py-2 rounded-xl bg-[#121212] border border-[#333333] text-xs text-white focus:outline-none focus:border-[#1ed760] font-mono"
                       />
-                      <label className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold cursor-pointer shrink-0 transition flex items-center gap-1.5">
+                      <label className="px-3 py-2 rounded-xl bg-[#242424] hover:bg-[#333333] text-slate-200 border border-[#333333] text-xs font-semibold cursor-pointer shrink-0 transition flex items-center gap-1.5">
                         <Upload size={14} />
                         <span>{logoUploading ? 'Đang tải...' : 'Upload'}</span>
                         <input
@@ -3225,12 +3225,12 @@ https://s.lazada.vn/s.flashsale_deal`}
                   </div>
 
                   {/* Preview Logo */}
-                  <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center gap-3">
+                  <div className="p-3 rounded-xl bg-[#121212] border border-[#282828] flex items-center gap-3">
                     {settingsForm.logoUrl ? (
-                      <img src={settingsForm.logoUrl} alt="Logo Preview" className="w-10 h-10 rounded-lg object-cover border border-amber-500/40" />
+                      <img src={settingsForm.logoUrl} alt="Logo Preview" className="w-10 h-10 rounded-lg object-cover border border-[#1ed760]/40" />
                     ) : (
-                      <div className="w-10 h-10 rounded-lg bg-gradient-to-tr from-amber-500 to-amber-300 p-0.5">
-                        <div className="w-full h-full bg-[#0d121c] rounded-[7px] flex items-center justify-center text-amber-400 font-bold">
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-tr from-[#1ed760] to-[#1db954] p-0.5">
+                        <div className="w-full h-full bg-[#121212] rounded-[7px] flex items-center justify-center text-[#1ed760] font-bold">
                           🎧
                         </div>
                       </div>
@@ -3239,7 +3239,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                       <span className="font-black text-white text-sm block tracking-wider">
                         {settingsForm.siteName || 'Gối Ôm Audio'}
                       </span>
-                      <span className="text-[10px] text-slate-400 block">
+                      <span className="text-[10px] text-[#b3b3b3] block">
                         {settingsForm.siteTagline || 'Web Nghe Truyện Audio Online Miễn Phí'}
                       </span>
                     </div>
@@ -3248,15 +3248,15 @@ https://s.lazada.vn/s.flashsale_deal`}
               </div>
 
               {/* FAVICON */}
-              <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
-                <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2 border-b border-slate-800 pb-3">
+              <div className="p-6 rounded-2xl bg-[#181818] border border-[#282828] space-y-4">
+                <h4 className="text-xs font-bold text-[#1ed760] uppercase tracking-wider flex items-center gap-2 border-b border-[#282828] pb-3">
                   <BookmarkCheck size={16} />
                   <span>3. Favicon (Biểu Tượng Tab Trình Duyệt)</span>
                 </h4>
 
                 <div className="space-y-3 text-xs">
                   <div>
-                    <label className="text-slate-300 font-semibold block mb-1">
+                    <label className="text-[#d1d1d1] font-semibold block mb-1">
                       Đường Dẫn Favicon (.ico, .svg, .png - Lưu trên Server)
                     </label>
                     <div className="flex items-center gap-2">
@@ -3265,9 +3265,9 @@ https://s.lazada.vn/s.flashsale_deal`}
                         value={settingsForm.faviconUrl || ''}
                         onChange={(e) => setSettingsForm({ ...settingsForm, faviconUrl: e.target.value })}
                         placeholder="https://...favicon.svg"
-                        className="flex-1 px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-400 font-mono"
+                        className="flex-1 px-3 py-2 rounded-xl bg-[#121212] border border-[#333333] text-xs text-white focus:outline-none focus:border-[#1ed760] font-mono"
                       />
-                      <label className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold cursor-pointer shrink-0 transition flex items-center gap-1.5">
+                      <label className="px-3 py-2 rounded-xl bg-[#242424] hover:bg-[#333333] text-slate-200 border border-[#333333] text-xs font-semibold cursor-pointer shrink-0 transition flex items-center gap-1.5">
                         <Upload size={14} />
                         <span>{faviconUploading ? 'Đang tải...' : 'Upload'}</span>
                         <input
@@ -3291,13 +3291,13 @@ https://s.lazada.vn/s.flashsale_deal`}
                   </div>
 
                   {/* Preview Tab Trình Duyệt */}
-                  <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+                  <div className="p-2.5 rounded-xl bg-[#121212] border border-[#282828]">
                     <span className="text-[10px] text-slate-500 block mb-1.5">Mô phỏng Tab trình duyệt:</span>
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-t-lg bg-slate-800 border-t border-x border-slate-700 text-xs text-slate-200">
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-t-lg bg-[#242424] border-t border-x border-[#333333] text-xs text-slate-200">
                       {settingsForm.faviconUrl ? (
                         <img src={settingsForm.faviconUrl} alt="Favicon" className="w-4 h-4 object-contain rounded" />
                       ) : (
-                        <span className="w-3.5 h-3.5 rounded bg-amber-400"></span>
+                        <span className="w-3.5 h-3.5 rounded bg-[#1ed760]"></span>
                       )}
                       <span className="text-[11px] font-semibold truncate max-w-[150px]">
                         {settingsForm.siteName || 'Gối Ôm Audio'} - Nghe Truyện
@@ -3310,14 +3310,14 @@ https://s.lazada.vn/s.flashsale_deal`}
             </div>
 
               {/* 4. XEM TRƯỚC KẾT QUẢ HIỂN THỊ TRÊN GOOGLE TÌM KIẾM (GOOGLE SERP LIVE PREVIEW) */}
-              <div className="col-span-1 lg:col-span-2 p-6 rounded-2xl bg-slate-900 border border-amber-500/30 space-y-5">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+              <div className="col-span-1 lg:col-span-2 p-6 rounded-2xl bg-[#181818] border border-[#1ed760]/30 space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#282828] pb-3">
                   <div>
-                    <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+                    <h4 className="text-xs font-bold text-[#1ed760] uppercase tracking-wider flex items-center gap-2">
                       <Search size={16} />
                       <span>4. Xem Trước Hiển Thị Trên Google Tìm Kiếm (Google Search Live Preview)</span>
                     </h4>
-                    <p className="text-[11px] text-slate-400 mt-1">
+                    <p className="text-[11px] text-[#b3b3b3] mt-1">
                       Mô phỏng chính xác cách Google hiển thị Trang Chủ và Trang Nghe Truyện của bạn dựa trên các cài đặt bên trên (đồng bộ cả Server-Side HTML, Sitemap XML & Schema.org).
                     </p>
                   </div>
@@ -3326,7 +3326,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                       href="/sitemap.xml"
                       target="_blank"
                       rel="noreferrer"
-                      className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 text-[11px] font-semibold flex items-center gap-1 transition"
+                      className="px-2.5 py-1.5 rounded-lg bg-[#242424] hover:bg-[#333333] text-[#1ed760] border border-[#333333] text-[11px] font-semibold flex items-center gap-1 transition"
                     >
                       <ExternalLink size={12} />
                       <span>Xem /sitemap.xml</span>
@@ -3335,7 +3335,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                       href="/robots.txt"
                       target="_blank"
                       rel="noreferrer"
-                      className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[11px] font-semibold flex items-center gap-1 transition"
+                      className="px-2.5 py-1.5 rounded-lg bg-[#242424] hover:bg-[#333333] text-[#d1d1d1] border border-[#333333] text-[11px] font-semibold flex items-center gap-1 transition"
                     >
                       <ExternalLink size={12} />
                       <span>Xem /robots.txt</span>
@@ -3388,15 +3388,15 @@ https://s.lazada.vn/s.flashsale_deal`}
                   return (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                       {/* Card 1: Kết quả Trang Chủ trên Google */}
-                      <div className="p-4 rounded-2xl bg-[#1f2329] border border-slate-700/80 space-y-2.5 shadow-inner">
-                        <div className="flex items-center justify-between text-[10px] text-amber-400 font-bold uppercase tracking-wider border-b border-slate-700/60 pb-2">
+                      <div className="p-4 rounded-2xl bg-[#1f2329] border border-[#333333]/80 space-y-2.5 shadow-inner">
+                        <div className="flex items-center justify-between text-[10px] text-[#1ed760] font-bold uppercase tracking-wider border-b border-[#333333]/60 pb-2">
                           <span>① Khi tìm Tên Web / Trang Chủ trên Google</span>
                           <span className="text-emerald-400 font-mono">Schema: WebSite + SearchBox</span>
                         </div>
 
                         {/* Google Header Row (Favicon + Site Name + URL) */}
                         <div className="flex items-center gap-2.5 pt-1">
-                          <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center overflow-hidden shrink-0">
+                          <div className="w-7 h-7 rounded-full bg-[#242424] border border-slate-600 flex items-center justify-center overflow-hidden shrink-0">
                             {settingsForm.faviconUrl || settingsForm.logoUrl ? (
                               <img
                                 src={settingsForm.faviconUrl || settingsForm.logoUrl}
@@ -3425,23 +3425,23 @@ https://s.lazada.vn/s.flashsale_deal`}
 
                         {/* Sitelinks Searchbox Preview */}
                         <div className="pt-1.5">
-                          <div className="px-3 py-1.5 rounded-lg bg-[#282c34] border border-slate-600/80 text-[11px] text-slate-400 flex items-center justify-between">
+                          <div className="px-3 py-1.5 rounded-lg bg-[#282c34] border border-slate-600/80 text-[11px] text-[#b3b3b3] flex items-center justify-between">
                             <span>Tìm truyện trên {previewBrand}...</span>
-                            <Search size={12} className="text-slate-400" />
+                            <Search size={12} className="text-[#b3b3b3]" />
                           </div>
                         </div>
                       </div>
 
                       {/* Card 2: Kết quả Trang Truyện Lẻ trên Google */}
-                      <div className="p-4 rounded-2xl bg-[#1f2329] border border-slate-700/80 space-y-2.5 shadow-inner">
-                        <div className="flex items-center justify-between text-[10px] text-amber-400 font-bold uppercase tracking-wider border-b border-slate-700/60 pb-2">
+                      <div className="p-4 rounded-2xl bg-[#1f2329] border border-[#333333]/80 space-y-2.5 shadow-inner">
+                        <div className="flex items-center justify-between text-[10px] text-[#1ed760] font-bold uppercase tracking-wider border-b border-[#333333]/60 pb-2">
                           <span>② Khi tìm Tên Truyện Cụ Thể trên Google</span>
                           <span className="text-emerald-400 font-mono">Schema: AudioObject</span>
                         </div>
 
                         {/* Google Header Row */}
                         <div className="flex items-center gap-2.5 pt-1">
-                          <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center overflow-hidden shrink-0">
+                          <div className="w-7 h-7 rounded-full bg-[#242424] border border-slate-600 flex items-center justify-center overflow-hidden shrink-0">
                             {settingsForm.faviconUrl || settingsForm.logoUrl ? (
                               <img
                                 src={settingsForm.faviconUrl || settingsForm.logoUrl}
@@ -3467,7 +3467,7 @@ https://s.lazada.vn/s.flashsale_deal`}
 
                         {/* Rich Result Badge */}
                         <div className="flex items-center gap-2 text-[11px] text-[#bdc1c6]">
-                          <span className="px-2 py-0.5 rounded bg-slate-700/80 text-amber-300 font-medium">
+                          <span className="px-2 py-0.5 rounded bg-slate-700/80 text-[#1ed760] font-medium">
                             🎧 Audio · {sampleStory.category || 'Truyện Audio'}
                           </span>
                           <span>•</span>
@@ -3485,9 +3485,9 @@ https://s.lazada.vn/s.flashsale_deal`}
               </div>
 
               {/* 5. CHÈN MÃ THEO DÕI HEADER & BODY (GOOGLE ANALYTICS, FACEBOOK PIXEL, META TAGS...) */}
-              <div className="col-span-1 lg:col-span-2 p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-5">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
-                  <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+              <div className="col-span-1 lg:col-span-2 p-6 rounded-2xl bg-[#181818] border border-[#282828] space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#282828] pb-3">
+                  <h4 className="text-xs font-bold text-[#1ed760] uppercase tracking-wider flex items-center gap-2">
                     <Code2 size={16} />
                     <span>5. Chèn Mã Đo Lường & Theo Dõi (Google Analytics, Facebook Pixel, Thẻ Meta)</span>
                   </h4>
@@ -3501,7 +3501,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <label className="text-xs text-slate-200 font-bold flex items-center gap-1.5">
-                        <span className="text-amber-400 font-mono">&lt;head&gt;</span>
+                        <span className="text-[#1ed760] font-mono">&lt;head&gt;</span>
                         <span>Mã Chèn Vào Header (Phổ biến nhất)</span>
                       </label>
                       {settingsForm.headerCode ? (
@@ -3513,7 +3513,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                           Xóa mã Header
                         </button>
                       ) : (
-                        <span className="text-[10px] text-slate-400">Google Analytics, GTM, Meta Pixel</span>
+                        <span className="text-[10px] text-[#b3b3b3]">Google Analytics, GTM, Meta Pixel</span>
                       )}
                     </div>
 
@@ -3522,12 +3522,12 @@ https://s.lazada.vn/s.flashsale_deal`}
                       value={settingsForm.headerCode || ''}
                       onChange={(e) => setSettingsForm({ ...settingsForm, headerCode: e.target.value })}
                       placeholder="<!-- Dán mã Google Analytics (G-XXXXX), Facebook Pixel hoặc thẻ xác minh Google Search Console vào đây -->"
-                      className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-amber-200/90 font-mono focus:outline-none focus:border-amber-400 leading-relaxed"
+                      className="w-full px-3 py-2.5 rounded-xl bg-[#121212] border border-[#333333] text-xs text-[#1ed760] font-mono focus:outline-none focus:border-[#1ed760] leading-relaxed"
                     />
 
                     {/* Preset Buttons for Quick Template Insertion */}
                     <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                      <span className="text-[10px] text-slate-400 mr-1">Chèn nhanh:</span>
+                      <span className="text-[10px] text-[#b3b3b3] mr-1">Chèn nhanh:</span>
                       <button
                         type="button"
                         onClick={() => {
@@ -3537,7 +3537,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                             headerCode: (prev.headerCode ? prev.headerCode + '\n\n' : '') + sampleGA
                           }));
                         }}
-                        className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-medium border border-slate-700 transition cursor-pointer"
+                        className="px-2 py-1 rounded bg-[#242424] hover:bg-[#333333] text-[#d1d1d1] text-[10px] font-medium border border-[#333333] transition cursor-pointer"
                       >
                         + Google Analytics (GA4)
                       </button>
@@ -3550,7 +3550,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                             headerCode: (prev.headerCode ? prev.headerCode + '\n\n' : '') + sampleFB
                           }));
                         }}
-                        className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-medium border border-slate-700 transition cursor-pointer"
+                        className="px-2 py-1 rounded bg-[#242424] hover:bg-[#333333] text-[#d1d1d1] text-[10px] font-medium border border-[#333333] transition cursor-pointer"
                       >
                         + Facebook Pixel
                       </button>
@@ -3563,7 +3563,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                             headerCode: (prev.headerCode ? prev.headerCode + '\n\n' : '') + sampleVerify
                           }));
                         }}
-                        className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-medium border border-slate-700 transition cursor-pointer"
+                        className="px-2 py-1 rounded bg-[#242424] hover:bg-[#333333] text-[#d1d1d1] text-[10px] font-medium border border-[#333333] transition cursor-pointer"
                       >
                         + Xác minh Google
                       </button>
@@ -3574,7 +3574,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <label className="text-xs text-slate-200 font-bold flex items-center gap-1.5">
-                        <span className="text-amber-400 font-mono">&lt;body&gt;</span>
+                        <span className="text-[#1ed760] font-mono">&lt;body&gt;</span>
                         <span>Mã Chèn Trước Thẻ Đóng Body</span>
                       </label>
                       {settingsForm.bodyCode ? (
@@ -3586,7 +3586,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                           Xóa mã Body
                         </button>
                       ) : (
-                        <span className="text-[10px] text-slate-400">Facebook Chat, TikTok Pixel, Zalo Widget</span>
+                        <span className="text-[10px] text-[#b3b3b3]">Facebook Chat, TikTok Pixel, Zalo Widget</span>
                       )}
                     </div>
 
@@ -3595,12 +3595,12 @@ https://s.lazada.vn/s.flashsale_deal`}
                       value={settingsForm.bodyCode || ''}
                       onChange={(e) => setSettingsForm({ ...settingsForm, bodyCode: e.target.value })}
                       placeholder="<!-- Dán mã Facebook Chat Plugin, TikTok Pixel hoặc mã HTML/JS widget vào đây -->"
-                      className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-amber-200/90 font-mono focus:outline-none focus:border-amber-400 leading-relaxed"
+                      className="w-full px-3 py-2.5 rounded-xl bg-[#121212] border border-[#333333] text-xs text-[#1ed760] font-mono focus:outline-none focus:border-[#1ed760] leading-relaxed"
                     />
 
                     {/* Preset Buttons for Body */}
                     <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                      <span className="text-[10px] text-slate-400 mr-1">Chèn nhanh:</span>
+                      <span className="text-[10px] text-[#b3b3b3] mr-1">Chèn nhanh:</span>
                       <button
                         type="button"
                         onClick={() => {
@@ -3610,7 +3610,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                             bodyCode: (prev.bodyCode ? prev.bodyCode + '\n\n' : '') + sampleTikTok
                           }));
                         }}
-                        className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-medium border border-slate-700 transition cursor-pointer"
+                        className="px-2 py-1 rounded bg-[#242424] hover:bg-[#333333] text-[#d1d1d1] text-[10px] font-medium border border-[#333333] transition cursor-pointer"
                       >
                         + TikTok Pixel
                       </button>
@@ -3623,7 +3623,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                             bodyCode: (prev.bodyCode ? prev.bodyCode + '\n\n' : '') + sampleChat
                           }));
                         }}
-                        className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-medium border border-slate-700 transition cursor-pointer"
+                        className="px-2 py-1 rounded bg-[#242424] hover:bg-[#333333] text-[#d1d1d1] text-[10px] font-medium border border-[#333333] transition cursor-pointer"
                       >
                         + Facebook Chat Widget
                       </button>
@@ -3633,14 +3633,14 @@ https://s.lazada.vn/s.flashsale_deal`}
               </div>
 
               {/* 6. CẤU HÌNH CHẶN TRÌNH DUYỆT MẠNG XÃ HỘI (IN-APP BROWSER BLOCKER) */}
-              <div className="col-span-1 lg:col-span-2 p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-5">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+              <div className="col-span-1 lg:col-span-2 p-6 rounded-2xl bg-[#181818] border border-[#282828] space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#282828] pb-3">
                   <div>
-                    <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+                    <h4 className="text-xs font-bold text-[#1ed760] uppercase tracking-wider flex items-center gap-2">
                       <ShieldCheck size={16} />
                       <span>6. Cấu Hình Chặn Trình Duyệt Mạng Xã Hội (In-App Browser Blocker)</span>
                     </h4>
-                    <p className="text-[11px] text-slate-400 mt-1">
+                    <p className="text-[11px] text-[#b3b3b3] mt-1">
                       Tự động phát hiện khi khách truy cập từ Facebook, Messenger, TikTok, Instagram, Zalo... và hiển thị hộp thoại hướng dẫn mở bằng Chrome hoặc Safari để đảm bảo nghe audio ngầm không bị ngắt.
                     </p>
                   </div>
@@ -3653,7 +3653,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                         onChange={(e) => setSettingsForm({ ...settingsForm, socialBlockerEnabled: e.target.checked })}
                         className="sr-only peer"
                       />
-                      <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                      <div className="w-11 h-6 bg-[#242424] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1ed760]"></div>
                       <span className="ml-2.5 text-xs font-bold text-slate-200">
                         {settingsForm.socialBlockerEnabled ?? true ? 'Đang Bật Chặn' : 'Đã Tắt Chặn'}
                       </span>
@@ -3663,22 +3663,22 @@ https://s.lazada.vn/s.flashsale_deal`}
 
                 {/* Giải thích về Domain & Thương hiệu */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-3.5 rounded-xl bg-slate-950/80 border border-amber-500/20 space-y-1.5">
-                    <div className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                  <div className="p-3.5 rounded-xl bg-[#121212]/80 border border-[#1ed760]/20 space-y-1.5">
+                    <div className="text-xs font-bold text-[#1ed760] flex items-center gap-1.5">
                       <Globe size={14} />
                       <span>🌐 Tự động nhận diện Tên Miền (Không lo khi đổi Domain)</span>
                     </div>
-                    <p className="text-[11px] text-slate-300 leading-relaxed">
-                      Đường dẫn mở Chrome và liên kết sao chép được nhận diện trực tiếp qua trình duyệt (<strong className="text-amber-200 font-mono">window.location.host</strong>). Dù bạn đổi sang bất kỳ tên miền nào hay chạy nhiều domain, hệ thống luôn tự động tạo link chuẩn xác 100%.
+                    <p className="text-[11px] text-[#d1d1d1] leading-relaxed">
+                      Đường dẫn mở Chrome và liên kết sao chép được nhận diện trực tiếp qua trình duyệt (<strong className="text-[#1ed760] font-mono">window.location.host</strong>). Dù bạn đổi sang bất kỳ tên miền nào hay chạy nhiều domain, hệ thống luôn tự động tạo link chuẩn xác 100%.
                     </p>
                   </div>
 
-                  <div className="p-3.5 rounded-xl bg-slate-950/80 border border-emerald-500/20 space-y-1.5">
+                  <div className="p-3.5 rounded-xl bg-[#121212]/80 border border-emerald-500/20 space-y-1.5">
                     <div className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
                       <Palette size={14} />
                       <span>🏷️ Tự động đồng bộ Thương Hiệu & Tên Website</span>
                     </div>
-                    <p className="text-[11px] text-slate-300 leading-relaxed">
+                    <p className="text-[11px] text-[#d1d1d1] leading-relaxed">
                       Khi bạn đổi tên website ở Mục 1 (<strong className="text-emerald-200">{settingsForm.siteName || 'Gối Ôm Audio'}</strong>), popup thông báo sẽ tự động cập nhật tên thương hiệu mới để nhắc nhở người nghe một cách chuyên nghiệp.
                     </p>
                   </div>
@@ -3694,7 +3694,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                       value={settingsForm.socialBlockerTitle || 'Vui lòng mở bằng Google Chrome'}
                       onChange={(e) => setSettingsForm({ ...settingsForm, socialBlockerTitle: e.target.value })}
                       placeholder="Vui lòng mở bằng Google Chrome"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-400 font-medium"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#121212] border border-[#333333] text-xs text-white focus:outline-none focus:border-[#1ed760] font-medium"
                     />
                   </div>
 
@@ -3707,7 +3707,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                       value={settingsForm.socialBlockerBtnText || 'Mở bằng Google Chrome'}
                       onChange={(e) => setSettingsForm({ ...settingsForm, socialBlockerBtnText: e.target.value })}
                       placeholder="Mở bằng Google Chrome"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-400 font-medium"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#121212] border border-[#333333] text-xs text-white focus:outline-none focus:border-[#1ed760] font-medium"
                     />
                   </div>
 
@@ -3722,7 +3722,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                           ...settingsForm,
                           socialBlockerDesc: `Trình duyệt mạng xã hội chặn phát âm thanh và bảo lưu phiên nghe trên <b>${settingsForm.siteName || 'Gối Ôm Audio'}</b>. Vui lòng mở bằng <b>Chrome</b> hoặc <b>Safari</b> để tiếp tục!`
                         })}
-                        className="text-[10px] text-amber-400 hover:text-amber-300 underline cursor-pointer"
+                        className="text-[10px] text-[#1ed760] hover:text-[#1ed760] underline cursor-pointer"
                       >
                         Chèn mẫu theo tên web hiện tại
                       </button>
@@ -3732,9 +3732,9 @@ https://s.lazada.vn/s.flashsale_deal`}
                       value={settingsForm.socialBlockerDesc || 'Trình duyệt mạng xã hội chặn phát âm thanh và bảo lưu phiên nghe. Vui lòng mở bằng Chrome hoặc Safari để tiếp tục!'}
                       onChange={(e) => setSettingsForm({ ...settingsForm, socialBlockerDesc: e.target.value })}
                       placeholder="Nhập nội dung lời nhắc hiển thị trong popup..."
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-400 leading-relaxed"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#121212] border border-[#333333] text-xs text-white focus:outline-none focus:border-[#1ed760] leading-relaxed"
                     />
-                    <span className="text-[10px] text-slate-400 block mt-1">
+                    <span className="text-[10px] text-[#b3b3b3] block mt-1">
                       Hỗ trợ thẻ HTML đơn giản như &lt;b&gt;in đậm&lt;/b&gt;.
                     </span>
                   </div>
@@ -3747,7 +3747,7 @@ https://s.lazada.vn/s.flashsale_deal`}
             <button
               type="submit"
               disabled={isSavingSettings}
-              className="px-6 py-3 rounded-xl font-bold text-xs sm:text-sm bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 shadow-lg shadow-amber-500/20 flex items-center gap-2 transition cursor-pointer"
+              className="px-6 py-3 rounded-xl font-bold text-xs sm:text-sm bg-gradient-to-r from-[#1ed760] to-[#1db954] hover:from-[#1db954] hover:to-[#1db954] text-slate-950 shadow-lg shadow-[#1ed760]/20 flex items-center gap-2 transition cursor-pointer"
             >
               <BookmarkCheck size={16} />
               <span>{isSavingSettings ? 'Đang Lưu Lên Server...' : 'Lưu Thay Đổi Cài Đặt Lên Server'}</span>
@@ -3760,22 +3760,22 @@ https://s.lazada.vn/s.flashsale_deal`}
       {activeTab === 'accounts' && (
         <div className="space-y-6 animate-fade-in">
           {/* Header Banner */}
-          <div className="p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-amber-500/15 via-slate-900 to-slate-900 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-[#1ed760]/15 via-slate-900 to-slate-900 border border-[#1ed760]/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-1.5">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-bold">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1ed760]/20 border border-[#1ed760]/40 text-[#1ed760] text-xs font-bold">
                 <Users size={14} />
                 <span>QUẢN LÝ TÀI KHOẢN QUẢN TRỊ TRÊN SERVER</span>
               </div>
               <h2 className="text-xl font-black text-white">
                 Quản Lý Tài Khoản Admin CMS (Thêm • Sửa • Đổi Mật Khẩu • Xóa)
               </h2>
-              <p className="text-xs text-slate-300 max-w-3xl leading-relaxed">
-                Hệ thống luôn cấp sẵn 1 tài khoản Admin mặc định (<strong className="text-amber-300 font-mono">tuld2901@gmail.com</strong> / mật khẩu: <strong className="text-amber-300 font-mono">admin123</strong>). Tại đây bạn có thể <strong className="text-white">tạo thêm tài khoản quản trị mới</strong>, <strong className="text-white">thay đổi email/tên đăng nhập, đổi mật khẩu</strong> hoặc <strong className="text-white">xóa bất kỳ tài khoản nào — kể cả tài khoản Admin mặc định</strong>. Mọi thay đổi đều lưu trực tiếp vào cơ sở dữ liệu trên Server.
+              <p className="text-xs text-[#d1d1d1] max-w-3xl leading-relaxed">
+                Hệ thống luôn cấp sẵn 1 tài khoản Admin mặc định (<strong className="text-[#1ed760] font-mono">tuld2901@gmail.com</strong> / mật khẩu: <strong className="text-[#1ed760] font-mono">admin123</strong>). Tại đây bạn có thể <strong className="text-white">tạo thêm tài khoản quản trị mới</strong>, <strong className="text-white">thay đổi email/tên đăng nhập, đổi mật khẩu</strong> hoặc <strong className="text-white">xóa bất kỳ tài khoản nào — kể cả tài khoản Admin mặc định</strong>. Mọi thay đổi đều lưu trực tiếp vào cơ sở dữ liệu trên Server.
               </p>
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
-              <span className="px-3.5 py-2 rounded-xl bg-slate-950/90 border border-slate-800 text-xs font-bold text-amber-300 flex items-center gap-2">
+              <span className="px-3.5 py-2 rounded-xl bg-[#121212]/90 border border-[#282828] text-xs font-bold text-[#1ed760] flex items-center gap-2">
                 <ShieldCheck size={16} className="text-emerald-400" />
                 <span>Tổng số: {adminAccounts.length} Tài khoản Admin</span>
               </span>
@@ -3795,7 +3795,7 @@ https://s.lazada.vn/s.flashsale_deal`}
               <button
                 type="button"
                 onClick={() => setAccountFormMsg(null)}
-                className="text-slate-400 hover:text-white text-xs cursor-pointer"
+                className="text-[#b3b3b3] hover:text-white text-xs cursor-pointer"
               >
                 ✕
               </button>
@@ -3804,17 +3804,17 @@ https://s.lazada.vn/s.flashsale_deal`}
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Cột trái: Form Tạo mới / Chỉnh sửa tài khoản quản trị */}
-            <div className="lg:col-span-5 p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4 self-start">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="lg:col-span-5 p-6 rounded-2xl bg-[#181818] border border-[#282828] space-y-4 self-start">
+              <div className="flex items-center justify-between border-b border-[#282828] pb-3">
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
                   {editingAccountId ? (
                     <>
-                      <Edit3 size={16} className="text-amber-400" />
+                      <Edit3 size={16} className="text-[#1ed760]" />
                       <span>Chỉnh Sửa Tài Khoản Quản Trị</span>
                     </>
                   ) : (
                     <>
-                      <UserPlus size={16} className="text-amber-400" />
+                      <UserPlus size={16} className="text-[#1ed760]" />
                       <span>Tạo Thêm Tài Khoản Quản Trị Mới</span>
                     </>
                   )}
@@ -3832,7 +3832,7 @@ https://s.lazada.vn/s.flashsale_deal`}
 
               <form onSubmit={handleSaveAdminAccount} className="space-y-4 text-xs">
                 <div>
-                  <label className="text-slate-300 font-semibold block mb-1.5">
+                  <label className="text-[#d1d1d1] font-semibold block mb-1.5">
                     Email Quản Trị (Dùng để đăng nhập) *
                   </label>
                   <input
@@ -3841,12 +3841,12 @@ https://s.lazada.vn/s.flashsale_deal`}
                     value={accEmailInput}
                     onChange={(e) => setAccEmailInput(e.target.value)}
                     placeholder="VD: admin@tenmien.com hoặc tuld2901@gmail.com"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white focus:outline-none focus:border-amber-400 font-mono"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#121212] border border-[#333333] text-white focus:outline-none focus:border-[#1ed760] font-mono"
                   />
                 </div>
 
                 <div>
-                  <label className="text-slate-300 font-semibold block mb-1.5">
+                  <label className="text-[#d1d1d1] font-semibold block mb-1.5">
                     Tên Đăng Nhập Ngắn / Username (Tùy chọn)
                   </label>
                   <input
@@ -3854,15 +3854,15 @@ https://s.lazada.vn/s.flashsale_deal`}
                     value={accUsernameInput}
                     onChange={(e) => setAccUsernameInput(e.target.value)}
                     placeholder="VD: admin, superadmin..."
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white focus:outline-none focus:border-amber-400 font-mono"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#121212] border border-[#333333] text-white focus:outline-none focus:border-[#1ed760] font-mono"
                   />
-                  <span className="text-[11px] text-slate-400 mt-1 block">
+                  <span className="text-[11px] text-[#b3b3b3] mt-1 block">
                     Có thể dùng Email hoặc Tên đăng nhập này để đăng nhập vào CMS.
                   </span>
                 </div>
 
                 <div>
-                  <label className="text-slate-300 font-semibold block mb-1.5">
+                  <label className="text-[#d1d1d1] font-semibold block mb-1.5">
                     Mật Khẩu Quản Trị *
                   </label>
                   <div className="relative">
@@ -3872,12 +3872,12 @@ https://s.lazada.vn/s.flashsale_deal`}
                       value={accPasswordInput}
                       onChange={(e) => setAccPasswordInput(e.target.value)}
                       placeholder="Nhập mật khẩu quản trị (tối thiểu 3 ký tự)..."
-                      className="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-amber-300 font-mono focus:outline-none focus:border-amber-400"
+                      className="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-[#121212] border border-[#333333] text-[#1ed760] font-mono focus:outline-none focus:border-[#1ed760]"
                     />
                     <button
                       type="button"
                       onClick={() => setShowAccPassword(!showAccPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white cursor-pointer"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#b3b3b3] hover:text-white cursor-pointer"
                       title={showAccPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
                     >
                       {showAccPassword ? <EyeOff size={15} /> : <Eye size={15} />}
@@ -3887,7 +3887,7 @@ https://s.lazada.vn/s.flashsale_deal`}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-slate-300 font-semibold block mb-1.5">
+                    <label className="text-[#d1d1d1] font-semibold block mb-1.5">
                       Tên Hiển Thị
                     </label>
                     <input
@@ -3895,18 +3895,18 @@ https://s.lazada.vn/s.flashsale_deal`}
                       value={accNameInput}
                       onChange={(e) => setAccNameInput(e.target.value)}
                       placeholder="VD: Quản Trị Viên Chính"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white focus:outline-none focus:border-amber-400"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#121212] border border-[#333333] text-white focus:outline-none focus:border-[#1ed760]"
                     />
                   </div>
 
                   <div>
-                    <label className="text-slate-300 font-semibold block mb-1.5">
+                    <label className="text-[#d1d1d1] font-semibold block mb-1.5">
                       Vai Trò / Quyền Hạn
                     </label>
                     <select
                       value={accRoleInput}
                       onChange={(e) => setAccRoleInput(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white focus:outline-none focus:border-amber-400 cursor-pointer"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#121212] border border-[#333333] text-white focus:outline-none focus:border-[#1ed760] cursor-pointer"
                     >
                       <option value="Super Admin">Super Admin (Toàn quyền)</option>
                       <option value="Admin">Admin (Quản trị viên)</option>
@@ -3915,12 +3915,12 @@ https://s.lazada.vn/s.flashsale_deal`}
                   </div>
                 </div>
 
-                <div className="pt-2 flex items-center justify-end gap-2.5 border-t border-slate-800">
+                <div className="pt-2 flex items-center justify-end gap-2.5 border-t border-[#282828]">
                   {editingAccountId && (
                     <button
                       type="button"
                       onClick={resetAccountForm}
-                      className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold transition cursor-pointer"
+                      className="px-4 py-2.5 rounded-xl bg-[#242424] hover:bg-[#333333] text-[#d1d1d1] font-semibold transition cursor-pointer"
                     >
                       Hủy Bỏ
                     </button>
@@ -3928,7 +3928,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                   <button
                     type="submit"
                     disabled={isSavingAccount}
-                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-bold flex items-center gap-2 transition cursor-pointer shadow-lg shadow-amber-500/20"
+                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#1ed760] to-[#1db954] hover:from-[#1db954] hover:to-[#1db954] text-slate-950 font-bold flex items-center gap-2 transition cursor-pointer shadow-lg shadow-[#1ed760]/20"
                   >
                     <Key size={15} />
                     <span>
@@ -3944,14 +3944,14 @@ https://s.lazada.vn/s.flashsale_deal`}
             </div>
 
             {/* Cột phải: Danh sách các tài khoản quản trị hiện có */}
-            <div className="lg:col-span-7 p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="lg:col-span-7 p-6 rounded-2xl bg-[#181818] border border-[#282828] space-y-4">
+              <div className="flex items-center justify-between border-b border-[#282828] pb-3">
                 <div>
                   <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                    <ShieldCheck size={16} className="text-amber-400" />
+                    <ShieldCheck size={16} className="text-[#1ed760]" />
                     <span>Danh Sách Tài Khoản Quản Trị ({adminAccounts.length})</span>
                   </h3>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
+                  <p className="text-[11px] text-[#b3b3b3] mt-0.5">
                     Bấm "Sửa / Đổi Pass" để đổi email, username, mật khẩu hoặc bấm "Xóa" để loại bỏ tài khoản khỏi Server.
                   </p>
                 </div>
@@ -3971,8 +3971,8 @@ https://s.lazada.vn/s.flashsale_deal`}
                       key={acc.id}
                       className={`p-4 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
                         isBeingEdited
-                          ? 'bg-amber-500/10 border-amber-400 shadow-lg shadow-amber-500/10'
-                          : 'bg-slate-950/80 border-slate-800 hover:border-slate-700'
+                          ? 'bg-[#1ed760]/10 border-[#1ed760] shadow-lg shadow-[#1ed760]/10'
+                          : 'bg-[#121212]/80 border-[#282828] hover:border-[#333333]'
                       }`}
                     >
                       <div className="space-y-2 min-w-0 flex-1">
@@ -3980,7 +3980,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                           <span className="text-sm font-bold text-white">
                             {acc.name || 'Quản Trị Viên'}
                           </span>
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#1ed760]/20 text-[#1ed760] border border-[#1ed760]/30">
                             {acc.role || 'Super Admin'}
                           </span>
                           {(acc.isDefault || acc.id === 'admin-default') && (
@@ -3995,23 +3995,23 @@ https://s.lazada.vn/s.flashsale_deal`}
                           )}
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono bg-slate-900/90 p-2.5 rounded-xl border border-slate-800/90">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono bg-[#181818]/90 p-2.5 rounded-xl border border-[#282828]/90">
                           <div className="flex items-center justify-between gap-2 min-w-0">
-                            <span className="text-slate-400 font-sans text-[11px] shrink-0">Email:</span>
-                            <span className="text-amber-300 font-bold truncate select-all" title={acc.email}>
+                            <span className="text-[#b3b3b3] font-sans text-[11px] shrink-0">Email:</span>
+                            <span className="text-[#1ed760] font-bold truncate select-all" title={acc.email}>
                               {acc.email}
                             </span>
                           </div>
 
                           <div className="flex items-center justify-between gap-2 min-w-0">
-                            <span className="text-slate-400 font-sans text-[11px] shrink-0">Username:</span>
+                            <span className="text-[#b3b3b3] font-sans text-[11px] shrink-0">Username:</span>
                             <span className="text-slate-200 font-semibold truncate select-all">
                               {acc.username || acc.email.split('@')[0]}
                             </span>
                           </div>
 
-                          <div className="sm:col-span-2 flex items-center justify-between gap-2 pt-1 border-t border-slate-800/80">
-                            <span className="text-slate-400 font-sans text-[11px]">Mật khẩu:</span>
+                          <div className="sm:col-span-2 flex items-center justify-between gap-2 pt-1 border-t border-[#282828]/80">
+                            <span className="text-[#b3b3b3] font-sans text-[11px]">Mật khẩu:</span>
                             <div className="flex items-center gap-2">
                               <span className="text-emerald-300 font-bold select-all">
                                 {isPassVisible ? acc.password : '••••••••'}
@@ -4024,7 +4024,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                                     [acc.id]: !prev[acc.id]
                                   }))
                                 }
-                                className="text-slate-400 hover:text-white p-0.5 cursor-pointer"
+                                className="text-[#b3b3b3] hover:text-white p-0.5 cursor-pointer"
                                 title={isPassVisible ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
                               >
                                 {isPassVisible ? <EyeOff size={13} /> : <Eye size={13} />}
@@ -4032,7 +4032,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                               <button
                                 type="button"
                                 onClick={() => handleCopyText(acc.password, `pass-${acc.id}`)}
-                                className="text-slate-400 hover:text-amber-300 p-0.5 cursor-pointer"
+                                className="text-[#b3b3b3] hover:text-[#1ed760] p-0.5 cursor-pointer"
                                 title="Sao chép mật khẩu"
                               >
                                 {apiCopiedKey === `pass-${acc.id}` ? (
@@ -4050,7 +4050,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                         <button
                           type="button"
                           onClick={() => handleStartEditAccount(acc)}
-                          className="w-full sm:w-auto px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 flex items-center justify-center gap-1.5 transition cursor-pointer"
+                          className="w-full sm:w-auto px-3.5 py-2 rounded-xl text-xs font-bold bg-[#1ed760]/15 hover:bg-[#1ed760]/25 text-[#1ed760] border border-[#1ed760]/30 flex items-center justify-center gap-1.5 transition cursor-pointer"
                           title="Chỉnh sửa thông tin hoặc đổi mật khẩu tài khoản này"
                         >
                           <Edit3 size={13} />
@@ -4080,17 +4080,17 @@ https://s.lazada.vn/s.flashsale_deal`}
       {activeTab === 'backup' && (
         <div className="space-y-6 animate-fade-in">
           {/* Header Banner */}
-          <div className="p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-amber-500/15 via-slate-900 to-slate-900 border border-amber-500/30 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-[#1ed760]/15 via-slate-900 to-slate-900 border border-[#1ed760]/30 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div className="space-y-1.5">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-bold">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1ed760]/20 border border-[#1ed760]/40 text-[#1ed760] text-xs font-bold">
                 <HardDrive size={14} />
                 <span>SAO LƯU & KHÔI PHỤC DỮ LIỆU TOÀN HỆ THỐNG</span>
               </div>
               <h2 className="text-xl font-black text-white">
-                Backup Dữ Liệu • Chuẩn Hóa Tên File Theo Slug • Thư Mục Tĩnh <code className="text-amber-300 font-mono">uploads/audio/</code>
+                Backup Dữ Liệu • Chuẩn Hóa Tên File Theo Slug • Thư Mục Tĩnh <code className="text-[#1ed760] font-mono">uploads/audio/</code>
               </h2>
-              <p className="text-xs text-slate-300 max-w-3xl leading-relaxed">
-                Quản lý sao lưu và khôi phục trọn bộ cơ sở dữ liệu <code className="text-amber-300 font-mono">data/db.json</code> cùng thư mục tĩnh cố định <code className="text-amber-300 font-mono">uploads/audio/</code> nằm ngay tại thư mục gốc dự án. Mọi file MP3 tải lên đều được tự động chuẩn hóa tên file theo slug không dấu gạch nối của tiêu đề tập truyện.
+              <p className="text-xs text-[#d1d1d1] max-w-3xl leading-relaxed">
+                Quản lý sao lưu và khôi phục trọn bộ cơ sở dữ liệu <code className="text-[#1ed760] font-mono">data/db.json</code> cùng thư mục tĩnh cố định <code className="text-[#1ed760] font-mono">uploads/audio/</code> nằm ngay tại thư mục gốc dự án. Mọi file MP3 tải lên đều được tự động chuẩn hóa tên file theo slug không dấu gạch nối của tiêu đề tập truyện.
               </p>
             </div>
 
@@ -4118,7 +4118,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                 type="button"
                 onClick={handleNormalizeAllSlugs}
                 disabled={isLoadingBackup}
-                className="px-4 py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
+                className="px-4 py-2.5 rounded-xl bg-[#1ed760]/20 hover:bg-[#1ed760]/30 border border-[#1ed760]/40 text-[#1ed760] text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
                 title="Quét và chuẩn hóa toàn bộ tên file MP3 theo slug tiêu đề tập"
               >
                 <Sparkles size={15} />
@@ -4128,7 +4128,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                 type="button"
                 onClick={loadBackupInfo}
                 disabled={isLoadingBackup}
-                className="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
+                className="px-3.5 py-2.5 rounded-xl bg-[#242424] hover:bg-[#333333] border border-[#333333] text-slate-200 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
               >
                 <RefreshCw size={14} className={isLoadingBackup ? 'animate-spin' : ''} />
                 <span>Làm mới</span>
@@ -4149,7 +4149,7 @@ https://s.lazada.vn/s.flashsale_deal`}
               <button
                 type="button"
                 onClick={() => setBackupMsg(null)}
-                className="text-slate-400 hover:text-white text-xs cursor-pointer"
+                className="text-[#b3b3b3] hover:text-white text-xs cursor-pointer"
               >
                 ✕
               </button>
@@ -4158,56 +4158,56 @@ https://s.lazada.vn/s.flashsale_deal`}
 
           {/* Metrics Overview Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-1.5">
+            <div className="p-4 rounded-2xl bg-[#181818] border border-[#282828] space-y-1.5">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-slate-400 uppercase">File CSDL Server</span>
-                <FileJson size={16} className="text-amber-400" />
+                <span className="text-[11px] font-bold text-[#b3b3b3] uppercase">File CSDL Server</span>
+                <FileJson size={16} className="text-[#1ed760]" />
               </div>
               <div className="text-lg font-black text-white font-mono">data/db.json</div>
-              <div className="text-xs text-slate-400 flex items-center justify-between pt-1 border-t border-slate-800/80">
-                <span>Dung lượng: <strong className="text-amber-300">{formatBytes(backupInfo?.dbFile.sizeBytes || 0)}</strong></span>
+              <div className="text-xs text-[#b3b3b3] flex items-center justify-between pt-1 border-t border-[#282828]/80">
+                <span>Dung lượng: <strong className="text-[#1ed760]">{formatBytes(backupInfo?.dbFile.sizeBytes || 0)}</strong></span>
                 <span className="text-emerald-400 font-semibold">✓ Sẵn sàng</span>
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-1.5">
+            <div className="p-4 rounded-2xl bg-[#181818] border border-[#282828] space-y-1.5">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-slate-400 uppercase">Thư Mục Audio Cố Định</span>
+                <span className="text-[11px] font-bold text-[#b3b3b3] uppercase">Thư Mục Audio Cố Định</span>
                 <FileAudio size={16} className="text-emerald-400" />
               </div>
               <div className="text-lg font-black text-emerald-300 font-mono">uploads/audio/</div>
-              <div className="text-xs text-slate-400 flex items-center justify-between pt-1 border-t border-slate-800/80">
+              <div className="text-xs text-[#b3b3b3] flex items-center justify-between pt-1 border-t border-[#282828]/80">
                 <span>
-                  Đang dùng: <strong className="text-emerald-400">{backupInfo?.uploadsDir.usedAudioFilesCount ?? backupInfo?.uploadsDir.audioFilesCount ?? 0}</strong> • Rác: <strong className={(backupInfo?.uploadsDir.orphanAudioFilesCount ?? 0) > 0 ? 'text-rose-400' : 'text-slate-300'}>{backupInfo?.uploadsDir.orphanAudioFilesCount ?? 0}</strong>
+                  Đang dùng: <strong className="text-emerald-400">{backupInfo?.uploadsDir.usedAudioFilesCount ?? backupInfo?.uploadsDir.audioFilesCount ?? 0}</strong> • Rác: <strong className={(backupInfo?.uploadsDir.orphanAudioFilesCount ?? 0) > 0 ? 'text-rose-400' : 'text-[#d1d1d1]'}>{backupInfo?.uploadsDir.orphanAudioFilesCount ?? 0}</strong>
                 </span>
-                <span>Tổng: <strong className="text-amber-300">{formatBytes(backupInfo?.uploadsDir.totalSizeBytes || 0)}</strong></span>
+                <span>Tổng: <strong className="text-[#1ed760]">{formatBytes(backupInfo?.uploadsDir.totalSizeBytes || 0)}</strong></span>
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-1.5">
+            <div className="p-4 rounded-2xl bg-[#181818] border border-[#282828] space-y-1.5">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-slate-400 uppercase">Dữ Liệu Đang Lưu Trữ</span>
+                <span className="text-[11px] font-bold text-[#b3b3b3] uppercase">Dữ Liệu Đang Lưu Trữ</span>
                 <Database size={16} className="text-sky-400" />
               </div>
               <div className="text-lg font-black text-white">
                 {backupInfo?.dbFile.storiesCount ?? tracks.length} Bộ Truyện ({backupInfo?.dbFile.chaptersCount ?? 0} Tập)
               </div>
-              <div className="text-xs text-slate-400 flex items-center justify-between pt-1 border-t border-slate-800/80">
+              <div className="text-xs text-[#b3b3b3] flex items-center justify-between pt-1 border-t border-[#282828]/80">
                 <span>Affiliate: <strong className="text-white">{backupInfo?.dbFile.affiliatesCount ?? affiliateList.length} link</strong></span>
                 <span>Admin: <strong className="text-white">{backupInfo?.dbFile.adminsCount ?? adminAccounts.length} TK</strong></span>
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-1.5">
+            <div className="p-4 rounded-2xl bg-[#181818] border border-[#282828] space-y-1.5">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-slate-400 uppercase">Bản Sao Lưu Trên Server</span>
+                <span className="text-[11px] font-bold text-[#b3b3b3] uppercase">Bản Sao Lưu Trên Server</span>
                 <Archive size={16} className="text-purple-400" />
               </div>
               <div className="text-lg font-black text-white">
                 {backupInfo?.snapshots.length ?? 0} Bản Snapshot
               </div>
-              <div className="text-xs text-slate-400 flex items-center justify-between pt-1 border-t border-slate-800/80">
-                <span>Thư mục: <code className="text-amber-300 font-mono">backups/</code></span>
+              <div className="text-xs text-[#b3b3b3] flex items-center justify-between pt-1 border-t border-[#282828]/80">
+                <span>Thư mục: <code className="text-[#1ed760] font-mono">backups/</code></span>
                 <span className="text-emerald-400">Khôi phục 1-Click</span>
               </div>
             </div>
@@ -4216,14 +4216,14 @@ https://s.lazada.vn/s.flashsale_deal`}
           {/* Section 1: Download Backup & Restore Database */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Left: Tải về máy tính & Tạo bản sao lưu trên Server */}
-            <div className="lg:col-span-7 p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-5">
-              <div className="border-b border-slate-800 pb-3">
+            <div className="lg:col-span-7 p-6 rounded-2xl bg-[#181818] border border-[#282828] space-y-5">
+              <div className="border-b border-[#282828] pb-3">
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Download size={16} className="text-amber-400" />
+                  <Download size={16} className="text-[#1ed760]" />
                   <span>1. Tải Về Bản Sao Lưu (Download Backup Về Máy Tính)</span>
                 </h3>
-                <p className="text-xs text-slate-400 mt-1">
-                  Tải trực tiếp file cơ sở dữ liệu <code className="text-amber-300 font-mono">db.json</code> hoặc gói nén toàn bộ dữ liệu + file âm thanh <code className="text-amber-300 font-mono">.tar.gz</code> về máy tính để lưu trữ an toàn khi chuyển VPS/Hosting.
+                <p className="text-xs text-[#b3b3b3] mt-1">
+                  Tải trực tiếp file cơ sở dữ liệu <code className="text-[#1ed760] font-mono">db.json</code> hoặc gói nén toàn bộ dữ liệu + file âm thanh <code className="text-[#1ed760] font-mono">.tar.gz</code> về máy tính để lưu trữ an toàn khi chuyển VPS/Hosting.
                 </p>
               </div>
 
@@ -4231,21 +4231,21 @@ https://s.lazada.vn/s.flashsale_deal`}
                 <a
                   href="/api/backup/download-db"
                   download
-                  className="p-4 rounded-2xl bg-slate-950 hover:bg-slate-950/80 border border-amber-500/40 hover:border-amber-400 transition flex flex-col justify-between gap-3 group"
+                  className="p-4 rounded-2xl bg-[#121212] hover:bg-[#121212]/80 border border-[#1ed760]/40 hover:border-[#1ed760] transition flex flex-col justify-between gap-3 group"
                 >
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <span className="px-2.5 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-bold font-mono">
+                      <span className="px-2.5 py-0.5 rounded bg-[#1ed760]/20 text-[#1ed760] text-[10px] font-bold font-mono">
                         data/db.json
                       </span>
-                      <FileJson size={18} className="text-amber-400 group-hover:scale-110 transition-transform" />
+                      <FileJson size={18} className="text-[#1ed760] group-hover:scale-110 transition-transform" />
                     </div>
                     <h4 className="text-sm font-bold text-white">Tải File Database (db.json)</h4>
-                    <p className="text-[11px] text-slate-400 leading-relaxed">
-                      Chứa toàn bộ danh sách truyện, tập truyện, đường dẫn <code className="text-slate-300">/uploads/audio/...</code>, link Affiliate, Banner và tài khoản Admin.
+                    <p className="text-[11px] text-[#b3b3b3] leading-relaxed">
+                      Chứa toàn bộ danh sách truyện, tập truyện, đường dẫn <code className="text-[#d1d1d1]">/uploads/audio/...</code>, link Affiliate, Banner và tài khoản Admin.
                     </p>
                   </div>
-                  <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-xs font-bold text-amber-400">
+                  <div className="pt-2 border-t border-[#282828] flex items-center justify-between text-xs font-bold text-[#1ed760]">
                     <span>Tải về máy (.json)</span>
                     <Download size={14} />
                   </div>
@@ -4254,7 +4254,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                 <a
                   href="/api/backup/download-full"
                   download
-                  className="p-4 rounded-2xl bg-slate-950 hover:bg-slate-950/80 border border-emerald-500/40 hover:border-emerald-400 transition flex flex-col justify-between gap-3 group"
+                  className="p-4 rounded-2xl bg-[#121212] hover:bg-[#121212]/80 border border-emerald-500/40 hover:border-emerald-400 transition flex flex-col justify-between gap-3 group"
                 >
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
@@ -4264,11 +4264,11 @@ https://s.lazada.vn/s.flashsale_deal`}
                       <Archive size={18} className="text-emerald-400 group-hover:scale-110 transition-transform" />
                     </div>
                     <h4 className="text-sm font-bold text-white">Tải Trọn Gói Full Backup (.tar.gz)</h4>
-                    <p className="text-[11px] text-slate-400 leading-relaxed">
-                      Nén toàn bộ thư mục <code className="text-slate-300">data/db.json</code> cùng toàn bộ file MP3 & hình ảnh trong <code className="text-slate-300">uploads/</code> thành 1 file duy nhất.
+                    <p className="text-[11px] text-[#b3b3b3] leading-relaxed">
+                      Nén toàn bộ thư mục <code className="text-[#d1d1d1]">data/db.json</code> cùng toàn bộ file MP3 & hình ảnh trong <code className="text-[#d1d1d1]">uploads/</code> thành 1 file duy nhất.
                     </p>
                   </div>
-                  <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-xs font-bold text-emerald-400">
+                  <div className="pt-2 border-t border-[#282828] flex items-center justify-between text-xs font-bold text-emerald-400">
                     <span>Tải trọn gói (.tar.gz)</span>
                     <Download size={14} />
                   </div>
@@ -4276,10 +4276,10 @@ https://s.lazada.vn/s.flashsale_deal`}
               </div>
 
               {/* Create Snapshot on Server */}
-              <form onSubmit={handleCreateServerSnapshot} className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+              <form onSubmit={handleCreateServerSnapshot} className="p-4 rounded-2xl bg-[#121212] border border-[#282828] space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                    <Server size={14} className="text-amber-400" />
+                    <Server size={14} className="text-[#1ed760]" />
                     <span>Tạo Bản Sao Lưu Dự Phòng Lưu Ngay Trên Server (backups/)</span>
                   </span>
                 </div>
@@ -4289,12 +4289,12 @@ https://s.lazada.vn/s.flashsale_deal`}
                     value={snapshotLabelInput}
                     onChange={(e) => setSnapshotLabelInput(e.target.value)}
                     placeholder="Ghi chú bản sao lưu (VD: truoc-khi-them-truyen-moi)..."
-                    className="flex-1 px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-400"
+                    className="flex-1 px-3.5 py-2 rounded-xl bg-[#181818] border border-[#333333] text-xs text-white focus:outline-none focus:border-[#1ed760]"
                   />
                   <button
                     type="submit"
                     disabled={isLoadingBackup}
-                    className="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer shrink-0 shadow-md shadow-amber-500/20"
+                    className="px-4 py-2 rounded-xl bg-[#1ed760] hover:bg-[#1db954] text-black font-bold text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer shrink-0 shadow-md shadow-[#1ed760]/20"
                   >
                     <Archive size={14} />
                     <span>Tạo Bản Backup Trên Server</span>
@@ -4304,26 +4304,26 @@ https://s.lazada.vn/s.flashsale_deal`}
             </div>
 
             {/* Right: Khôi phục dữ liệu từ file JSON & Danh sách Snapshot */}
-            <div className="lg:col-span-5 p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-5 flex flex-col justify-between">
+            <div className="lg:col-span-5 p-6 rounded-2xl bg-[#181818] border border-[#282828] space-y-5 flex flex-col justify-between">
               <div className="space-y-4">
-                <div className="border-b border-slate-800 pb-3">
+                <div className="border-b border-[#282828] pb-3">
                   <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                    <RotateCcw size={16} className="text-amber-400" />
+                    <RotateCcw size={16} className="text-[#1ed760]" />
                     <span>2. Khôi Phục Dữ Liệu (Restore Từ File db.json)</span>
                   </h3>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Tải file <code className="text-amber-300 font-mono">.json</code> đã sao lưu từ máy tính lên để khôi phục toàn bộ truyện, tập truyện, Affiliate và cài đặt.
+                  <p className="text-xs text-[#b3b3b3] mt-1">
+                    Tải file <code className="text-[#1ed760] font-mono">.json</code> đã sao lưu từ máy tính lên để khôi phục toàn bộ truyện, tập truyện, Affiliate và cài đặt.
                   </p>
                 </div>
 
-                <label className="p-5 rounded-2xl border-2 border-dashed border-amber-500/40 hover:border-amber-400 bg-slate-950/70 hover:bg-slate-950 transition flex flex-col items-center justify-center text-center gap-2 cursor-pointer">
-                  <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                <label className="p-5 rounded-2xl border-2 border-dashed border-[#1ed760]/40 hover:border-[#1ed760] bg-[#121212]/70 hover:bg-[#121212] transition flex flex-col items-center justify-center text-center gap-2 cursor-pointer">
+                  <div className="w-10 h-10 rounded-xl bg-[#1ed760]/15 border border-[#1ed760]/30 flex items-center justify-center text-[#1ed760]">
                     <Upload size={20} />
                   </div>
                   <span className="text-xs font-bold text-white">
                     {isRestoringDb ? 'Đang khôi phục dữ liệu lên Server...' : 'Bấm để chọn file backup (.json) từ máy tính'}
                   </span>
-                  <span className="text-[11px] text-slate-400">
+                  <span className="text-[11px] text-[#b3b3b3]">
                     Hệ thống tự động tạo 1 bản snapshot an toàn trước khi khôi phục
                   </span>
                   <input
@@ -4337,7 +4337,7 @@ https://s.lazada.vn/s.flashsale_deal`}
 
                 {/* Server Snapshots List */}
                 <div className="space-y-2 pt-2">
-                  <span className="text-xs font-bold text-slate-300 block">
+                  <span className="text-xs font-bold text-[#d1d1d1] block">
                     Các bản Snapshot đang lưu trên Server ({backupInfo?.snapshots.length ?? 0}):
                   </span>
                   <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
@@ -4345,13 +4345,13 @@ https://s.lazada.vn/s.flashsale_deal`}
                       backupInfo.snapshots.map((snap) => (
                         <div
                           key={snap.filename}
-                          className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between gap-2 text-xs"
+                          className="p-3 rounded-xl bg-[#121212] border border-[#282828] flex items-center justify-between gap-2 text-xs"
                         >
                           <div className="min-w-0 flex-1">
-                            <div className="font-mono font-bold text-amber-300 truncate" title={snap.filename}>
+                            <div className="font-mono font-bold text-[#1ed760] truncate" title={snap.filename}>
                               {snap.filename}
                             </div>
-                            <div className="text-[10px] text-slate-400 flex items-center gap-2 mt-0.5">
+                            <div className="text-[10px] text-[#b3b3b3] flex items-center gap-2 mt-0.5">
                               <span>{snap.storiesCount} truyện ({snap.chaptersCount} tập)</span>
                               <span>•</span>
                               <span>{formatBytes(snap.sizeBytes)}</span>
@@ -4369,7 +4369,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                             <a
                               href={`/api/backup/snapshots/${encodeURIComponent(snap.filename)}/download`}
                               download
-                              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700"
+                              className="p-1.5 rounded-lg bg-[#242424] hover:bg-[#333333] text-[#d1d1d1] hover:text-white border border-[#333333]"
                               title="Tải bản sao lưu này về máy"
                             >
                               <Download size={13} />
@@ -4386,8 +4386,8 @@ https://s.lazada.vn/s.flashsale_deal`}
                         </div>
                       ))
                     ) : (
-                      <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 text-center text-xs text-slate-400">
-                        Chưa có bản snapshot nào trong thư mục <code className="text-amber-300 font-mono">backups/</code>. Bấm "Tạo Bản Backup Trên Server" để tạo ngay.
+                      <div className="p-4 rounded-xl bg-[#121212]/60 border border-[#282828] text-center text-xs text-[#b3b3b3]">
+                        Chưa có bản snapshot nào trong thư mục <code className="text-[#1ed760] font-mono">backups/</code>. Bấm "Tạo Bản Backup Trên Server" để tạo ngay.
                       </div>
                     )}
                   </div>
@@ -4399,37 +4399,37 @@ https://s.lazada.vn/s.flashsale_deal`}
           {/* Section 2: Chuẩn Hóa Quy Tắc Đặt Tên File Slug & Quản Lý / Dọn Dẹp File Trong uploads/audio/ */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Left: Quy chuẩn đặt tên file MP3 theo Slug & Cấu hình Nginx */}
-            <div className="lg:col-span-5 p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
-              <div className="border-b border-slate-800 pb-3">
+            <div className="lg:col-span-5 p-6 rounded-2xl bg-[#181818] border border-[#282828] space-y-4">
+              <div className="border-b border-[#282828] pb-3">
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Sparkles size={16} className="text-amber-400" />
+                  <Sparkles size={16} className="text-[#1ed760]" />
                   <span>3. Chuẩn Hóa Tên File Theo Slug & Cơ Chế Tự Dọn Rác</span>
                 </h3>
               </div>
 
-              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2.5 text-xs">
-                <div className="font-bold text-amber-300 uppercase tracking-wider text-[11px]">
+              <div className="p-4 rounded-xl bg-[#121212] border border-[#282828] space-y-2.5 text-xs">
+                <div className="font-bold text-[#1ed760] uppercase tracking-wider text-[11px]">
                   1. Quy tắc tự động đặt tên & tự động xóa file khi xóa truyện/tập:
                 </div>
-                <div className="space-y-1.5 text-slate-300 font-mono text-[11px] bg-slate-900/90 p-3 rounded-lg border border-slate-800">
+                <div className="space-y-1.5 text-[#d1d1d1] font-mono text-[11px] bg-[#181818]/90 p-3 rounded-lg border border-[#282828]">
                   <div>
-                    <span className="text-slate-400">Tiêu đề tập: </span>
+                    <span className="text-[#b3b3b3]">Tiêu đề tập: </span>
                     <strong className="text-white">Tập 1: Tiếng Gõ Cửa Đêm Khuya</strong>
                   </div>
                   <div>
-                    <span className="text-slate-400">Tên file lưu trên đĩa: </span>
-                    <strong className="text-amber-300">tap-1-tieng-go-cua-dem-khuya.mp3</strong>
+                    <span className="text-[#b3b3b3]">Tên file lưu trên đĩa: </span>
+                    <strong className="text-[#1ed760]">tap-1-tieng-go-cua-dem-khuya.mp3</strong>
                   </div>
                   <div>
-                    <span className="text-slate-400">Khi xóa truyện / xóa tập: </span>
+                    <span className="text-[#b3b3b3]">Khi xóa truyện / xóa tập: </span>
                     <strong className="text-emerald-300">Tự động xóa luôn file MP3 khỏi uploads/audio/</strong>
                   </div>
                 </div>
               </div>
 
-              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2.5 text-xs">
+              <div className="p-4 rounded-xl bg-[#121212] border border-[#282828] space-y-2.5 text-xs">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-bold text-amber-300 uppercase tracking-wider text-[11px]">
+                  <span className="font-bold text-[#1ed760] uppercase tracking-wider text-[11px]">
                     2. Cấu hình Nginx trỏ thẳng thư mục tĩnh duy nhất (uploads/):
                   </span>
                   <button
@@ -4440,16 +4440,16 @@ https://s.lazada.vn/s.flashsale_deal`}
                         'nginx-uploads-alias'
                       )
                     }
-                    className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
+                    className="px-2.5 py-1 rounded-lg bg-[#242424] hover:bg-[#333333] text-[#1ed760] text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
                   >
                     {apiCopiedKey === 'nginx-uploads-alias' ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
                     <span>{apiCopiedKey === 'nginx-uploads-alias' ? 'Đã Copy' : 'Copy Nginx'}</span>
                   </button>
                 </div>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[11px] text-[#b3b3b3]">
                   Đường dẫn thư mục vật lý cố định: <code className="text-emerald-300 font-mono">uploads/audio/</code> (nằm ngay trong thư mục gốc dự án).
                 </p>
-                <pre className="p-3 rounded-lg bg-slate-900 border border-slate-800 font-mono text-[11px] text-emerald-300 overflow-x-auto leading-relaxed">
+                <pre className="p-3 rounded-lg bg-[#181818] border border-[#282828] font-mono text-[11px] text-emerald-300 overflow-x-auto leading-relaxed">
 {`location /uploads/ {
     alias /root/NAMNGHE-AUDIO/uploads/;
     expires 30d;
@@ -4461,15 +4461,15 @@ https://s.lazada.vn/s.flashsale_deal`}
             </div>
 
             {/* Right: Danh sách file vật lý trong uploads/audio/ & Công cụ dọn dẹp theo DB */}
-            <div className="lg:col-span-7 p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+            <div className="lg:col-span-7 p-6 rounded-2xl bg-[#181818] border border-[#282828] space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#282828] pb-3">
                 <div>
                   <h3 className="text-sm font-bold text-white flex items-center gap-2">
                     <FileAudio size={16} className="text-emerald-400" />
                     <span>4. Quản Lý & Dọn Dẹp File Trong <code className="text-emerald-300 font-mono">uploads/audio/</code> ({backupInfo?.uploadsDir.audioFiles.length ?? 0})</span>
                   </h3>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
-                    Đối chiếu trực tiếp từng file vật lý trên ổ đĩa với <code className="text-amber-300 font-mono">data/db.json</code> để phát hiện và xóa các file dư thừa.
+                  <p className="text-[11px] text-[#b3b3b3] mt-0.5">
+                    Đối chiếu trực tiếp từng file vật lý trên ổ đĩa với <code className="text-[#1ed760] font-mono">data/db.json</code> để phát hiện và xóa các file dư thừa.
                   </p>
                 </div>
 
@@ -4511,8 +4511,8 @@ https://s.lazada.vn/s.flashsale_deal`}
                         audioFilesFilter === tab.id
                           ? tab.id === 'orphan'
                             ? 'bg-rose-500 text-white'
-                            : 'bg-amber-400 text-slate-950'
-                          : 'bg-slate-950 text-slate-300 hover:bg-slate-800 border border-slate-800'
+                            : 'bg-[#1ed760] text-black font-bold'
+                          : 'bg-[#121212] text-[#d1d1d1] hover:bg-[#242424] border border-[#282828]'
                       }`}
                     >
                       {tab.label}
@@ -4520,7 +4520,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                   ))}
                 </div>
 
-                <span className="text-[11px] text-slate-400">
+                <span className="text-[11px] text-[#b3b3b3]">
                   Dung lượng file rác: <strong className={(backupInfo?.uploadsDir.orphanAudioSizeBytes ?? 0) > 0 ? 'text-rose-400' : 'text-emerald-400'}>{formatBytes(backupInfo?.uploadsDir.orphanAudioSizeBytes || 0)}</strong>
                 </span>
               </div>
@@ -4536,7 +4536,7 @@ https://s.lazada.vn/s.flashsale_deal`}
 
                   if (filteredFiles.length === 0) {
                     return (
-                      <div className="p-6 rounded-xl bg-slate-950/60 border border-slate-800 text-center text-xs text-slate-400">
+                      <div className="p-6 rounded-xl bg-[#121212]/60 border border-[#282828] text-center text-xs text-[#b3b3b3]">
                         {audioFilesFilter === 'orphan'
                           ? 'Tuyệt vời! Không có file MP3 rác nào trong thư mục uploads/audio/. Toàn bộ file trên đĩa đều khớp 100% với Database.'
                           : 'Hiện chưa có file MP3 nào trong danh mục này.'}
@@ -4551,7 +4551,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                         key={f.filename}
                         className={`p-3 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs transition ${
                           isUsed
-                            ? 'bg-slate-950 border-slate-800'
+                            ? 'bg-[#121212] border-[#282828]'
                             : 'bg-rose-500/5 border-rose-500/30 hover:border-rose-500/50'
                         }`}
                       >
@@ -4571,7 +4571,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                             )}
                           </div>
 
-                          <div className="text-[11px] font-mono text-slate-400 truncate">
+                          <div className="text-[11px] font-mono text-[#b3b3b3] truncate">
                             {f.url}
                           </div>
 
@@ -4583,13 +4583,13 @@ https://s.lazada.vn/s.flashsale_deal`}
                         </div>
 
                         <div className="flex items-center gap-2 shrink-0 justify-end">
-                          <span className="px-2 py-1 rounded bg-slate-900 border border-slate-800 text-[11px] font-mono text-amber-300">
+                          <span className="px-2 py-1 rounded bg-[#181818] border border-[#282828] text-[11px] font-mono text-[#1ed760]">
                             {formatBytes(f.sizeBytes)}
                           </span>
                           <button
                             type="button"
                             onClick={() => handleCopyText(f.url, `audio-url-${f.filename}`)}
-                            className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
+                            className="px-2.5 py-1.5 rounded-lg bg-[#242424] hover:bg-[#333333] text-slate-200 text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
                             title="Copy đường dẫn /uploads/audio/..."
                           >
                             {apiCopiedKey === `audio-url-${f.filename}` ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
@@ -4600,7 +4600,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                             onClick={() => handleDeleteSingleAudioFile(f.filename, isUsed, f.usedBy)}
                             className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1 cursor-pointer transition ${
                               isUsed
-                                ? 'bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-300 border border-slate-700'
+                                ? 'bg-[#242424] hover:bg-rose-500/20 text-[#b3b3b3] hover:text-rose-300 border border-[#333333]'
                                 : 'bg-rose-500/20 hover:bg-rose-500 text-rose-300 hover:text-white border border-rose-500/40'
                             }`}
                             title={isUsed ? 'Xóa file này khỏi ổ đĩa' : 'Xóa vĩnh viễn file rác này khỏi uploads/audio/'}
@@ -4623,10 +4623,10 @@ https://s.lazada.vn/s.flashsale_deal`}
       {activeTab === 'sql' && (
         <div className="space-y-6">
           {/* 1. Cấu Hình Supabase Cloud SQL Trực Tiếp Lên Server */}
-          <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div className="p-6 rounded-2xl bg-[#181818] border border-[#282828] space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#282828] pb-3">
               <div className="flex items-center gap-2">
-                <Database size={18} className="text-amber-400" />
+                <Database size={18} className="text-[#1ed760]" />
                 <h3 className="text-base font-bold text-white">
                   Cấu Hình Supabase Cloud SQL (Đồng Bộ Server)
                 </h3>
@@ -4634,20 +4634,20 @@ https://s.lazada.vn/s.flashsale_deal`}
               <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-bold border ${
                 isSupabaseServerConnected
                   ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                  : 'bg-slate-800 text-slate-400 border-slate-700'
+                  : 'bg-[#242424] text-[#b3b3b3] border-[#333333]'
               }`}>
                 {isSupabaseServerConnected ? '✓ Supabase Đã Kết Nối Server' : 'Chế độ: Server JSON Database (db.json)'}
               </span>
             </div>
 
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <p className="text-xs text-[#b3b3b3] leading-relaxed">
               Nhập thông tin kết nối Supabase của bạn để Server lưu trữ trực tiếp vào PostgreSQL Cloud SQL. Mọi thao tác thêm/xóa/sửa truyện, link affiliate và cài đặt banner sẽ được gửi trực tiếp lên Server và đồng bộ vào Supabase mà không dựa vào bộ nhớ trình duyệt Chrome.
             </p>
 
             <form onSubmit={handleSaveSupabaseConfig} className="space-y-4 pt-1">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-300">
+                  <label className="text-xs font-semibold text-[#d1d1d1]">
                     Supabase Project URL:
                   </label>
                   <input
@@ -4655,12 +4655,12 @@ https://s.lazada.vn/s.flashsale_deal`}
                     value={supabaseUrlInput}
                     onChange={(e) => setSupabaseUrlInput(e.target.value)}
                     placeholder="https://your-project.supabase.co"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#121212] border border-[#333333] text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#1ed760]"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-300">
+                  <label className="text-xs font-semibold text-[#d1d1d1]">
                     Supabase Anon Public Key:
                   </label>
                   <input
@@ -4668,7 +4668,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                     value={supabaseKeyInput}
                     onChange={(e) => setSupabaseKeyInput(e.target.value)}
                     placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#121212] border border-[#333333] text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#1ed760]"
                   />
                 </div>
               </div>
@@ -4688,7 +4688,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                 <button
                   type="submit"
                   disabled={isSavingSupabase}
-                  className="px-5 py-2.5 rounded-xl text-xs font-bold bg-amber-400 hover:bg-amber-300 disabled:opacity-50 text-slate-950 flex items-center gap-2 transition cursor-pointer shadow-md shadow-amber-500/20"
+                  className="px-5 py-2.5 rounded-xl text-xs font-bold bg-[#1ed760] hover:bg-[#1db954] disabled:opacity-50 text-slate-950 flex items-center gap-2 transition cursor-pointer shadow-md shadow-[#1ed760]/20"
                 >
                   <BookmarkCheck size={16} />
                   <span>{isSavingSupabase ? 'Đang lưu lên Server...' : 'Lưu Cấu Hình Supabase Lên Server'}</span>
@@ -4698,17 +4698,17 @@ https://s.lazada.vn/s.flashsale_deal`}
           </div>
 
           {/* 2. Database Health & Status Banner */}
-          <div className="p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-[#101726] to-slate-900 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-[#101726] to-slate-900 border border-[#1ed760]/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2 flex-wrap">
-                <Database size={18} className="text-amber-400" />
+                <Database size={18} className="text-[#1ed760]" />
                 <h4 className="text-sm font-bold text-white">
                   Trạng Thái Cơ Sở Dữ Liệu SQL
                 </h4>
                 <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
                   isSupabaseServerConnected || isSupabaseConfigured()
                     ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                    : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                    : 'bg-[#1ed760]/10 text-[#1ed760] border-[#1ed760]/30'
                 }`}>
                   {isSupabaseServerConnected || isSupabaseConfigured() ? '✓ Đã kết nối Supabase Cloud SQL' : '✓ Server Database Persistent (data/db.json)'}
                 </span>
@@ -4720,7 +4720,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                   {healthReport.status === 'healthy' ? '✓ Dữ liệu chuẩn 100%' : '⚠️ Có cảnh báo'}
                 </span>
               </div>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-[#b3b3b3]">
                 Toàn bộ dữ liệu hiển thị trên trang chủ, danh sách truyện và thanh phát audio được đồng bộ trực tiếp từ CSDL Server này.
               </p>
             </div>
@@ -4732,7 +4732,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                   onRefreshTracks();
                   setHealthReport(validateDatabaseIntegrity(tracks));
                 }}
-                className="px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-400 hover:bg-amber-300 text-slate-950 flex items-center gap-1.5 transition cursor-pointer"
+                className="px-3.5 py-2 rounded-xl text-xs font-bold bg-[#1ed760] hover:bg-[#1db954] text-black font-bold flex items-center gap-1.5 transition cursor-pointer"
               >
                 <RefreshCw size={13} /> Kiểm tra & Tải lại
               </button>
@@ -4741,45 +4741,45 @@ https://s.lazada.vn/s.flashsale_deal`}
 
           {/* 2. Thống kê & Kiểm tra toàn vẹn CSDL */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Tổng Audio Trong CSDL</span>
+            <div className="p-4 rounded-xl bg-[#181818]/90 border border-[#282828] space-y-1">
+              <span className="text-[10px] uppercase font-bold text-[#b3b3b3] block tracking-wider">Tổng Audio Trong CSDL</span>
               <span className="text-2xl font-black text-white font-mono">{healthReport.totalTracks}</span>
               <span className="text-[11px] text-emerald-400 block">Sẵn sàng phát</span>
             </div>
-            <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Tổng Số Tập (Chapters)</span>
-              <span className="text-2xl font-black text-amber-400 font-mono">{healthReport.totalChapters}</span>
-              <span className="text-[11px] text-slate-400 block">Đầy đủ thời lượng</span>
+            <div className="p-4 rounded-xl bg-[#181818]/90 border border-[#282828] space-y-1">
+              <span className="text-[10px] uppercase font-bold text-[#b3b3b3] block tracking-wider">Tổng Số Tập (Chapters)</span>
+              <span className="text-2xl font-black text-[#1ed760] font-mono">{healthReport.totalChapters}</span>
+              <span className="text-[11px] text-[#b3b3b3] block">Đầy đủ thời lượng</span>
             </div>
-            <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Link MP3 Hợp Lệ</span>
+            <div className="p-4 rounded-xl bg-[#181818]/90 border border-[#282828] space-y-1">
+              <span className="text-[10px] uppercase font-bold text-[#b3b3b3] block tracking-wider">Link MP3 Hợp Lệ</span>
               <span className="text-2xl font-black text-emerald-400 font-mono">{healthReport.validAudioUrls}</span>
-              <span className="text-[11px] text-slate-400 block">0 link lỗi</span>
+              <span className="text-[11px] text-[#b3b3b3] block">0 link lỗi</span>
             </div>
-            <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Liên Kết Affiliate Pool</span>
+            <div className="p-4 rounded-xl bg-[#181818]/90 border border-[#282828] space-y-1">
+              <span className="text-[10px] uppercase font-bold text-[#b3b3b3] block tracking-wider">Liên Kết Affiliate Pool</span>
               <span className="text-2xl font-black text-blue-400 font-mono">{healthReport.totalAffiliates}</span>
-              <span className="text-[11px] text-slate-400 block">{healthReport.totalCategories} tài khoản</span>
+              <span className="text-[11px] text-[#b3b3b3] block">{healthReport.totalCategories} tài khoản</span>
             </div>
           </div>
 
           {/* 3. INTERACTIVE SQL CONSOLE (TRUY VẤN VÀ CẬP NHẬT TRỰC TIẾP) */}
-          <div className="p-5 sm:p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div className="p-5 sm:p-6 rounded-2xl bg-[#181818] border border-[#282828] space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#282828] pb-3">
               <div className="flex items-center gap-2">
-                <Terminal size={18} className="text-amber-400" />
+                <Terminal size={18} className="text-[#1ed760]" />
                 <h3 className="text-base font-bold text-white">
                   SQL Query Console (Thực Thi Truy Vấn Trực Tiếp)
                 </h3>
               </div>
-              <span className="text-[11px] text-slate-400">
+              <span className="text-[11px] text-[#b3b3b3]">
                 Hỗ trợ SELECT, INSERT, UPDATE, DELETE & GROUP BY
               </span>
             </div>
 
             {/* Quick Query Templates */}
             <div className="space-y-1.5">
-              <span className="text-[11px] text-slate-400 font-semibold block">Mẫu truy vấn nhanh:</span>
+              <span className="text-[11px] text-[#b3b3b3] font-semibold block">Mẫu truy vấn nhanh:</span>
               <div className="flex flex-wrap items-center gap-1.5">
                 {[
                   {
@@ -4807,7 +4807,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                     key={idx}
                     type="button"
                     onClick={() => setSqlInput(item.query)}
-                    className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs border border-slate-700/80 transition cursor-pointer"
+                    className="px-2.5 py-1 rounded-lg bg-[#242424] hover:bg-[#333333] text-[#d1d1d1] hover:text-white text-xs border border-[#333333]/80 transition cursor-pointer"
                   >
                     {item.label}
                   </button>
@@ -4822,18 +4822,18 @@ https://s.lazada.vn/s.flashsale_deal`}
                 value={sqlInput}
                 onChange={(e) => setSqlInput(e.target.value)}
                 placeholder="Nhập câu lệnh SQL vào đây. Ví dụ: SELECT * FROM tracks WHERE category = 'Truyện Ma';"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-amber-300 font-mono focus:outline-none focus:border-amber-400 leading-relaxed"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#121212] border border-[#333333] text-xs text-[#1ed760] font-mono focus:outline-none focus:border-[#1ed760] leading-relaxed"
               />
 
               <div className="flex items-center justify-between flex-wrap gap-2">
-                <span className="text-[11px] text-slate-400">
+                <span className="text-[11px] text-[#b3b3b3]">
                   Phím tắt: Bấm Chạy câu lệnh để xem kết quả trả về ngay bên dưới.
                 </span>
                 <button
                   type="button"
                   onClick={handleRunSQL}
                   disabled={isExecutingSql}
-                  className="px-5 py-2 rounded-xl text-xs font-bold bg-amber-400 hover:bg-amber-300 disabled:opacity-50 text-slate-950 flex items-center gap-1.5 transition cursor-pointer shadow-md shadow-amber-500/20"
+                  className="px-5 py-2 rounded-xl text-xs font-bold bg-[#1ed760] hover:bg-[#1db954] disabled:opacity-50 text-slate-950 flex items-center gap-1.5 transition cursor-pointer shadow-md shadow-[#1ed760]/20"
                 >
                   <PlayCircle size={15} />
                   <span>{isExecutingSql ? 'Đang thực thi...' : 'Chạy câu lệnh SQL'}</span>
@@ -4843,15 +4843,15 @@ https://s.lazada.vn/s.flashsale_deal`}
 
             {/* Query Result Box */}
             {sqlResult && (
-              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3 animate-fade-in">
-                <div className="flex items-center justify-between flex-wrap gap-2 border-b border-slate-800/80 pb-2">
+              <div className="p-4 rounded-xl bg-[#121212] border border-[#282828] space-y-3 animate-fade-in">
+                <div className="flex items-center justify-between flex-wrap gap-2 border-b border-[#282828]/80 pb-2">
                   <div className="flex items-center gap-2">
                     <span className={`w-2 h-2 rounded-full ${sqlResult.success ? 'bg-emerald-400' : 'bg-red-400'}`}></span>
                     <span className={`text-xs font-bold ${sqlResult.success ? 'text-emerald-300' : 'text-red-400'}`}>
                       {sqlResult.message}
                     </span>
                   </div>
-                  <div className="flex items-center gap-3 text-[11px] text-slate-400 font-mono">
+                  <div className="flex items-center gap-3 text-[11px] text-[#b3b3b3] font-mono">
                     <span>{sqlResult.rowCount} bản ghi</span>
                     <span>•</span>
                     <span>{sqlResult.executionTimeMs} ms</span>
@@ -4862,7 +4862,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                   <div className="overflow-x-auto max-h-72 scrollbar-thin">
                     <table className="w-full text-left text-xs font-mono border-collapse">
                       <thead>
-                        <tr className="border-b border-slate-800 text-amber-400 bg-slate-900/60 sticky top-0">
+                        <tr className="border-b border-[#282828] text-[#1ed760] bg-[#181818]/60 sticky top-0">
                           {sqlResult.columns.map((col, idx) => (
                             <th key={idx} className="p-2 whitespace-nowrap font-semibold">
                               {col}
@@ -4872,7 +4872,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                       </thead>
                       <tbody className="divide-y divide-slate-800/60">
                         {sqlResult.rows.map((row, rIdx) => (
-                          <tr key={rIdx} className="hover:bg-slate-900/40 text-slate-300">
+                          <tr key={rIdx} className="hover:bg-[#181818]/40 text-[#d1d1d1]">
                             {sqlResult.columns.map((col, cIdx) => (
                               <td key={cIdx} className="p-2 whitespace-nowrap max-w-xs truncate">
                                 {typeof row[col] === 'boolean'
@@ -4888,7 +4888,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                     </table>
                   </div>
                 ) : (
-                  <p className="text-xs text-slate-400 italic">
+                  <p className="text-xs text-[#b3b3b3] italic">
                     Không có bản ghi nào phù hợp với điều kiện truy vấn.
                   </p>
                 )}
@@ -4897,15 +4897,15 @@ https://s.lazada.vn/s.flashsale_deal`}
           </div>
 
           {/* 4. FULL MIGRATION SCRIPT & EXPORT */}
-          <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+          <div className="p-6 rounded-2xl bg-[#181818] border border-[#282828] space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#282828] pb-3">
               <div>
                 <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <Database size={18} className="text-amber-400" />
+                  <Database size={18} className="text-[#1ed760]" />
                   <span>Mã SQL Chuẩn Hóa Khởi Tạo Database (Supabase & Cloud SQL)</span>
                 </h3>
-                <p className="text-xs text-slate-400 mt-1">
-                  Bao gồm đầy đủ 4 bảng <code className="text-amber-300 font-mono">tracks</code>, <code className="text-amber-300 font-mono">affiliate_categories</code>, <code className="text-amber-300 font-mono">affiliate_links</code>, <code className="text-amber-300 font-mono">site_settings</code> đồng bộ theo dữ liệu thực tế trên Server.
+                <p className="text-xs text-[#b3b3b3] mt-1">
+                  Bao gồm đầy đủ 4 bảng <code className="text-[#1ed760] font-mono">tracks</code>, <code className="text-[#1ed760] font-mono">affiliate_categories</code>, <code className="text-[#1ed760] font-mono">affiliate_links</code>, <code className="text-[#1ed760] font-mono">site_settings</code> đồng bộ theo dữ liệu thực tế trên Server.
                 </p>
               </div>
 
@@ -4913,7 +4913,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                 <button
                   type="button"
                   onClick={handleDownloadSQL}
-                  className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1.5 transition cursor-pointer"
+                  className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#242424] hover:bg-[#333333] text-slate-200 border border-[#333333] flex items-center gap-1.5 transition cursor-pointer"
                   title="Tải về file script .sql"
                 >
                   <Download size={14} />
@@ -4926,7 +4926,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                     setSqlCopied(true);
                     setTimeout(() => setSqlCopied(false), 2000);
                   }}
-                  className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-400 text-slate-950 hover:bg-amber-300 flex items-center gap-1.5 transition cursor-pointer"
+                  className="px-4 py-2 rounded-xl text-xs font-bold bg-[#1ed760] text-black font-bold hover:bg-[#1db954] flex items-center gap-1.5 transition cursor-pointer"
                 >
                   {sqlCopied ? <Check size={14} /> : <Copy size={14} />}
                   <span>{sqlCopied ? 'Đã copy!' : 'Sao chép SQL'}</span>
@@ -4934,7 +4934,7 @@ https://s.lazada.vn/s.flashsale_deal`}
               </div>
             </div>
 
-            <pre className="p-4 rounded-xl bg-slate-950 border border-slate-800 font-mono text-xs text-amber-200/90 overflow-x-auto max-h-96 leading-relaxed">
+            <pre className="p-4 rounded-xl bg-[#121212] border border-[#282828] font-mono text-xs text-[#1ed760] overflow-x-auto max-h-96 leading-relaxed">
               {SQL_SNIPPET}
             </pre>
           </div>
@@ -4945,17 +4945,17 @@ https://s.lazada.vn/s.flashsale_deal`}
       {activeTab === 'api' && (
         <div className="space-y-6 animate-fade-in">
           {/* Header & Overview */}
-          <div className="p-6 rounded-2xl bg-gradient-to-r from-amber-500/15 via-slate-900 to-slate-900 border border-amber-500/30 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="p-6 rounded-2xl bg-gradient-to-r from-[#1ed760]/15 via-slate-900 to-slate-900 border border-[#1ed760]/30 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div className="space-y-1.5">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-bold">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1ed760]/20 border border-[#1ed760]/40 text-[#1ed760] text-xs font-bold">
                 <Code2 size={14} />
                 <span>CỔNG API QUẢN LÝ TRUYỆN TRÊN SERVER (REST & GATEWAY)</span>
               </div>
               <h2 className="text-xl font-black text-white">
                 Cổng API Tự Động Đăng • Sửa • Thêm Tập • Xóa Truyện
               </h2>
-              <p className="text-xs text-slate-300 max-w-3xl leading-relaxed">
-                Bạn có thể gọi trực tiếp từ tool tự động (Python, Node.js, n8n, Make, Postman, cURL...) vào <strong className="text-amber-300">1 Cổng API Duy Nhất (POST /api/gateway)</strong> hoặc qua các chuẩn RESTful <code className="text-amber-300 font-mono">/api/v1/stories</code>. Mọi thao tác đều lưu trực tiếp vào cơ sở dữ liệu trên Server.
+              <p className="text-xs text-[#d1d1d1] max-w-3xl leading-relaxed">
+                Bạn có thể gọi trực tiếp từ tool tự động (Python, Node.js, n8n, Make, Postman, cURL...) vào <strong className="text-[#1ed760]">1 Cổng API Duy Nhất (POST /api/gateway)</strong> hoặc qua các chuẩn RESTful <code className="text-[#1ed760] font-mono">/api/v1/stories</code>. Mọi thao tác đều lưu trực tiếp vào cơ sở dữ liệu trên Server.
               </p>
             </div>
 
@@ -4970,29 +4970,29 @@ https://s.lazada.vn/s.flashsale_deal`}
           {/* Section 1: Endpoint URLs & Server API Key Security */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Left: Main Gateway & REST Endpoints */}
-            <div className="lg:col-span-7 p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
+            <div className="lg:col-span-7 p-6 rounded-2xl bg-[#181818] border border-[#282828] space-y-4">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Terminal size={16} className="text-amber-400" />
+                <Terminal size={16} className="text-[#1ed760]" />
                 <span>Địa Chỉ Cổng API Chính Thức (Endpoints)</span>
               </h3>
 
               {/* Primary Single Gateway URL */}
-              <div className="p-4 rounded-xl bg-slate-950 border border-amber-500/40 space-y-2">
+              <div className="p-4 rounded-xl bg-[#121212] border border-[#1ed760]/40 space-y-2">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                  <span className="text-xs font-bold text-[#1ed760] flex items-center gap-1.5">
                     <Zap size={14} />
                     <span>Cổng API Duy Nhất (Khuyên dùng - Gửi mọi lệnh Đăng/Sửa/Xóa vào 1 link):</span>
                   </span>
-                  <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono text-[10px] font-bold">
+                  <span className="px-2 py-0.5 rounded bg-[#1ed760]/20 text-[#1ed760] font-mono text-[10px] font-bold">
                     POST JSON
                   </span>
                 </div>
-                <div className="flex items-center justify-between gap-2 bg-slate-900 px-3 py-2 rounded-lg border border-slate-800 font-mono text-xs text-emerald-300">
+                <div className="flex items-center justify-between gap-2 bg-[#181818] px-3 py-2 rounded-lg border border-[#282828] font-mono text-xs text-emerald-300">
                   <span className="truncate select-all">{`${window.location.origin}/api/gateway`}</span>
                   <button
                     type="button"
                     onClick={() => handleCopyText(`${window.location.origin}/api/gateway`, 'gw-url')}
-                    className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-sans font-semibold flex items-center gap-1 shrink-0 cursor-pointer"
+                    className="px-2.5 py-1 rounded bg-[#242424] hover:bg-[#333333] text-slate-200 text-[11px] font-sans font-semibold flex items-center gap-1 shrink-0 cursor-pointer"
                   >
                     {apiCopiedKey === 'gw-url' ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
                     <span>{apiCopiedKey === 'gw-url' ? 'Đã copy' : 'Copy Link'}</span>
@@ -5002,30 +5002,30 @@ https://s.lazada.vn/s.flashsale_deal`}
 
               {/* Standard RESTful Endpoints Table */}
               <div className="space-y-2">
-                <span className="text-xs font-semibold text-slate-400 block">
+                <span className="text-xs font-semibold text-[#b3b3b3] block">
                   Hoặc gọi theo chuẩn RESTful & Upload / Streaming trực tiếp:
                 </span>
-                <div className="divide-y divide-slate-800/80 rounded-xl border border-slate-800 bg-slate-950/70 text-xs">
+                <div className="divide-y divide-slate-800/80 rounded-xl border border-[#282828] bg-[#121212]/70 text-xs">
                   {[
-                    { method: 'POST', badge: 'bg-amber-500/20 text-amber-300', path: '/api/gateway', desc: 'Cổng 1-Port Đa Năng (list, get, create, update, add_chapter, delete_chapter, delete)' },
+                    { method: 'POST', badge: 'bg-[#1ed760]/20 text-[#1ed760]', path: '/api/gateway', desc: 'Cổng 1-Port Đa Năng (list, get, create, update, add_chapter, delete_chapter, delete)' },
                     { method: 'POST', badge: 'bg-indigo-500/20 text-indigo-300', path: '/api/upload-audio', desc: 'Upload file .mp3 vào uploads/audio/ (form-data: audio, tối đa 150MB, đo duration bằng ffprobe)' },
                     { method: 'POST', badge: 'bg-cyan-500/20 text-cyan-300', path: '/api/upload-image', desc: 'Upload ảnh bìa/banner vào uploads/images/ (form-data: image, tối đa 20MB)' },
                     { method: 'GET', badge: 'bg-teal-500/20 text-teal-300', path: '/uploads/audio/:filename', desc: 'Phát trực tiếp file MP3 (HTTP 206 Partial Content, Accept-Ranges: bytes)' },
                     { method: 'GET', badge: 'bg-emerald-500/20 text-emerald-300', path: '/api/stream-audio', desc: 'Cắt luồng Byte-Slicing khi tua qua Cloudflare (?src=/uploads/audio/...&t=giây&dur=tổng)' },
                     { method: 'GET', badge: 'bg-sky-500/20 text-sky-300', path: '/api/tracks (hoặc /api/v1/stories)', desc: 'Lấy danh sách tất cả truyện' },
                     { method: 'POST', badge: 'bg-emerald-500/20 text-emerald-300', path: '/api/tracks (hoặc /api/v1/stories)', desc: 'Đăng truyện mới lên Server' },
-                    { method: 'PUT', badge: 'bg-amber-500/20 text-amber-300', path: '/api/tracks/:id', desc: 'Sửa thông tin truyện theo ID (Hỗ trợ cả PUT và PATCH)' },
+                    { method: 'PUT', badge: 'bg-[#1ed760]/20 text-[#1ed760]', path: '/api/tracks/:id', desc: 'Sửa thông tin truyện theo ID (Hỗ trợ cả PUT và PATCH)' },
                     { method: 'POST', badge: 'bg-purple-500/20 text-purple-300', path: '/api/tracks/:id/chapters', desc: 'Thêm tập MP3 mới vào truyện' },
                     { method: 'DELETE', badge: 'bg-rose-500/20 text-rose-300', path: '/api/tracks/:id', desc: 'Xóa truyện theo ID (Tự động xóa luôn file .mp3 trong uploads/audio/)' }
                   ].map((ep, i) => (
-                    <div key={i} className="p-2.5 flex items-center justify-between gap-2 hover:bg-slate-900/50">
+                    <div key={i} className="p-2.5 flex items-center justify-between gap-2 hover:bg-[#181818]/50">
                       <div className="flex items-center gap-2.5 min-w-0">
                         <span className={`px-2 py-0.5 rounded font-mono text-[10px] font-bold w-14 text-center shrink-0 ${ep.badge}`}>
                           {ep.method}
                         </span>
                         <code className="font-mono text-slate-200 truncate select-all">{ep.path}</code>
                       </div>
-                      <span className="text-[11px] text-slate-400 hidden sm:inline shrink-0">{ep.desc}</span>
+                      <span className="text-[11px] text-[#b3b3b3] hidden sm:inline shrink-0">{ep.desc}</span>
                     </div>
                   ))}
                 </div>
@@ -5033,31 +5033,31 @@ https://s.lazada.vn/s.flashsale_deal`}
             </div>
 
             {/* Right: API Key Security Configuration (Saved on Server) */}
-            <div className="lg:col-span-5 p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4 flex flex-col justify-between">
+            <div className="lg:col-span-5 p-6 rounded-2xl bg-[#181818] border border-[#282828] space-y-4 flex flex-col justify-between">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                    <Lock size={16} className="text-amber-400" />
+                    <Lock size={16} className="text-[#1ed760]" />
                     <span>Bảo Mật Cổng API (API Key Server)</span>
                   </h3>
                   <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
                     settingsForm.requireApiKey
                       ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                      : 'bg-slate-800 text-slate-400 border border-slate-700'
+                      : 'bg-[#242424] text-[#b3b3b3] border border-[#333333]'
                   }`}>
                     {settingsForm.requireApiKey ? 'Đang bật khóa bảo mật' : 'Mở tự do (Không cần Key)'}
                   </span>
                 </div>
 
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Nếu bật <strong className="text-slate-200">Yêu cầu API Key</strong>, các lệnh Đăng / Sửa / Xóa / Upload từ bên ngoài chỉ cần truyền khóa qua 1 trong 3 cách: Header <code className="text-amber-300 font-mono">x-api-key</code>, Header <code className="text-amber-300 font-mono">Authorization: Bearer &lt;KEY&gt;</code>, hoặc trường <code className="text-amber-300 font-mono">"api_key"</code> trong Body/Query.
+                <p className="text-xs text-[#b3b3b3] leading-relaxed">
+                  Nếu bật <strong className="text-slate-200">Yêu cầu API Key</strong>, các lệnh Đăng / Sửa / Xóa / Upload từ bên ngoài chỉ cần truyền khóa qua 1 trong 3 cách: Header <code className="text-[#1ed760] font-mono">x-api-key</code>, Header <code className="text-[#1ed760] font-mono">Authorization: Bearer &lt;KEY&gt;</code>, hoặc trường <code className="text-[#1ed760] font-mono">"api_key"</code> trong Body/Query.
                 </p>
 
                 {/* Toggle requireApiKey */}
-                <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between gap-3">
+                <div className="p-3.5 rounded-xl bg-[#121212] border border-[#282828] flex items-center justify-between gap-3">
                   <div>
                     <span className="text-xs font-bold text-white block">Bắt buộc xác thực API Key khi Đăng/Sửa/Xóa</span>
-                    <span className="text-[11px] text-slate-400">Chống người lạ gọi API xóa hoặc sửa truyện trái phép</span>
+                    <span className="text-[11px] text-[#b3b3b3]">Chống người lạ gọi API xóa hoặc sửa truyện trái phép</span>
                   </div>
                   <button
                     type="button"
@@ -5072,11 +5072,11 @@ https://s.lazada.vn/s.flashsale_deal`}
                       setTimeout(() => setSettingsSaveMsg(null), 3000);
                     }}
                     className={`w-12 h-6 rounded-full transition-colors relative shrink-0 cursor-pointer ${
-                      settingsForm.requireApiKey ? 'bg-amber-400' : 'bg-slate-700'
+                      settingsForm.requireApiKey ? 'bg-[#1ed760]' : 'bg-slate-700'
                     }`}
                   >
                     <span
-                      className={`w-4 h-4 rounded-full bg-slate-950 absolute top-1 transition-transform ${
+                      className={`w-4 h-4 rounded-full bg-[#121212] absolute top-1 transition-transform ${
                         settingsForm.requireApiKey ? 'left-7' : 'left-1'
                       }`}
                     />
@@ -5085,8 +5085,8 @@ https://s.lazada.vn/s.flashsale_deal`}
 
                 {/* API Key Input */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-300 block">
-                    Mã API Key Bí Mật (<code className="text-amber-300 font-mono">x-api-key</code>):
+                  <label className="text-xs font-semibold text-[#d1d1d1] block">
+                    Mã API Key Bí Mật (<code className="text-[#1ed760] font-mono">x-api-key</code>):
                   </label>
                   <div className="flex items-center gap-2">
                     <input
@@ -5094,7 +5094,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                       value={settingsForm.apiKey || ''}
                       onChange={(e) => setSettingsForm(prev => ({ ...prev, apiKey: e.target.value }))}
                       placeholder="Nhập mã API Key bảo mật..."
-                      className="flex-1 px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-amber-300 font-mono focus:outline-none focus:border-amber-400"
+                      className="flex-1 px-3.5 py-2 rounded-xl bg-[#121212] border border-[#333333] text-xs text-[#1ed760] font-mono focus:outline-none focus:border-[#1ed760]"
                     />
                     <button
                       type="button"
@@ -5108,7 +5108,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                         setSettingsSaveMsg('Đã tạo và lưu mã API Key mới trên Server!');
                         setTimeout(() => setSettingsSaveMsg(null), 3000);
                       }}
-                      className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 shrink-0 cursor-pointer"
+                      className="px-3 py-2 rounded-xl bg-[#242424] hover:bg-[#333333] text-slate-200 text-xs font-semibold border border-[#333333] shrink-0 cursor-pointer"
                       title="Tạo mã ngẫu nhiên mới"
                     >
                       Tạo Key Mới
@@ -5116,7 +5116,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                     <button
                       type="button"
                       onClick={() => handleCopyText(settingsForm.apiKey || '', 'api-key-val')}
-                      className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-semibold border border-slate-700 shrink-0 cursor-pointer flex items-center gap-1"
+                      className="px-3 py-2 rounded-xl bg-[#242424] hover:bg-[#333333] text-[#1ed760] text-xs font-semibold border border-[#333333] shrink-0 cursor-pointer flex items-center gap-1"
                     >
                       {apiCopiedKey === 'api-key-val' ? <Check size={13} /> : <Copy size={13} />}
                       <span>Copy</span>
@@ -5125,17 +5125,17 @@ https://s.lazada.vn/s.flashsale_deal`}
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-3">
+              <div className="pt-3 border-t border-[#282828] flex items-center justify-between gap-3">
                 {settingsSaveMsg ? (
                   <span className="text-xs text-emerald-400 font-medium">{settingsSaveMsg}</span>
                 ) : (
-                  <span className="text-[11px] text-slate-400">Lưu cấu hình API Key trực tiếp vào Server</span>
+                  <span className="text-[11px] text-[#b3b3b3]">Lưu cấu hình API Key trực tiếp vào Server</span>
                 )}
                 <button
                   type="button"
                   onClick={handleSaveSettings}
                   disabled={isSavingSettings}
-                  className="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-bold transition cursor-pointer shrink-0 shadow-md shadow-amber-500/20"
+                  className="px-4 py-2 rounded-xl bg-[#1ed760] hover:bg-[#1db954] text-black font-bold text-xs font-bold transition cursor-pointer shrink-0 shadow-md shadow-[#1ed760]/20"
                 >
                   {isSavingSettings ? 'Đang lưu...' : 'Lưu Cấu Hình API'}
                 </button>
@@ -5146,74 +5146,74 @@ https://s.lazada.vn/s.flashsale_deal`}
           {/* Section 1.5: Cấu Trúc Thư Mục Vật Lý Trên Server (Chỉ có uploads/, không có download/) & Chi Tiết Cổng API */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Left: Cấu trúc thư mục lưu trữ trên Server */}
-            <div className="lg:col-span-5 p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="lg:col-span-5 p-6 rounded-2xl bg-[#181818] border border-[#282828] space-y-4">
+              <div className="flex items-center justify-between border-b border-[#282828] pb-3">
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
                   <HardDrive size={16} className="text-emerald-400" />
-                  <span>Cấu Trúc Thư Mục Lưu Trữ Trên Server (<code className="text-amber-300 font-mono">server-db.ts</code>)</span>
+                  <span>Cấu Trúc Thư Mục Lưu Trữ Trên Server (<code className="text-[#1ed760] font-mono">server-db.ts</code>)</span>
                 </h3>
                 <span className="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
                   Chuẩn Đồng Bộ 100%
                 </span>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 leading-relaxed">
+              <div className="p-3.5 rounded-xl bg-[#1ed760]/10 border border-[#1ed760]/30 text-xs text-[#1ed760] leading-relaxed">
                 <strong>Lưu ý quan trọng:</strong> Trên hệ thống <strong>hoàn toàn không có thư mục <code className="font-mono text-white">download</code> (hay <code className="font-mono text-white">downloads</code>)</strong>. Khi khởi chạy, Server tự động kiểm tra và tạo đúng <strong>3 thư mục gốc</strong> tại thư mục dự án:
               </div>
 
               <div className="space-y-2.5 text-xs">
-                <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1.5">
+                <div className="p-3 rounded-xl bg-[#121212] border border-[#282828] space-y-1.5">
                   <div className="font-bold text-emerald-400 font-mono flex items-center justify-between">
                     <span>1. uploads/ (Thư mục chứa file tải lên & phát ra ngoài)</span>
                     <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Public Static</span>
                   </div>
-                  <ul className="space-y-1 text-slate-300 pl-3 list-disc">
+                  <ul className="space-y-1 text-[#d1d1d1] pl-3 list-disc">
                     <li>
-                      <code className="text-amber-300 font-mono">uploads/audio/</code>: Chứa toàn bộ file <code className="text-white font-mono">.mp3</code>. Khi upload, file tự động đổi tên chuẩn SEO không dấu (<code className="text-emerald-300 font-mono">ten-truyen-ten-tap.mp3</code>).
+                      <code className="text-[#1ed760] font-mono">uploads/audio/</code>: Chứa toàn bộ file <code className="text-white font-mono">.mp3</code>. Khi upload, file tự động đổi tên chuẩn SEO không dấu (<code className="text-emerald-300 font-mono">ten-truyen-ten-tap.mp3</code>).
                     </li>
                     <li>
-                      <code className="text-amber-300 font-mono">uploads/images/</code>: Chứa file ảnh bìa, banner, icon tải lên.
+                      <code className="text-[#1ed760] font-mono">uploads/images/</code>: Chứa file ảnh bìa, banner, icon tải lên.
                     </li>
                   </ul>
                 </div>
 
-                <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
-                  <div className="font-bold text-amber-300 font-mono">2. data/</div>
-                  <p className="text-slate-300">
-                    <code className="text-amber-300 font-mono">data/db.json</code>: Cơ sở dữ liệu chính lưu danh sách truyện, tập truyện, cấu hình web, tài khoản admin, affiliate và khóa API.
+                <div className="p-3 rounded-xl bg-[#121212] border border-[#282828] space-y-1">
+                  <div className="font-bold text-[#1ed760] font-mono">2. data/</div>
+                  <p className="text-[#d1d1d1]">
+                    <code className="text-[#1ed760] font-mono">data/db.json</code>: Cơ sở dữ liệu chính lưu danh sách truyện, tập truyện, cấu hình web, tài khoản admin, affiliate và khóa API.
                   </p>
                 </div>
 
-                <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                <div className="p-3 rounded-xl bg-[#121212] border border-[#282828] space-y-1">
                   <div className="font-bold text-sky-300 font-mono">3. backups/</div>
-                  <p className="text-slate-300">
+                  <p className="text-[#d1d1d1]">
                     Chứa các bản sao lưu tự động và thủ công (<code className="text-sky-300 font-mono">snapshot .json</code>) trên máy chủ.
                   </p>
                 </div>
               </div>
 
-              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-400 leading-relaxed">
-                <strong className="text-slate-200">Lưu ý trên VPS / Nginx (<code className="font-mono text-amber-300">nginx.conf</code>):</strong> Bạn chỉ cần trỏ duy nhất <code className="font-mono text-emerald-300">location /uploads/</code> về đúng thư mục <code className="font-mono text-emerald-300">/đường_dẫn_code/uploads/;</code> và <code className="font-mono text-emerald-300">location ^~ /api/</code> vào <code className="font-mono text-emerald-300">http://127.0.0.1:3000</code>, hoàn toàn không cần tạo hay cấu hình bất kỳ thư mục <code className="font-mono text-rose-300">download</code> nào.
+              <div className="p-3 rounded-xl bg-[#121212] border border-[#282828] text-[11px] text-[#b3b3b3] leading-relaxed">
+                <strong className="text-slate-200">Lưu ý trên VPS / Nginx (<code className="font-mono text-[#1ed760]">nginx.conf</code>):</strong> Bạn chỉ cần trỏ duy nhất <code className="font-mono text-emerald-300">location /uploads/</code> về đúng thư mục <code className="font-mono text-emerald-300">/đường_dẫn_code/uploads/;</code> và <code className="font-mono text-emerald-300">location ^~ /api/</code> vào <code className="font-mono text-emerald-300">http://127.0.0.1:3000</code>, hoàn toàn không cần tạo hay cấu hình bất kỳ thư mục <code className="font-mono text-rose-300">download</code> nào.
               </div>
             </div>
 
             {/* Right: Bảng tổng hợp chi tiết cấu hình API Upload, Streaming & Gateway */}
-            <div className="lg:col-span-7 p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
-              <div className="border-b border-slate-800 pb-3">
+            <div className="lg:col-span-7 p-6 rounded-2xl bg-[#181818] border border-[#282828] space-y-4">
+              <div className="border-b border-[#282828] pb-3">
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Zap size={16} className="text-amber-400" />
-                  <span>Bảng Chi Tiết Cấu Hình Các Cổng API (<code className="text-amber-300 font-mono">server.ts</code>)</span>
+                  <Zap size={16} className="text-[#1ed760]" />
+                  <span>Bảng Chi Tiết Cấu Hình Các Cổng API (<code className="text-[#1ed760] font-mono">server.ts</code>)</span>
                 </h3>
               </div>
 
               {/* A. Bảng API Upload */}
               <div className="space-y-1.5">
-                <span className="text-xs font-bold text-amber-300 block">
+                <span className="text-xs font-bold text-[#1ed760] block">
                   A. API Upload File (Lưu thẳng vào thư mục <code className="font-mono">uploads/</code>):
                 </span>
-                <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950">
+                <div className="overflow-x-auto rounded-xl border border-[#282828] bg-[#121212]">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-900/90 text-slate-400 border-b border-slate-800">
+                    <thead className="bg-[#181818]/90 text-[#b3b3b3] border-b border-[#282828]">
                       <tr>
                         <th className="p-2.5">Chức năng</th>
                         <th className="p-2.5">Endpoint</th>
@@ -5222,18 +5222,18 @@ https://s.lazada.vn/s.flashsale_deal`}
                         <th className="p-2.5">Đường dẫn trả về (url)</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800/70 text-slate-300">
+                    <tbody className="divide-y divide-slate-800/70 text-[#d1d1d1]">
                       <tr>
                         <td className="p-2.5 font-semibold text-white">Upload Audio MP3</td>
                         <td className="p-2.5 font-mono text-emerald-300">POST /api/upload-audio</td>
-                        <td className="p-2.5 font-mono text-amber-300">audio <span className="text-slate-400 font-sans text-[10px]">(hoặc file, mp3 + storyTitle, chapterTitle)</span></td>
+                        <td className="p-2.5 font-mono text-[#1ed760]">audio <span className="text-[#b3b3b3] font-sans text-[10px]">(hoặc file, mp3 + storyTitle, chapterTitle)</span></td>
                         <td className="p-2.5 font-mono">150 MB</td>
-                        <td className="p-2.5 font-mono text-emerald-300">/uploads/audio/&lt;slug&gt;.mp3 <span className="text-slate-400 font-sans text-[10px]">(+ duration ffprobe)</span></td>
+                        <td className="p-2.5 font-mono text-emerald-300">/uploads/audio/&lt;slug&gt;.mp3 <span className="text-[#b3b3b3] font-sans text-[10px]">(+ duration ffprobe)</span></td>
                       </tr>
                       <tr>
                         <td className="p-2.5 font-semibold text-white">Upload Hình ảnh</td>
                         <td className="p-2.5 font-mono text-cyan-300">POST /api/upload-image</td>
-                        <td className="p-2.5 font-mono text-amber-300">image <span className="text-slate-400 font-sans text-[10px]">(hoặc file, thumb, cover)</span></td>
+                        <td className="p-2.5 font-mono text-[#1ed760]">image <span className="text-[#b3b3b3] font-sans text-[10px]">(hoặc file, thumb, cover)</span></td>
                         <td className="p-2.5 font-mono">20 MB</td>
                         <td className="p-2.5 font-mono text-cyan-300">/uploads/images/&lt;slug&gt;.&lt;ext&gt;</td>
                       </tr>
@@ -5244,11 +5244,11 @@ https://s.lazada.vn/s.flashsale_deal`}
 
               {/* B. Các hành động (action) trong Cổng Gateway 1-Port */}
               <div className="space-y-1.5">
-                <span className="text-xs font-bold text-amber-300 block">
+                <span className="text-xs font-bold text-[#1ed760] block">
                   B. Các hành động (<code className="font-mono">action</code>) hỗ trợ tại Cổng 1-Port <code className="font-mono text-emerald-300">POST /api/gateway</code>:
                 </span>
-                <p className="text-[11px] text-slate-400">
-                  Hỗ trợ <code className="font-mono text-slate-200">JSON</code>, <code className="font-mono text-slate-200">form-urlencoded</code> &amp; <code className="font-mono text-slate-200">multipart/form-data</code>. Nhận diện truyện thông minh theo <code className="font-mono text-amber-300">id</code>, <code className="font-mono text-amber-300">slug</code> hoặc <code className="font-mono text-amber-300">title</code>.
+                <p className="text-[11px] text-[#b3b3b3]">
+                  Hỗ trợ <code className="font-mono text-slate-200">JSON</code>, <code className="font-mono text-slate-200">form-urlencoded</code> &amp; <code className="font-mono text-slate-200">multipart/form-data</code>. Nhận diện truyện thông minh theo <code className="font-mono text-[#1ed760]">id</code>, <code className="font-mono text-[#1ed760]">slug</code> hoặc <code className="font-mono text-[#1ed760]">title</code>.
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                   {[
@@ -5260,29 +5260,29 @@ https://s.lazada.vn/s.flashsale_deal`}
                     { act: 'delete_chapter', alias: 'xoa_tap', desc: 'Xóa 1 tập trong truyện (theo chapter_id hoặc chapter_index)' },
                     { act: 'delete', alias: 'xoa', desc: 'Xóa truyện & tự động dọn luôn file .mp3 trong uploads/audio/' }
                   ].map((item, idx) => (
-                    <div key={idx} className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 flex flex-col gap-0.5">
+                    <div key={idx} className="p-2.5 rounded-xl bg-[#121212] border border-[#282828] flex flex-col gap-0.5">
                       <div className="flex items-center gap-1.5">
                         <code className="font-mono font-bold text-emerald-300">"{item.act}"</code>
                         {item.alias && (
-                          <span className="text-[10px] font-mono text-amber-300 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                          <span className="text-[10px] font-mono text-[#1ed760] bg-[#1ed760]/10 px-1.5 py-0.5 rounded border border-[#1ed760]/20">
                             hoặc "{item.alias}"
                           </span>
                         )}
                       </div>
-                      <span className="text-[11px] text-slate-400">{item.desc}</span>
+                      <span className="text-[11px] text-[#b3b3b3]">{item.desc}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
               {/* C. API Phát & Tua Audio qua Cloudflare */}
-              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1 text-xs">
-                <span className="font-bold text-amber-300 block">
+              <div className="p-3 rounded-xl bg-[#121212] border border-[#282828] space-y-1 text-xs">
+                <span className="font-bold text-[#1ed760] block">
                   C. Cơ chế Phát & Tua Audio Không Bị Nhảy Về 0:00 (Streaming & Byte-Range):
                 </span>
-                <p className="text-[11px] text-slate-300 leading-relaxed">
+                <p className="text-[11px] text-[#d1d1d1] leading-relaxed">
                   • <strong>Phát chuẩn:</strong> <code className="font-mono text-emerald-300">GET /uploads/audio/:filename</code> (Hỗ trợ <code className="font-mono">HTTP 206 Partial Content</code>, <code className="font-mono">Accept-Ranges: bytes</code>).<br />
-                  • <strong>Cắt luồng khi tua qua Cloudflare:</strong> <code className="font-mono text-emerald-300">GET /api/stream-audio?src=/uploads/audio/:filename&amp;t=&lt;giây&gt;&amp;dur=&lt;tổng_thời_lượng&gt;</code> — Nếu người nghe kéo tua đến giây <code className="font-mono text-amber-300">t</code> khi file chưa tải xong vào bộ đệm, Server tự động tính vị trí byte và cắt luồng MP3 phát ngay từ điểm đó.
+                  • <strong>Cắt luồng khi tua qua Cloudflare:</strong> <code className="font-mono text-emerald-300">GET /api/stream-audio?src=/uploads/audio/:filename&amp;t=&lt;giây&gt;&amp;dur=&lt;tổng_thời_lượng&gt;</code> — Nếu người nghe kéo tua đến giây <code className="font-mono text-[#1ed760]">t</code> khi file chưa tải xong vào bộ đệm, Server tự động tính vị trí byte và cắt luồng MP3 phát ngay từ điểm đó.
                 </p>
               </div>
             </div>
@@ -5291,10 +5291,10 @@ https://s.lazada.vn/s.flashsale_deal`}
           {/* Section 2: Interactive Live API Tester & Code Examples */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Left: Ready-to-copy cURL & JSON Payload Documentation */}
-            <div className="lg:col-span-6 p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
+            <div className="lg:col-span-6 p-6 rounded-2xl bg-[#181818] border border-[#282828] space-y-4">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Code2 size={16} className="text-amber-400" />
+                  <Code2 size={16} className="text-[#1ed760]" />
                   <span>Mẫu Lệnh Gọi API (Copy 1-Click)</span>
                 </h3>
                 <div className="flex items-center gap-1.5 flex-wrap">
@@ -5313,8 +5313,8 @@ https://s.lazada.vn/s.flashsale_deal`}
                       onClick={() => setApiDocExample(tab.id as any)}
                       className={`px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
                         apiDocExample === tab.id
-                          ? 'bg-amber-400 text-slate-950'
-                          : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                          ? 'bg-[#1ed760] text-black font-bold'
+                          : 'bg-[#242424] text-[#d1d1d1] hover:bg-[#333333]'
                       }`}
                     >
                       {tab.label}
@@ -5427,20 +5427,20 @@ https://s.lazada.vn/s.flashsale_deal`}
                   <div className="space-y-3">
                     <div className="flex items-center justify-between gap-2">
                       <div>
-                        <h4 className="text-xs font-bold text-amber-300">{title}</h4>
-                        <p className="text-[11px] text-slate-400 mt-0.5">{desc}</p>
+                        <h4 className="text-xs font-bold text-[#1ed760]">{title}</h4>
+                        <p className="text-[11px] text-[#b3b3b3] mt-0.5">{desc}</p>
                       </div>
                       <button
                         type="button"
                         onClick={() => handleCopyText(curlCode, 'doc-curl')}
-                        className="px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-bold flex items-center gap-1.5 shrink-0 cursor-pointer"
+                        className="px-3 py-1.5 rounded-xl bg-[#1ed760] hover:bg-[#1db954] text-black font-bold text-xs font-bold flex items-center gap-1.5 shrink-0 cursor-pointer"
                       >
                         {apiCopiedKey === 'doc-curl' ? <Check size={13} /> : <Copy size={13} />}
                         <span>{apiCopiedKey === 'doc-curl' ? 'Đã Copy!' : 'Copy Lệnh'}</span>
                       </button>
                     </div>
 
-                    <pre className="p-4 rounded-xl bg-slate-950 border border-slate-800 font-mono text-xs text-emerald-300 overflow-x-auto leading-relaxed">
+                    <pre className="p-4 rounded-xl bg-[#121212] border border-[#282828] font-mono text-xs text-emerald-300 overflow-x-auto leading-relaxed">
                       {curlCode}
                     </pre>
                   </div>
@@ -5449,13 +5449,13 @@ https://s.lazada.vn/s.flashsale_deal`}
             </div>
 
             {/* Right: Live API Gateway Tester in Browser */}
-            <div className="lg:col-span-6 p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
+            <div className="lg:col-span-6 p-6 rounded-2xl bg-[#181818] border border-[#282828] space-y-4">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <PlayCircle size={16} className="text-amber-400" />
+                  <PlayCircle size={16} className="text-[#1ed760]" />
                   <span>Trình Test Cổng API Trực Tiếp (/api/gateway)</span>
                 </h3>
-                <span className="text-[11px] text-slate-400">
+                <span className="text-[11px] text-[#b3b3b3]">
                   Chạy thật trực tiếp trên Database Server
                 </span>
               </div>
@@ -5463,13 +5463,13 @@ https://s.lazada.vn/s.flashsale_deal`}
               {/* Action Template Selector & Target Story Picker */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                  <label className="text-[11px] font-semibold text-[#b3b3b3] block mb-1">
                     Chọn tác vụ mẫu để nạp JSON:
                   </label>
                   <select
                     value={apiPlaygroundAction}
                     onChange={(e) => handleSwitchPlaygroundTemplate(e.target.value as any)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-400"
+                    className="w-full px-3 py-2 rounded-xl bg-[#121212] border border-[#333333] text-xs text-white focus:outline-none focus:border-[#1ed760]"
                   >
                     <option value="create">➕ Đăng truyện mới (action: create / dang)</option>
                     <option value="update">✏️ Sửa truyện đang có (action: update / sua)</option>
@@ -5482,7 +5482,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                  <label className="text-[11px] font-semibold text-[#b3b3b3] block mb-1">
                     Chọn nhanh truyện để lấy ID (khi Sửa/Thêm tập/Xóa):
                   </label>
                   <select
@@ -5492,7 +5492,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                       setApiPlaygroundTargetId(nextId);
                       handleSwitchPlaygroundTemplate(apiPlaygroundAction, nextId);
                     }}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-amber-300 focus:outline-none focus:border-amber-400"
+                    className="w-full px-3 py-2 rounded-xl bg-[#121212] border border-[#333333] text-xs text-[#1ed760] focus:outline-none focus:border-[#1ed760]"
                   >
                     {tracks.map(t => (
                       <option key={t.id} value={t.id}>
@@ -5505,12 +5505,12 @@ https://s.lazada.vn/s.flashsale_deal`}
 
               {/* JSON Body Editor */}
               <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-[11px] text-slate-400">
-                  <span>Nội dung JSON gửi tới <code className="text-amber-300 font-mono">POST /api/gateway</code>:</span>
+                <div className="flex items-center justify-between text-[11px] text-[#b3b3b3]">
+                  <span>Nội dung JSON gửi tới <code className="text-[#1ed760] font-mono">POST /api/gateway</code>:</span>
                   <button
                     type="button"
                     onClick={() => handleCopyText(apiPlaygroundBody, 'pg-body')}
-                    className="text-amber-400 hover:underline flex items-center gap-1 cursor-pointer"
+                    className="text-[#1ed760] hover:underline flex items-center gap-1 cursor-pointer"
                   >
                     {apiCopiedKey === 'pg-body' ? <Check size={11} /> : <Copy size={11} />}
                     <span>Copy JSON</span>
@@ -5520,7 +5520,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                   rows={9}
                   value={apiPlaygroundBody}
                   onChange={(e) => setApiPlaygroundBody(e.target.value)}
-                  className="w-full p-3.5 rounded-xl bg-slate-950 border border-slate-700 font-mono text-xs text-amber-200 focus:outline-none focus:border-amber-400 leading-relaxed"
+                  className="w-full p-3.5 rounded-xl bg-[#121212] border border-[#333333] font-mono text-xs text-[#1ed760] focus:outline-none focus:border-[#1ed760] leading-relaxed"
                 />
               </div>
 
@@ -5529,7 +5529,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                   type="button"
                   onClick={handleRunApiPlayground}
                   disabled={apiPlaygroundLoading}
-                  className="px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 disabled:opacity-50 text-slate-950 text-xs font-bold flex items-center gap-2 transition cursor-pointer shadow-lg shadow-amber-500/20"
+                  className="px-5 py-2.5 rounded-xl bg-[#1ed760] hover:bg-[#1db954] disabled:opacity-50 text-slate-950 text-xs font-bold flex items-center gap-2 transition cursor-pointer shadow-lg shadow-[#1ed760]/20"
                 >
                   <Zap size={15} />
                   <span>{apiPlaygroundLoading ? 'Đang gửi lệnh tới Server...' : 'Gửi Lệnh Tới Cổng API (/api/gateway)'}</span>
@@ -5538,8 +5538,8 @@ https://s.lazada.vn/s.flashsale_deal`}
 
               {/* Live Response Box */}
               {apiPlaygroundResponse && (
-                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2 animate-fade-in">
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-2 text-xs">
+                <div className="p-4 rounded-xl bg-[#121212] border border-[#282828] space-y-2 animate-fade-in">
+                  <div className="flex items-center justify-between border-b border-[#282828] pb-2 text-xs">
                     <span className={`font-bold flex items-center gap-1.5 ${
                       apiPlaygroundResponse.status >= 200 && apiPlaygroundResponse.status < 300
                         ? 'text-emerald-400'
@@ -5552,7 +5552,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                       }`} />
                       <span>HTTP {apiPlaygroundResponse.status}</span>
                     </span>
-                    <span className="text-[11px] font-mono text-slate-400">
+                    <span className="text-[11px] font-mono text-[#b3b3b3]">
                       {apiPlaygroundResponse.timeMs} ms
                     </span>
                   </div>
@@ -5569,12 +5569,12 @@ https://s.lazada.vn/s.flashsale_deal`}
       {/* Universal In-App Confirmation Modal (Bypasses iframe alert/confirm blocking) */}
       {confirmModal && confirmModal.isOpen && (
         <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
-          <div className="w-full max-w-md rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl p-6 space-y-4">
+          <div className="w-full max-w-md rounded-2xl bg-[#181818] border border-[#333333] shadow-2xl p-6 space-y-4">
             <div className="flex items-start gap-3">
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
                 confirmModal.isDestructive 
                   ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' 
-                  : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                  : 'bg-[#1ed760]/20 text-[#1ed760] border border-[#1ed760]/30'
               }`}>
                 <AlertTriangle size={20} />
               </div>
@@ -5582,17 +5582,17 @@ https://s.lazada.vn/s.flashsale_deal`}
                 <h4 className="text-base font-bold text-white leading-tight">
                   {confirmModal.title}
                 </h4>
-                <p className="text-xs text-slate-300 mt-2 leading-relaxed whitespace-pre-line">
+                <p className="text-xs text-[#d1d1d1] mt-2 leading-relaxed whitespace-pre-line">
                   {confirmModal.message}
                 </p>
               </div>
             </div>
 
-            <div className="pt-3 border-t border-slate-800 flex items-center justify-end gap-2.5">
+            <div className="pt-3 border-t border-[#282828] flex items-center justify-end gap-2.5">
               <button
                 type="button"
                 onClick={() => setConfirmModal(null)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 transition cursor-pointer"
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#242424] hover:bg-[#333333] text-[#d1d1d1] transition cursor-pointer"
               >
                 {confirmModal.cancelLabel || 'Hủy Bỏ'}
               </button>
@@ -5606,7 +5606,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                 className={`px-5 py-2 rounded-xl text-xs font-bold transition cursor-pointer shadow-md ${
                   confirmModal.isDestructive
                     ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-600/30'
-                    : 'bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-amber-500/20'
+                    : 'bg-[#1ed760] hover:bg-[#1db954] text-black font-bold shadow-[#1ed760]/20'
                 }`}
               >
                 {confirmModal.confirmLabel || 'Xác Nhận'}
