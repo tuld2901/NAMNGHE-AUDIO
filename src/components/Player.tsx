@@ -56,7 +56,7 @@ export const Player: React.FC<PlayerProps> = React.memo(({ onOpenStoryDetail }) 
     : 1;
 
   return (
-    <div className="sticky bottom-0 left-0 right-0 z-30 w-full bg-[#0e1525] border-t border-slate-800">
+    <div className="sticky bottom-0 left-0 right-0 z-30 w-full bg-[#000000] border-t border-[#282828]">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 space-y-1.5">
         {/* Top row: Story info + Responsive Playback Controls */}
         <div className="flex items-center justify-between gap-3 sm:gap-6">
@@ -70,44 +70,44 @@ export const Player: React.FC<PlayerProps> = React.memo(({ onOpenStoryDetail }) 
             </div>
 
             <div className="min-w-0">
-              <h4 className="font-bold text-white text-sm leading-tight truncate group-hover:text-amber-400 transition">
+              <h4 className="font-bold text-white text-sm leading-tight truncate group-hover:text-[#1ed760] transition">
                 {currentTrack.title}
               </h4>
-              <p className="text-xs text-slate-400 font-medium truncate mt-0.5">
+              <p className="text-xs text-[#b3b3b3] font-medium truncate mt-0.5">
                 Tập {currentChapterIdx > 0 ? currentChapterIdx : 1}/{chaptersCount} •{' '}
                 {isPlaying ? 'Đang phát' : 'Tạm dừng'}
               </p>
             </div>
           </div>
 
-          {/* Right Controls: Skip Back + Big Amber Play/Pause + Skip Forward + Speed Menu + Sleep Timer */}
+          {/* Right Controls: Skip Back + Big Spotify Green Play/Pause + Skip Forward + Speed Menu + Sleep Timer */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {/* Skip Back / Previous Episode */}
             <button
               onClick={prevChapter}
-              className="w-9 h-9 rounded-full hover:bg-slate-800/80 active:scale-95 text-slate-400 hover:text-white flex items-center justify-center transition cursor-pointer"
+              className="w-9 h-9 rounded-full hover:bg-[#282828] active:scale-95 text-[#b3b3b3] hover:text-white flex items-center justify-center transition cursor-pointer"
               title="Tập trước"
             >
               <SkipBack size={18} />
             </button>
 
-            {/* Round Solid Amber Play/Pause Button */}
+            {/* Round Solid Spotify Green Play/Pause Button */}
             <button
               onClick={togglePlayPause}
-              className="w-11 h-11 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 active:scale-95 text-slate-950 flex items-center justify-center transition cursor-pointer shadow-lg shadow-amber-500/25"
+              className="w-11 h-11 rounded-full bg-[#1ed760] hover:bg-[#1db954] hover:scale-105 active:scale-95 text-black flex items-center justify-center transition cursor-pointer shadow-lg shadow-[#1ed760]/20"
               title={isPlaying ? 'Tạm dừng' : 'Tiếp tục phát'}
             >
               {isPlaying ? (
-                <Pause size={18} className="fill-current text-slate-950" />
+                <Pause size={18} className="fill-current text-black" />
               ) : (
-                <Play size={18} className="fill-current text-slate-950 ml-0.5" />
+                <Play size={18} className="fill-current text-black ml-0.5" />
               )}
             </button>
 
             {/* Skip Forward / Next Episode */}
             <button
               onClick={nextChapter}
-              className="w-9 h-9 rounded-full hover:bg-slate-800/80 active:scale-95 text-slate-400 hover:text-white flex items-center justify-center transition cursor-pointer"
+              className="w-9 h-9 rounded-full hover:bg-[#282828] active:scale-95 text-[#b3b3b3] hover:text-white flex items-center justify-center transition cursor-pointer"
               title="Tập kế tiếp"
             >
               <SkipForward size={18} />
@@ -122,8 +122,8 @@ export const Player: React.FC<PlayerProps> = React.memo(({ onOpenStoryDetail }) 
                 }}
                 className={`h-9 px-2.5 sm:px-3 rounded-full text-xs font-semibold font-mono flex items-center gap-1 transition cursor-pointer border active:scale-95 ${
                   isSpeedMenuOpen
-                    ? 'bg-amber-500/20 text-amber-400 border-amber-500/40 shadow-sm shadow-amber-500/20'
-                    : 'bg-slate-800/90 hover:bg-slate-700 text-slate-200 border-slate-700/70'
+                    ? 'bg-[#1db954]/20 text-[#1ed760] border-[#1ed760]/40 shadow-sm shadow-[#1ed760]/20'
+                    : 'bg-[#242424] hover:bg-[#2a2a2a] text-[#b3b3b3] hover:text-white border-[#333333]'
                 }`}
                 title="Tốc độ phát: Bấm để chọn danh sách"
               >
@@ -136,10 +136,10 @@ export const Player: React.FC<PlayerProps> = React.memo(({ onOpenStoryDetail }) 
                     className="fixed inset-0 z-40"
                     onClick={() => setIsSpeedMenuOpen(false)}
                   />
-                  <div className="absolute bottom-full mb-2 right-0 w-44 bg-[#101726] border border-slate-700/80 rounded-2xl shadow-2xl py-1 z-50 animate-fade-in backdrop-blur-md">
-                    <div className="px-3 py-1.5 text-[11px] font-bold text-slate-400 border-b border-slate-800 uppercase tracking-wider flex items-center justify-between">
+                  <div className="absolute bottom-full mb-2 right-0 w-44 bg-[#282828] border border-[#3e3e3e] rounded-2xl shadow-2xl py-1 z-50 animate-fade-in backdrop-blur-md">
+                    <div className="px-3 py-1.5 text-[11px] font-bold text-[#b3b3b3] border-b border-[#333333] uppercase tracking-wider flex items-center justify-between">
                       <span>Tốc độ phát</span>
-                      <span className="text-[10px] text-amber-400 font-mono font-bold">{playbackSpeed}×</span>
+                      <span className="text-[10px] text-[#1ed760] font-mono font-bold">{playbackSpeed}×</span>
                     </div>
                     {SPEED_OPTIONS.map((opt) => {
                       const isSelected = playbackSpeed === opt.value;
@@ -150,15 +150,15 @@ export const Player: React.FC<PlayerProps> = React.memo(({ onOpenStoryDetail }) 
                             setPlaybackSpeed(opt.value);
                             setIsSpeedMenuOpen(false);
                           }}
-                          className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-800/90 flex items-center justify-between transition cursor-pointer ${
+                          className={`w-full text-left px-3 py-2 text-xs hover:bg-[#333333] flex items-center justify-between transition cursor-pointer ${
                             isSelected
-                              ? 'text-amber-400 font-bold bg-amber-500/10'
-                              : 'text-slate-300'
+                              ? 'text-[#1ed760] font-bold bg-[#1db954]/15'
+                              : 'text-white'
                           }`}
                         >
                           <span>{opt.label}</span>
                           {isSelected && (
-                            <span className="text-[11px] text-amber-400 font-bold">✓</span>
+                            <span className="text-[11px] text-[#1ed760] font-bold">✓</span>
                           )}
                         </button>
                       );
@@ -177,8 +177,8 @@ export const Player: React.FC<PlayerProps> = React.memo(({ onOpenStoryDetail }) 
                 }}
                 className={`w-9 h-9 rounded-full flex items-center justify-center transition cursor-pointer border active:scale-95 ${
                   sleepTimerMinutes
-                    ? 'bg-amber-500/20 text-amber-400 border-amber-500/40'
-                    : 'bg-slate-800/90 hover:bg-slate-700 text-slate-200 border-slate-700/70'
+                    ? 'bg-[#1db954]/20 text-[#1ed760] border-[#1ed760]/40'
+                    : 'bg-[#242424] hover:bg-[#2a2a2a] text-[#b3b3b3] hover:text-white border-[#333333]'
                 }`}
                 title="Hẹn giờ tắt"
               >
@@ -191,8 +191,8 @@ export const Player: React.FC<PlayerProps> = React.memo(({ onOpenStoryDetail }) 
                     className="fixed inset-0 z-40"
                     onClick={() => setIsSleepMenuOpen(false)}
                   />
-                  <div className="absolute bottom-full mb-2 right-0 w-36 bg-[#101726] border border-slate-700 rounded-2xl shadow-2xl py-1 z-50 animate-fade-in">
-                    <div className="px-3 py-1.5 text-[11px] font-bold text-slate-400 border-b border-slate-800 uppercase tracking-wider">
+                  <div className="absolute bottom-full mb-2 right-0 w-36 bg-[#282828] border border-[#3e3e3e] rounded-2xl shadow-2xl py-1 z-50 animate-fade-in">
+                    <div className="px-3 py-1.5 text-[11px] font-bold text-[#b3b3b3] border-b border-[#333333] uppercase tracking-wider">
                       Hẹn giờ tắt
                     </div>
                     {[
@@ -205,15 +205,15 @@ export const Player: React.FC<PlayerProps> = React.memo(({ onOpenStoryDetail }) 
                       <button
                         key={idx}
                         onClick={() => handleSetSleep(item.val)}
-                        className={`w-full text-left px-3 py-1.5 text-xs hover:bg-slate-800 flex items-center justify-between cursor-pointer ${
+                        className={`w-full text-left px-3 py-1.5 text-xs hover:bg-[#333333] flex items-center justify-between cursor-pointer ${
                           sleepTimerMinutes === item.val
-                            ? 'text-amber-400 font-bold'
-                            : 'text-slate-300'
+                            ? 'text-[#1ed760] font-bold'
+                            : 'text-white'
                         }`}
                       >
                         <span>{item.label}</span>
                         {sleepTimerMinutes === item.val && (
-                          <span className="text-[10px] text-amber-400">✓</span>
+                          <span className="text-[10px] text-[#1ed760]">✓</span>
                         )}
                       </button>
                     ))}

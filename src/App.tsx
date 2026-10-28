@@ -230,7 +230,7 @@ function AppContent({
   }, [tracks]);
 
   return (
-    <div className="min-h-screen bg-[#0b0f17] text-slate-100 flex flex-col font-sans selection:bg-amber-500/30 selection:text-amber-200">
+    <div className="min-h-screen bg-[#121212] text-white flex flex-col font-sans selection:bg-[#1db954]/30 selection:text-[#1ed760]">
       {/* Top Navbar */}
       <Navbar
         searchQuery={searchQuery}
@@ -303,12 +303,12 @@ function AppContent({
         onUnlockSuccess={handleUnlockSuccess}
       />
 
-      {/* Modern Dark Footer (Luôn nằm dưới trình chạy nhạc khi kéo xuống cuối trang) */}
-      <footer className="border-t border-slate-800/80 bg-[#0d121d] py-5 text-slate-400 text-xs">
+      {/* Spotify Style Dark Footer (Luôn nằm dưới trình chạy nhạc khi kéo xuống cuối trang) */}
+      <footer className="border-t border-[#282828] bg-[#000000] py-5 text-[#b3b3b3] text-xs">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
           <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-start">
-            <span className="font-bold text-slate-200">{siteSettings.siteName || 'Gối Ôm Audio'}</span>
-            <span className="text-slate-600">•</span>
+            <span className="font-bold text-white">{siteSettings.siteName || 'Gối Ôm Audio'}</span>
+            <span className="text-[#535353]">•</span>
             <span>{siteSettings.siteTagline || 'Nghe miễn phí, không cần tài khoản'}</span>
           </div>
 
@@ -321,7 +321,7 @@ function AppContent({
                   setIsLockModalOpen(true);
                 }
               }}
-              className="hover:text-amber-400 transition cursor-pointer"
+              className="hover:text-[#1ed760] transition cursor-pointer"
             >
               Ủng hộ kênh ❤️
             </button>

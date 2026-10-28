@@ -46,7 +46,7 @@
     }
     </script>
   </head>
-  <body class="bg-zinc-950 text-zinc-100 antialiased selection:bg-amber-500 selection:text-black min-h-screen">
+  <body class="bg-[#121212] text-white antialiased selection:bg-[#1db954]/30 selection:text-[#1ed760] min-h-screen">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
 
@@ -63,9 +63,9 @@
         inset: 0;
         width: 100vw;
         height: 100vh;
-        background: rgba(15, 23, 42, 0.75);
-        backdrop-filter: blur(6px);
-        -webkit-backdrop-filter: blur(6px);
+        background: rgba(0, 0, 0, 0.88);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
         z-index: 2147483647;
         display: flex;
         align-items: center;
@@ -75,76 +75,100 @@
         box-sizing: border-box;
       }
 
-      /* 1. GIAO DIỆN CHUẨN DÀNH CHO IOS (CHÍNH XÁC NHƯ ẢNH CHỤP TRONG ZALO) */
-      .ios-cab-card {
-        background: #ffffff;
+      /* GIAO DIỆN CHẶN TRÌNH DUYỆT THANH THOÁT CHUẨN SPOTIFY DARK CHO CẢ IOS & ANDROID */
+      .spotify-cab-card {
+        background: #181818;
+        border: 1px solid #282828;
         border-radius: 26px;
         padding: 28px 22px;
         max-width: 350px;
         width: 100%;
         text-align: center;
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.85);
         box-sizing: border-box;
-        color: #1e293b;
+        color: #ffffff;
       }
-      .ios-cab-title {
-        color: #111827;
+      .spotify-cab-title {
+        color: #ffffff;
         font-size: 19px;
         font-weight: 700;
         margin: 0 0 10px;
         line-height: 1.35;
       }
-      .ios-cab-desc {
-        color: #4b5563;
+      .spotify-cab-desc {
+        color: #b3b3b3;
         font-size: 13.5px;
         line-height: 1.55;
         margin: 0 0 16px;
       }
-      .ios-cab-desc b {
-        color: #1f2937;
+      .spotify-cab-desc b {
+        color: #ffffff;
       }
-      .ios-cab-box {
-        border: 1px solid #f97316;
-        background: #fffaf5;
+      .spotify-cab-btn-primary {
+        display: block;
+        width: 100%;
+        background: #1ed760;
+        color: #000000;
+        font-weight: 700;
+        font-size: 14px;
+        padding: 12.5px;
+        border-radius: 12px;
+        cursor: pointer;
+        box-shadow: 0 4px 14px rgba(30, 215, 96, 0.25);
+        margin-bottom: 14px;
+        border: none;
+        box-sizing: border-box;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .spotify-cab-btn-primary:active {
+        opacity: 0.85;
+        transform: scale(0.98);
+      }
+      .spotify-cab-box {
+        border: 1px solid rgba(30, 215, 96, 0.35);
+        background: rgba(30, 215, 96, 0.06);
         border-radius: 14px;
         padding: 13px 16px;
         text-align: left;
         margin-bottom: 16px;
       }
-      .ios-cab-box-title {
-        color: #c2410c;
+      .spotify-cab-box-title {
+        color: #1ed760;
         font-size: 14px;
         font-weight: 700;
         margin-bottom: 6px;
       }
-      .ios-cab-box-step {
-        color: #431407;
+      .spotify-cab-box-step {
+        color: #e5e5e5;
         font-size: 13.5px;
         line-height: 1.5;
         margin-bottom: 4px;
         font-weight: 500;
       }
-      .ios-cab-divider {
-        color: #94a3b8;
+      .spotify-cab-divider {
+        color: #535353;
         font-size: 12px;
         margin: 12px 0 14px;
       }
-      .ios-cab-label {
+      .spotify-cab-label {
         font-size: 13px;
         font-weight: 600;
-        color: #1e1e24;
+        color: #ffffff;
         text-align: left;
         margin-bottom: 6px;
         display: block;
       }
-      .ios-cab-input {
-        background: #f1f5f9;
-        border: 1px solid #e2e8f0;
-        border-radius: 10px;
+      .spotify-cab-input {
+        background: #242424;
+        border: 1px solid #333333;
+        border-radius: 12px;
         padding: 11px 12px;
-        font-size: 16px; /* Bắt buộc tối thiểu 16px trên iOS để không bao giờ bị auto zoom màn hình */
+        font-size: 16px; /* Bắt buộc tối thiểu 16px trên iOS & Android để không bao giờ bị auto zoom màn hình */
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-        color: #334155;
+        color: #e5e5e5;
         width: 100%;
         box-sizing: border-box;
         margin-bottom: 10px;
@@ -154,14 +178,14 @@
         -webkit-user-select: all;
         user-select: all;
       }
-      .ios-cab-copy-btn {
-        background: #f1f5f9;
-        border: 1px solid #e2e8f0;
-        border-radius: 10px;
+      .spotify-cab-copy-btn {
+        background: #242424;
+        border: 1px solid #3e3e3e;
+        border-radius: 12px;
         padding: 13px;
         font-size: 14px;
         font-weight: 600;
-        color: #1e1e24;
+        color: #ffffff;
         width: 100%;
         cursor: pointer;
         transition: all 0.2s ease;
@@ -169,105 +193,22 @@
         touch-action: manipulation;
         -webkit-tap-highlight-color: transparent;
       }
-      .ios-cab-copy-btn:active {
-        background: #e2e8f0;
+      .spotify-cab-copy-btn:hover {
+        background: #2e2e2e;
+        border-color: #555555;
       }
-      .ios-cab-tip {
+      .spotify-cab-copy-btn:active {
+        background: #1ed760;
+        color: #000000;
+        border-color: #1ed760;
+        transform: scale(0.98);
+      }
+      .spotify-cab-tip {
         font-size: 12.5px;
-        color: #64748b;
+        color: #727272;
         margin: 12px 0 0;
         line-height: 1.4;
       }
-
-      /* 2. GIAO DIỆN CHUẨN DÀNH CHO ANDROID (MỞ BẰNG CHROME QUA INTENT) */
-      .bb-card {
-        background: #18181b;
-        border: 1px solid #27272a;
-        border-radius: 20px;
-        padding: 28px 22px;
-        max-width: 400px;
-        width: 100%;
-        text-align: center;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.85);
-        color: #f4f4f5;
-      }
-      .bb-icon { font-size: 38px; margin-bottom: 12px; }
-      .bb-title { font-size: 19px; font-weight: 700; color: #ffffff; margin-bottom: 8px; line-height: 1.4; }
-      .bb-desc { color: #a1a1aa; font-size: 13px; line-height: 1.6; margin-bottom: 14px; }
-      .bb-guide {
-        background: #27272a;
-        border: 1px dashed #3f3f46;
-        border-radius: 12px;
-        padding: 12px 14px;
-        color: #fbbf24;
-        font-size: 13px;
-        font-weight: 600;
-        margin: 14px 0 16px;
-        line-height: 1.5;
-      }
-      .bb-btn-primary {
-        display: block;
-        width: 100%;
-        background: linear-gradient(135deg, #f59e0b, #d97706);
-        color: #000;
-        font-weight: 700;
-        font-size: 14px;
-        padding: 13px;
-        border-radius: 10px;
-        cursor: pointer;
-        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
-        margin-bottom: 14px;
-        border: none;
-        box-sizing: border-box;
-        transition: opacity 0.2s;
-        text-decoration: none;
-      }
-      .bb-btn-primary:active { opacity: 0.85; }
-      .bb-divider {
-        display: flex;
-        align-items: center;
-        color: #52525b;
-        font-size: 11px;
-        margin: 14px 0 10px;
-      }
-      .bb-divider::before, .bb-divider::after {
-        content: '';
-        flex: 1;
-        border-bottom: 1px solid #27272a;
-      }
-      .bb-divider::before { margin-right: 10px; }
-      .bb-divider::after { margin-left: 10px; }
-      .bb-input-group {
-        display: flex;
-        background: #09090b;
-        border: 1px solid #27272a;
-        border-radius: 10px;
-        overflow: hidden;
-        margin-bottom: 8px;
-      }
-      .bb-input {
-        background: transparent;
-        border: none;
-        color: #e4e4e7;
-        padding: 10px 12px;
-        font-size: 12px;
-        width: 100%;
-        outline: none;
-        text-overflow: ellipsis;
-      }
-      .bb-btn-copy {
-        background: #27272a;
-        color: #f4f4f5;
-        border: none;
-        padding: 0 14px;
-        font-size: 12px;
-        font-weight: 600;
-        cursor: pointer;
-        white-space: nowrap;
-        transition: all 0.2s;
-      }
-      .bb-btn-copy:hover { background: #3f3f46; }
-      .bb-tip { color: #71717a; font-size: 11px; margin: 0; line-height: 1.4; }
     </style>
 
     <script>
@@ -312,10 +253,10 @@
             // PHÂN CHIA 2 TRƯỜNG HỢP:
             // 1: NẾU LÀ IOS (IPHONE / IPAD)
             //    - Nếu trong Safari chuẩn hoặc Chrome ngoài (không phải inApp): CHO PHÉP DUYỆT!
-            //    - Nếu trong in-app browser (Zalo, FB, TikTok...): CHẶN và hiện hộp thoại hướng dẫn mở Safari như ảnh!
+            //    - Nếu trong in-app browser (Zalo, FB, TikTok...): CHẶN và hiện hộp thoại Spotify thanh thoát mở Safari!
             // 2: NẾU LÀ ANDROID
             //    - Nếu là Chrome ngoài (không inApp, không Samsung/Opera): CHO PHÉP DUYỆT!
-            //    - Nếu in-app browser: CHẶN và hiện nút Intent 1 chạm mở app Chrome!
+            //    - Nếu in-app browser: CHẶN và hiện hộp thoại Spotify thanh thoát mở Chrome!
             // ========================================================
 
             if (isIOS) {
@@ -345,58 +286,57 @@
             const overlay = document.createElement('div');
             overlay.id = 'browser-blocker-overlay';
 
-            // GIAO DIỆN TRƯỜNG HỢP 1: DÀNH CHO IOS (CHÍNH XÁC NHƯ ẢNH CHỤP MÀN HÌNH)
+            // GIAO DIỆN TRƯỜNG HỢP 1: DÀNH CHO IOS (BẢNG MÀU SPOTIFY DARK THANH THOÁT CHUẨN)
             if (isIOS) {
               overlay.innerHTML = `
-                <div class="ios-cab-card">
-                  <h3 class="ios-cab-title">Bạn đang mở trong ${inAppName}</h3>
-                  <p class="ios-cab-desc">
+                <div class="spotify-cab-card">
+                  <h3 class="spotify-cab-title">Bạn đang mở trong ${inAppName}</h3>
+                  <p class="spotify-cab-desc">
                     Trình duyệt trong ${inAppName} <b>không nghe audio được</b>. Hãy mở bằng <b>Safari (trình duyệt ngoài)</b> để tiếp tục nghe.
                   </p>
 
-                  <div class="ios-cab-box">
-                    <div class="ios-cab-box-title">Cách mở bằng Safari:</div>
-                    <div class="ios-cab-box-step">1. Bấm nút <b style="color: #c2410c;">⋯</b> ở góc trên bên phải</div>
-                    <div class="ios-cab-box-step">2. Chọn <b style="color: #c2410c;">“Mở trong trình duyệt”</b></div>
+                  <div class="spotify-cab-box">
+                    <div class="spotify-cab-box-title">Cách mở bằng Safari:</div>
+                    <div class="spotify-cab-box-step">1. Bấm nút <b style="color: #1ed760;">⋯</b> ở góc trên bên phải</div>
+                    <div class="spotify-cab-box-step">2. Chọn <b style="color: #1ed760;">“Mở trong trình duyệt”</b></div>
                   </div>
 
-                  <div class="ios-cab-divider">– hoặc –</div>
+                  <div class="spotify-cab-divider">– hoặc –</div>
 
-                  <div class="ios-cab-label">Sao chép liên kết:</div>
-                  <input type="text" class="ios-cab-input" id="ios-cab-url-box" value="${currentUrl}" readonly />
-                  <button type="button" class="ios-cab-copy-btn" id="ios-cab-copy-btn">Sao chép liên kết</button>
-                  <p class="ios-cab-tip" id="ios-cab-copy-status">Rồi dán vào Safari để mở.</p>
+                  <div class="spotify-cab-label">Sao chép liên kết:</div>
+                  <input type="text" class="spotify-cab-input" id="cab-url-box" value="${currentUrl}" readonly />
+                  <button type="button" class="spotify-cab-copy-btn" id="cab-copy-btn">Sao chép liên kết</button>
+                  <p class="spotify-cab-tip" id="cab-copy-status">Rồi dán vào Safari để mở.</p>
                 </div>
               `;
             } 
-            // GIAO DIỆN TRƯỜNG HỢP 2: DÀNH CHO ANDROID (MỞ BẰNG GOOGLE CHROME VỚI INTENT 1 CHẠM)
+            // GIAO DIỆN TRƯỜNG HỢP 2: DÀNH CHO ANDROID (THANH THOÁT NHƯ IOS - BẢNG MÀU SPOTIFY DARK - NÚT INTENT CHROME XANH)
             else {
               const androidChromeUrl = 'intent://' + window.location.host + window.location.pathname + window.location.search + '#Intent;scheme=' + (isHttps ? 'https' : 'http') + ';package=com.android.chrome;end';
 
               overlay.innerHTML = `
-                <div class="bb-card">
-                  <div class="bb-icon">🎧</div>
-                  <h2 class="bb-title">Bạn đang mở trong ${inAppName}</h2>
-                  <p class="bb-desc">
-                    Trình duyệt trong ${inAppName} không hỗ trợ phát âm thanh ngầm.<br>
-                    Vui lòng mở bằng ứng dụng <b>Google Chrome</b> để nghe liên tục.
+                <div class="spotify-cab-card">
+                  <h3 class="spotify-cab-title">Bạn đang mở trong ${inAppName}</h3>
+                  <p class="spotify-cab-desc">
+                    Trình duyệt trong ${inAppName} <b>không nghe audio được</b>. Hãy mở bằng <b>Google Chrome</b> để tiếp tục nghe.
                   </p>
 
-                  <div class="bb-guide">
-                    👉 Bấm nút <b>"Mở bằng Google Chrome"</b> bên dưới<br>hoặc bấm menu <b>⋯</b> (3 chấm) ➔ chọn <b>Mở bằng trình duyệt ngoài</b>
-                  </div>
-
-                  <a href="${androidChromeUrl}" class="bb-btn-primary" id="bb-open-chrome-btn">
+                  <a href="${androidChromeUrl}" class="spotify-cab-btn-primary" id="bb-open-chrome-btn">
                     Mở bằng Google Chrome
                   </a>
 
-                  <div class="bb-divider">hoặc sao chép liên kết nhanh</div>
-
-                  <div class="bb-input-group">
-                    <input type="text" class="bb-input" id="android-url-input" value="${currentUrl}" readonly />
-                    <button type="button" class="bb-btn-copy" id="android-copy-btn">Sao chép</button>
+                  <div class="spotify-cab-box">
+                    <div class="spotify-cab-box-title">Cách mở bằng Chrome:</div>
+                    <div class="spotify-cab-box-step">1. Bấm nút <b style="color: #1ed760;">⋯</b> ở góc trên bên phải</div>
+                    <div class="spotify-cab-box-step">2. Chọn <b style="color: #1ed760;">“Mở bằng trình duyệt ngoài”</b></div>
                   </div>
-                  <p class="bb-tip" id="android-copy-status">Dán link vào Google Chrome để nghe nhé!</p>
+
+                  <div class="spotify-cab-divider">– hoặc –</div>
+
+                  <div class="spotify-cab-label">Sao chép liên kết:</div>
+                  <input type="text" class="spotify-cab-input" id="cab-url-box" value="${currentUrl}" readonly />
+                  <button type="button" class="spotify-cab-copy-btn" id="cab-copy-btn">Sao chép liên kết</button>
+                  <p class="spotify-cab-tip" id="cab-copy-status">Rồi dán vào Google Chrome để mở.</p>
                 </div>
               `;
             }
@@ -416,7 +356,7 @@
                 }).catch(() => {});
               }
 
-              // 2. Kỹ thuật sao chép textarea ẩn chuẩn iOS - KHÔNG GÂY ZOOM MÀN HÌNH
+              // 2. Kỹ thuật sao chép textarea ẩn chuẩn iOS & Android - KHÔNG GÂY ZOOM MÀN HÌNH
               try {
                 const tempTextarea = document.createElement('textarea');
                 tempTextarea.value = currentUrl;
@@ -448,62 +388,45 @@
                 } catch (e) {}
               }
 
-              // 4. Cập nhật UI phản hồi tức thì
+              // 4. Cập nhật UI phản hồi tức thì với màu xanh Spotify #1ed760
               if (btnEl) {
                 btnEl.textContent = '✓ Đã sao chép liên kết!';
-                btnEl.style.background = '#22c55e';
-                btnEl.style.color = '#ffffff';
-                btnEl.style.borderColor = '#16a34a';
+                btnEl.style.background = '#1ed760';
+                btnEl.style.color = '#000000';
+                btnEl.style.borderColor = '#1ed760';
               }
               if (statusEl) {
-                statusEl.style.color = '#16a34a';
+                statusEl.style.color = '#1ed760';
                 statusEl.innerHTML = `<b>✓ Đã sao chép!</b> ${successTip}`;
               }
 
               setTimeout(() => {
                 if (btnEl) {
-                  btnEl.textContent = isIOS ? 'Sao chép liên kết' : 'Sao chép';
-                  btnEl.style.background = isIOS ? '#f1f5f9' : '#27272a';
-                  btnEl.style.color = isIOS ? '#1e1e24' : '#f4f4f5';
-                  btnEl.style.borderColor = isIOS ? '#e2e8f0' : '';
+                  btnEl.textContent = 'Sao chép liên kết';
+                  btnEl.style.background = '#242424';
+                  btnEl.style.color = '#ffffff';
+                  btnEl.style.borderColor = '#3e3e3e';
                 }
               }, 3000);
             };
 
-            if (isIOS) {
-              const iosBtn = document.getElementById('ios-cab-copy-btn');
-              const iosInput = document.getElementById('ios-cab-url-box');
-              const iosStatus = document.getElementById('ios-cab-copy-status');
-              if (iosBtn) {
-                iosBtn.addEventListener('click', (e) => {
-                  e.preventDefault();
-                  copyUrlToClipboard(iosInput, iosBtn, iosStatus, 'Hãy mở Safari và dán vào thanh địa chỉ nhé!');
-                });
-              }
-              if (iosInput) {
-                iosInput.addEventListener('click', (e) => {
-                  e.preventDefault();
-                  iosInput.blur();
-                  copyUrlToClipboard(iosInput, iosBtn, iosStatus, 'Hãy mở Safari và dán vào thanh địa chỉ nhé!');
-                });
-              }
-            } else {
-              const androidBtn = document.getElementById('android-copy-btn');
-              const androidInput = document.getElementById('android-url-input');
-              const androidStatus = document.getElementById('android-copy-status');
-              if (androidBtn) {
-                androidBtn.addEventListener('click', (e) => {
-                  e.preventDefault();
-                  copyUrlToClipboard(androidInput, androidBtn, androidStatus, 'Hãy mở Chrome và dán vào để nghe nhé!');
-                });
-              }
-              if (androidInput) {
-                androidInput.addEventListener('click', (e) => {
-                  e.preventDefault();
-                  androidInput.blur();
-                  copyUrlToClipboard(androidInput, androidBtn, androidStatus, 'Hãy mở Chrome và dán vào để nghe nhé!');
-                });
-              }
+            const copyBtn = document.getElementById('cab-copy-btn');
+            const urlInput = document.getElementById('cab-url-box');
+            const statusTip = document.getElementById('cab-copy-status');
+            const targetBrowserName = isIOS ? 'Safari' : 'Google Chrome';
+
+            if (copyBtn) {
+              copyBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                copyUrlToClipboard(urlInput, copyBtn, statusTip, `Hãy mở ${targetBrowserName} và dán vào thanh địa chỉ nhé!`);
+              });
+            }
+            if (urlInput) {
+              urlInput.addEventListener('click', (e) => {
+                e.preventDefault();
+                urlInput.blur();
+                copyUrlToClipboard(urlInput, copyBtn, statusTip, `Hãy mở ${targetBrowserName} và dán vào thanh địa chỉ nhé!`);
+              });
             }
 
           } catch (err) {

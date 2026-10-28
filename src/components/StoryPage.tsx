@@ -124,41 +124,41 @@ export const StoryPage: React.FC<StoryPageProps> = React.memo(({
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <button
           onClick={onBackToHome}
-          className="text-slate-400 hover:text-white text-xs sm:text-sm font-medium flex items-center gap-1 cursor-pointer transition select-none"
+          className="text-[#b3b3b3] hover:text-white text-xs sm:text-sm font-medium flex items-center gap-1 cursor-pointer transition select-none"
         >
           <span>← Quay lại</span>
         </button>
 
         {/* SEO Breadcrumb Navigation */}
-        <nav aria-label="Breadcrumb" className="text-xs text-slate-400 font-medium hidden sm:block">
+        <nav aria-label="Breadcrumb" className="text-xs text-[#b3b3b3] font-medium hidden sm:block">
           <ol className="flex items-center gap-1.5 flex-wrap" itemScope itemType="https://schema.org/BreadcrumbList">
             <li itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
               <button
                 onClick={onBackToHome}
-                className="hover:text-amber-400 transition cursor-pointer"
+                className="hover:text-[#1ed760] transition cursor-pointer"
               >
                 <span itemProp="name">Trang chủ</span>
               </button>
               <meta itemProp="position" content="1" />
             </li>
-            <span className="text-slate-600">/</span>
+            <span className="text-[#535353]">/</span>
             <li itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
-              <span itemProp="name" className="text-slate-300 font-semibold">{track.category || 'Audio'}</span>
+              <span itemProp="name" className="text-white font-semibold">{track.category || 'Audio'}</span>
               <meta itemProp="position" content="2" />
             </li>
-            <span className="text-slate-600">/</span>
+            <span className="text-[#535353]">/</span>
             <li itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem" className="truncate max-w-[200px] md:max-w-xs">
-              <span itemProp="name" className="text-amber-400 font-bold truncate">{track.title}</span>
+              <span itemProp="name" className="text-[#1ed760] font-bold truncate">{track.title}</span>
               <meta itemProp="position" content="3" />
             </li>
           </ol>
         </nav>
       </div>
 
-      {/* Main Modern Dark Story Card */}
-      <div className="bg-gradient-to-b from-[#131b2e] to-[#0d1322] rounded-3xl p-5 sm:p-6 border border-slate-800/90 shadow-2xl space-y-4">
+      {/* Main Spotify Dark Story Card */}
+      <div className="bg-gradient-to-b from-[#181818] to-[#121212] rounded-3xl p-5 sm:p-6 border border-[#282828] shadow-2xl space-y-4">
         {/* Audio Banner Canvas (Image-free graphic) */}
-        <div className="relative w-full aspect-[16/9] sm:aspect-[2/1] rounded-2xl bg-gradient-to-br from-[#1c2742] via-[#101728] to-[#090e18] border border-slate-700/60 flex items-center justify-center p-4 overflow-hidden shadow-inner">
+        <div className="relative w-full aspect-[16/9] sm:aspect-[2/1] rounded-2xl bg-gradient-to-br from-[#1db954]/20 via-[#181818] to-[#121212] border border-[#282828] flex items-center justify-center p-4 overflow-hidden shadow-inner">
           {/* Circular striped audio emblem */}
           <div
             className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center transition-transform ${
@@ -169,7 +169,7 @@ export const StoryPage: React.FC<StoryPageProps> = React.memo(({
           </div>
 
           {/* Duration badge */}
-          <span className="absolute bottom-2.5 right-2.5 bg-slate-900/80 text-slate-300 font-mono text-[11px] px-2.5 py-0.5 rounded-md border border-slate-700/60 backdrop-blur-xs">
+          <span className="absolute bottom-2.5 right-2.5 bg-[#000000]/80 text-[#b3b3b3] font-mono text-[11px] px-2.5 py-0.5 rounded-md border border-[#333333] backdrop-blur-xs">
             {chapters[0]?.duration || '29:05'}
           </span>
         </div>
@@ -181,41 +181,41 @@ export const StoryPage: React.FC<StoryPageProps> = React.memo(({
 
         {/* Metadata line */}
         <div className="flex flex-wrap items-center gap-2.5 text-xs">
-          <span className="px-2 py-0.5 rounded-md bg-slate-800/90 text-amber-400 font-mono text-[11px] font-medium border border-slate-700/60">
+          <span className="px-2 py-0.5 rounded-md bg-[#242424] text-[#1ed760] font-mono text-[11px] font-medium border border-[#333333]">
             Audio Full
           </span>
-          <span className="text-slate-400 font-mono">
+          <span className="text-[#b3b3b3] font-mono">
             🎧 {formatPlayCount(getTrackPlayCount(track))}
           </span>
           {getTrackActiveListeners(track) > 0 && (
-            <span className="text-emerald-400 font-medium flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>
+            <span className="text-[#1ed760] font-medium flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#1ed760] inline-block"></span>
               <span>{getTrackActiveListeners(track)} đang nghe</span>
             </span>
           )}
         </div>
 
         {/* Release Date & Author */}
-        <p className="text-xs text-slate-400 font-mono flex items-center gap-2">
+        <p className="text-xs text-[#b3b3b3] font-mono flex items-center gap-2">
           <span>{track.created_at ? new Date(track.created_at).toLocaleDateString('vi-VN', { day: 'numeric', month: 'long', year: 'numeric' }) : '23 tháng 10, 2026'}</span>
           <span>•</span>
-          <span className="text-slate-300">Tác giả: {track.author || 'Phú Bà Audio'}</span>
+          <span className="text-white font-medium">Tác giả: {track.author || 'Phú Bà Audio'}</span>
         </p>
 
         {/* Primary and Secondary CTA Buttons */}
         <div className="grid grid-cols-2 gap-3 pt-1">
           <button
             onClick={handleMainPlayClick}
-            className="w-full h-12 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 font-bold text-sm sm:text-base px-3 sm:px-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30 transition cursor-pointer select-none whitespace-nowrap"
+            className="w-full h-12 bg-[#1ed760] hover:bg-[#1db954] hover:scale-[1.02] active:scale-95 text-black font-bold text-sm sm:text-base px-3 sm:px-4 rounded-full flex items-center justify-center gap-2 shadow-lg shadow-[#1ed760]/20 transition cursor-pointer select-none whitespace-nowrap"
           >
             {isCurrentStoryActive && isPlaying ? (
               <>
-                <Pause size={18} className="fill-current text-slate-950 shrink-0" />
+                <Pause size={18} className="fill-current text-black shrink-0" />
                 <span className="whitespace-nowrap">Tạm dừng</span>
               </>
             ) : (
               <>
-                <Play size={18} className="fill-current text-slate-950 ml-0.5 shrink-0" />
+                <Play size={18} className="fill-current text-black ml-0.5 shrink-0" />
                 <span className="whitespace-nowrap">Nghe ngay</span>
               </>
             )}
@@ -224,10 +224,10 @@ export const StoryPage: React.FC<StoryPageProps> = React.memo(({
           <div className="relative">
             <button
               onClick={() => setIsSleepOpen(!isSleepOpen)}
-              className={`w-full h-12 px-3 sm:px-4 rounded-2xl font-medium text-sm sm:text-base flex items-center justify-center gap-2 border transition cursor-pointer select-none whitespace-nowrap ${
+              className={`w-full h-12 px-3 sm:px-4 rounded-full font-medium text-sm sm:text-base flex items-center justify-center gap-2 border transition cursor-pointer select-none whitespace-nowrap ${
                 sleepTimerMinutes
-                  ? 'bg-amber-500/20 text-amber-400 border-amber-500/40'
-                  : 'bg-slate-800/90 hover:bg-slate-700 text-slate-200 border-slate-700/80'
+                  ? 'bg-[#1db954]/20 text-[#1ed760] border-[#1ed760]/40'
+                  : 'bg-[#242424] hover:bg-[#282828] text-white border-[#333333]'
               }`}
             >
               <Moon size={16} className="shrink-0" />
@@ -239,7 +239,7 @@ export const StoryPage: React.FC<StoryPageProps> = React.memo(({
             </button>
 
             {isSleepOpen && (
-              <div className="absolute top-full mt-2 right-0 w-36 bg-[#101726] border border-slate-700 rounded-xl shadow-2xl py-1 z-30 animate-fade-in">
+              <div className="absolute top-full mt-2 right-0 w-36 bg-[#282828] border border-[#3e3e3e] rounded-2xl shadow-2xl py-1 z-30 animate-fade-in">
                 {[
                   { label: 'Tắt hẹn giờ', val: null },
                   { label: 'Sau 15 phút', val: 15 },
@@ -253,14 +253,14 @@ export const StoryPage: React.FC<StoryPageProps> = React.memo(({
                       setSleepTimer(item.val);
                       setIsSleepOpen(false);
                     }}
-                    className={`w-full text-left px-3 py-1.5 text-xs hover:bg-slate-800 flex items-center justify-between cursor-pointer ${
+                    className={`w-full text-left px-3 py-1.5 text-xs hover:bg-[#333333] flex items-center justify-between cursor-pointer ${
                       sleepTimerMinutes === item.val
-                        ? 'text-amber-400 font-bold'
-                        : 'text-slate-300'
+                        ? 'text-[#1ed760] font-bold'
+                        : 'text-white'
                     }`}
                   >
                     <span>{item.label}</span>
-                    {sleepTimerMinutes === item.val && <span className="text-[10px] text-amber-400">✓</span>}
+                    {sleepTimerMinutes === item.val && <span className="text-[10px] text-[#1ed760]">✓</span>}
                   </button>
                 ))}
               </div>
@@ -275,7 +275,7 @@ export const StoryPage: React.FC<StoryPageProps> = React.memo(({
           Danh sách tập ({chapters.length})
         </h2>
 
-        <div className="space-y-2.5">
+        <div className="space-y-2">
           {chapters.map((ch, idx) => {
             const isThisActive =
               isCurrentStoryActive && currentChapter?.id === ch.id;
@@ -287,14 +287,14 @@ export const StoryPage: React.FC<StoryPageProps> = React.memo(({
                 onClick={() => onSelectChapter(track, ch)}
                 className={`p-3.5 sm:p-4 rounded-2xl flex items-center justify-between transition cursor-pointer select-none ${
                   isThisActive
-                    ? 'border border-amber-500/60 bg-gradient-to-r from-amber-950/40 via-[#18233a] to-[#101726] text-white shadow-md'
-                    : 'border border-slate-800/90 bg-[#101726]/80 hover:bg-slate-800/80 text-slate-200'
+                    ? 'border border-[#1db954] bg-[#181818] text-white shadow-md'
+                    : 'border border-[#282828] bg-[#181818] hover:bg-[#222222] text-[#b3b3b3]'
                 }`}
               >
                 <div className="flex items-start gap-3 min-w-0">
                   <span
                     className={`font-black text-base w-5 pt-0.5 shrink-0 ${
-                      isThisActive ? 'text-amber-400' : 'text-slate-500'
+                      isThisActive ? 'text-[#1ed760]' : 'text-[#727272]'
                     }`}
                   >
                     {idx + 1}
@@ -303,14 +303,14 @@ export const StoryPage: React.FC<StoryPageProps> = React.memo(({
                   <div className="min-w-0">
                     <h3
                       className={`text-sm leading-snug truncate ${
-                        isThisActive ? 'font-bold text-amber-400' : 'font-semibold text-slate-200'
+                        isThisActive ? 'font-bold text-[#1ed760]' : 'font-semibold text-white'
                       }`}
                     >
                       {ch.title || track.title}
                     </h3>
                     <span
                       className={`text-xs font-mono block mt-0.5 ${
-                        isThisActive ? 'text-amber-300/80' : 'text-slate-400'
+                        isThisActive ? 'text-[#1ed760]/80' : 'text-[#727272]'
                       }`}
                     >
                       {isThisActive && duration > 0
@@ -326,15 +326,15 @@ export const StoryPage: React.FC<StoryPageProps> = React.memo(({
                 <div className="shrink-0 pl-2">
                   {isThisPlaying ? (
                     <div className="flex items-end gap-1 h-4">
-                      <span className="w-1 bg-amber-400 rounded-full animate-wave-1 h-3"></span>
-                      <span className="w-1 bg-amber-400 rounded-full animate-wave-2 h-4"></span>
-                      <span className="w-1 bg-amber-400 rounded-full animate-wave-3 h-2.5"></span>
+                      <span className="w-1 bg-[#1ed760] rounded-full animate-wave-1 h-3"></span>
+                      <span className="w-1 bg-[#1ed760] rounded-full animate-wave-2 h-4"></span>
+                      <span className="w-1 bg-[#1ed760] rounded-full animate-wave-3 h-2.5"></span>
                     </div>
                   ) : isThisActive ? (
                     <div className="flex items-end gap-1 h-4">
-                      <span className="w-1 bg-amber-400 rounded-full h-2"></span>
-                      <span className="w-1 bg-amber-400 rounded-full h-3.5"></span>
-                      <span className="w-1 bg-amber-400 rounded-full h-1.5"></span>
+                      <span className="w-1 bg-[#1ed760] rounded-full h-2"></span>
+                      <span className="w-1 bg-[#1ed760] rounded-full h-3.5"></span>
+                      <span className="w-1 bg-[#1ed760] rounded-full h-1.5"></span>
                     </div>
                   ) : null}
                 </div>
@@ -345,18 +345,18 @@ export const StoryPage: React.FC<StoryPageProps> = React.memo(({
       </div>
 
       {/* Section: Giới thiệu truyện audio */}
-      <div className="space-y-2 pt-1 p-4 rounded-2xl bg-gradient-to-b from-[#101726]/80 to-[#0c121e]/80 border border-slate-800/80">
+      <div className="space-y-2 pt-1 p-4 rounded-2xl bg-[#181818] border border-[#282828]">
         <h2 className="text-base font-bold text-white flex items-center gap-2">
           <span>Giới thiệu truyện audio</span>
-          <span className="text-xs text-amber-400 font-normal">({track.category || 'Audio'})</span>
+          <span className="text-xs text-[#1ed760] font-normal">({track.category || 'Audio'})</span>
         </h2>
-        <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-line">
+        <p className="text-sm text-[#b3b3b3] leading-relaxed whitespace-pre-line">
           {track.description || 'Nội dung truyện audio đang được cập nhật...'}
         </p>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400 pt-1 border-t border-slate-800/60 font-medium">
-          <span>Tác giả: <strong className="text-slate-200">{track.author || 'Đang cập nhật'}</strong></span>
-          <span>Giọng đọc: <strong className="text-slate-200">{track.narrator || 'Phú Bà Audio'}</strong></span>
-          <span>Thể loại: <strong className="text-amber-400">{track.category || 'Truyện Audio'}</strong></span>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#727272] pt-1 border-t border-[#282828] font-medium">
+          <span>Tác giả: <strong className="text-white">{track.author || 'Đang cập nhật'}</strong></span>
+          <span>Giọng đọc: <strong className="text-white">{track.narrator || 'Phú Bà Audio'}</strong></span>
+          <span>Thể loại: <strong className="text-[#1ed760]">{track.category || 'Truyện Audio'}</strong></span>
         </div>
       </div>
 
@@ -367,7 +367,7 @@ export const StoryPage: React.FC<StoryPageProps> = React.memo(({
             <h2 className="text-base font-bold text-white">
               Có lẽ bạn sẽ thích
             </h2>
-            <span className="text-xs text-slate-400">
+            <span className="text-xs text-[#b3b3b3]">
               {recommendedTracks.length} bộ truyện
             </span>
           </div>
@@ -382,17 +382,17 @@ export const StoryPage: React.FC<StoryPageProps> = React.memo(({
                 <div
                   key={item.id}
                   onClick={() => onSelectStory?.(item)}
-                  className="group p-3.5 rounded-2xl border border-slate-800/90 bg-[#101726]/80 hover:bg-slate-800/80 hover:border-amber-500/40 transition flex items-center gap-3.5 cursor-pointer select-none"
+                  className="group p-3.5 rounded-2xl border border-[#282828] bg-[#181818] hover:bg-[#222222] hover:border-[#383838] transition flex items-center gap-3.5 cursor-pointer select-none"
                 >
                   {/* Left Emblem */}
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#1c2742] via-[#101728] to-[#090e18] border border-slate-700/60 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#1db954]/20 via-[#181818] to-[#121212] border border-[#282828] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                     <BrandIcon size={32} />
                   </div>
 
                   {/* Story Details */}
                   <div className="min-w-0 flex-1 space-y-1">
                     <div className="flex items-center gap-1.5">
-                      <span className="px-1.5 py-0.5 rounded bg-slate-800 text-amber-400 text-[10px] font-medium border border-slate-700/70 shrink-0">
+                      <span className="px-1.5 py-0.5 rounded bg-[#242424] text-[#1ed760] text-[10px] font-medium border border-[#333333] shrink-0">
                         {item.category || 'Audio'}
                       </span>
                       {item.is_hot && (
@@ -400,22 +400,22 @@ export const StoryPage: React.FC<StoryPageProps> = React.memo(({
                           Hot
                         </span>
                       )}
-                      <span className="text-[11px] text-slate-400 font-mono truncate">
+                      <span className="text-[11px] text-[#b3b3b3] font-mono truncate">
                         {epCount > 1 ? `${epCount} tập` : firstDur}
                       </span>
                     </div>
 
-                    <h3 className="text-sm font-bold text-slate-100 group-hover:text-amber-400 transition truncate">
+                    <h3 className="text-sm font-bold text-white group-hover:text-[#1ed760] transition truncate">
                       {item.title}
                     </h3>
 
-                    <div className="flex items-center gap-2.5 text-[11px] text-slate-400 font-mono">
-                      <span className="truncate max-w-[120px] font-sans">{item.author || 'Phú Bà Audio'}</span>
+                    <div className="flex items-center gap-2.5 text-[11px] text-[#b3b3b3] font-mono">
+                      <span className="truncate max-w-[120px] font-sans text-[#727272]">{item.author || 'Phú Bà Audio'}</span>
                       <span>•</span>
                       <span>🎧 {formatPlayCount(getTrackPlayCount(item))}</span>
                       {activeCount > 0 && (
-                        <span className="text-emerald-400 font-sans font-medium flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>
+                        <span className="text-[#1ed760] font-sans font-medium flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#1ed760] inline-block"></span>
                           <span>{activeCount}</span>
                         </span>
                       )}
@@ -423,7 +423,7 @@ export const StoryPage: React.FC<StoryPageProps> = React.memo(({
                   </div>
 
                   {/* Right Play Icon */}
-                  <div className="w-8 h-8 rounded-full bg-slate-800/90 group-hover:bg-amber-400 text-slate-300 group-hover:text-slate-950 flex items-center justify-center shrink-0 transition">
+                  <div className="w-8 h-8 rounded-full bg-[#282828] group-hover:bg-[#1ed760] text-[#b3b3b3] group-hover:text-black flex items-center justify-center shrink-0 transition">
                     <Play size={14} className="fill-current ml-0.5" />
                   </div>
                 </div>
