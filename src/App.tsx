@@ -6,7 +6,8 @@ import {
   getLocalTracks,
   isDailyUnlockedToday, 
   getSiteSettings,
-  updateFavicon
+  updateFavicon,
+  recordClientVisit
 } from './services/api';
 import { getStoryPath, findTrackBySlugOrId, updateSEOMetadata } from './services/seo';
 import { Navbar } from './components/Navbar';
@@ -92,6 +93,11 @@ function AppContent({
       }
 
       setCurrentPath(pathname);
+
+      // Ghi nhận traffic đo lường khách truy cập (trừ trang quản trị)
+      if (!pathname.includes('admin') && !pathname.includes('quan-tri')) {
+        recordClientVisit(pathname, document.referrer, window.innerWidth);
+      }
 
       const cleanSegment = pathname.replace(/^\/+/, '').replace(/\/+$/, '').trim();
       const lowerSegment = cleanSegment.toLowerCase();

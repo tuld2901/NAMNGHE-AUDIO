@@ -57,6 +57,12 @@ import {
   detectAudioDurationSync,
   detectAudioDurationSecondsFast
 } from './server-db';
+import {
+  recordTrafficVisit,
+  recordTrafficUnlockClick,
+  getTrafficAnalyticsReport,
+  resetTrafficData
+} from './server-traffic';
 
 async function startServer() {
   const app = express();
@@ -1044,7 +1050,40 @@ async function startServer() {
   app.post('/api/affiliates/links/:id/click', (req, res) => {
     try {
       incrementAffiliateClick(req.params.id);
+      recordTrafficUnlockClick();
       res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // --- TRAFFIC ANALYTICS & VISITOR MEASUREMENT API ---
+  app.post('/api/traffic/visit', (req, res) => {
+    try {
+      recordTrafficVisit(req, {
+        path: req.body?.path,
+        referrer: req.body?.referrer,
+        screenWidth: req.body?.screenWidth
+      });
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get('/api/traffic/stats', (_req, res) => {
+    try {
+      const stats = getTrafficAnalyticsReport();
+      res.json(stats);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post('/api/traffic/reset', (_req, res) => {
+    try {
+      const result = resetTrafficData();
+      res.json(result);
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
@@ -1502,6 +1541,8 @@ ${urlsXml}
           .trim()
           .toLowerCase();
 
+        let matchedTrackThumb = '';
+
         if (cleanSlug && cleanSlug !== 'admin' && cleanSlug !== 'quan-tri' && cleanSlug !== 'system-secret-admin') {
           const tracks = await getTracks();
           const matched = tracks.find(
@@ -1512,6 +1553,7 @@ ${urlsXml}
           );
 
           if (matched) {
+            matchedTrackThumb = matched.thumb_url || '';
             const storySlug = slugifyServer(matched.title) || matched.id;
             pageTitle = `${matched.title} (Audio Full) - ${brandName}`;
             pageDesc = matched.description
@@ -1535,6 +1577,12 @@ ${urlsXml}
 
         const escapeHtml = (str: string) =>
           str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+        const rawOgImage = matchedTrackThumb || settings.ogImage || settings.logoUrl || '';
+        let fullOgImage = '';
+        if (rawOgImage) {
+          fullOgImage = rawOgImage.startsWith('http') ? rawOgImage : `${baseUrl}${rawOgImage.startsWith('/') ? '' : '/'}${rawOgImage}`;
+        }
 
         const bootstrapJson = JSON.stringify({
           tracks: getTracksSync(),
@@ -1564,12 +1612,20 @@ ${urlsXml}
             `<meta property="og:url" content="${escapeHtml(canonicalUrl)}" />`
           )
           .replace(
+            /<meta property="og:image" content="[^"]*"\s*\/?>/i,
+            fullOgImage ? `<meta property="og:image" content="${escapeHtml(fullOgImage)}" />` : ''
+          )
+          .replace(
             /<meta name="twitter:title" content="[^"]*"\s*\/?>/i,
             `<meta name="twitter:title" content="${escapeHtml(pageTitle)}" />`
           )
           .replace(
             /<meta name="twitter:description" content="[^"]*"\s*\/?>/i,
             `<meta name="twitter:description" content="${escapeHtml(pageDesc)}" />`
+          )
+          .replace(
+            /<meta name="twitter:image" content="[^"]*"\s*\/?>/i,
+            fullOgImage ? `<meta name="twitter:image" content="${escapeHtml(fullOgImage)}" />` : ''
           )
           .replace(
             /<link rel="canonical" href="[^"]*"\s*\/?>/i,

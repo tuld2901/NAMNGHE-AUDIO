@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Lock, ShieldCheck, Upload, Image as ImageIcon, Plus, 
   Trash2, Edit3, CheckCircle2, AlertCircle, Database, RefreshCw, 
   ArrowLeft, ExternalLink, Play, Copy, Check, Shuffle, Sparkles,
-  Sliders, Globe, Palette, BookmarkCheck, Folder, FolderPlus, Layers,
+  Sliders, Globe, Palette, BookmarkCheck, Folder, FolderPlus, Layers, Share2,
   AlertTriangle, Power, Filter, Search, Code2, Terminal, Download, PlayCircle,
   CheckSquare, Square, Zap, Users, UserPlus, Key, Eye, EyeOff,
-  HardDrive, Archive, FileJson, FileAudio, RotateCcw, Server, Clock
+  HardDrive, Archive, FileJson, FileAudio, RotateCcw, Server, Clock, Activity,
+  ChevronDown, LayoutGrid, Wrench, Radio
 } from 'lucide-react';
 import { Track, Chapter, AffiliateItem, AffiliateCategory, SiteSettings, AdminAccount } from '../types';
 import { getStoryPath } from '../services/seo';
@@ -61,8 +62,12 @@ import {
   deleteServerSnapshotApi,
   normalizeAllAudioSlugsOnServer,
   cleanupOrphanedFilesOnServer,
-  deleteSingleAudioFileOnServer
+  deleteSingleAudioFileOnServer,
+  fetchTrafficAnalytics,
+  resetTrafficAnalyticsOnServer,
+  TrafficAnalyticsResponse
 } from '../services/api';
+import { AdminTraffic } from './AdminTraffic';
 
 interface AdminProps {
   tracks: Track[];
@@ -90,7 +95,82 @@ export const Admin: React.FC<AdminProps> = ({
   const [isAuthLoading, setIsAuthLoading] = useState<boolean>(false);
 
   // Active View in Admin
-  const [activeTab, setActiveTab] = useState<'manage' | 'add' | 'affiliate' | 'settings' | 'accounts' | 'backup' | 'api' | 'sql'>('manage');
+  const [activeTab, setActiveTab] = useState<'manage' | 'traffic' | 'add' | 'affiliate' | 'settings' | 'accounts' | 'backup' | 'api' | 'sql'>('manage');
+
+  // Traffic Analytics State (Server-backed)
+  const [trafficStats, setTrafficStats] = useState<TrafficAnalyticsResponse | null>(null);
+  const [isLoadingTraffic, setIsLoadingTraffic] = useState<boolean>(false);
+
+  const loadTrafficStats = async () => {
+    setIsLoadingTraffic(true);
+    try {
+      const stats = await fetchTrafficAnalytics();
+      if (stats) setTrafficStats(stats);
+    } finally {
+      setIsLoadingTraffic(false);
+    }
+  };
+
+  useEffect(() => {
+    loadTrafficStats();
+  }, []);
+
+  const handleResetTraffic = () => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Xác Nhận Xóa Lịch Sử Đo Lường Traffic',
+      message: 'Hệ thống sẽ xóa toàn bộ số liệu lượt xem trang, khách truy cập duy nhất, phân bổ thiết bị và nhật ký truy cập để bắt đầu đo lường lại từ đầu.\n\nBạn có chắc chắn muốn xóa không?',
+      confirmLabel: 'Xóa Toàn Bộ Lịch Sử Traffic',
+      isDestructive: true,
+      onConfirm: async () => {
+        setIsLoadingTraffic(true);
+        try {
+          const res = await resetTrafficAnalyticsOnServer();
+          if (res.success) {
+            await loadTrafficStats();
+          }
+        } finally {
+          setIsLoadingTraffic(false);
+        }
+      }
+    });
+  };
+
+  // Navigation Bar State: 'compact' (Modern 7-tab bar with Dropdown) or 'grouped' (4 Scientific Categorized Blocks)
+  const [navViewMode, setNavViewMode] = useState<'compact' | 'grouped'>(() => {
+    try {
+      return (localStorage.getItem('phuba_admin_nav_mode') as 'compact' | 'grouped') || 'compact';
+    } catch {
+      return 'compact';
+    }
+  });
+  const [isTechDropdownOpen, setIsTechDropdownOpen] = useState<boolean>(false);
+  const techDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (techDropdownRef.current && !techDropdownRef.current.contains(e.target as Node)) {
+        setIsTechDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const isTechTabActive = activeTab === 'backup' || activeTab === 'api' || activeTab === 'sql';
+  const getActiveTechLabel = () => {
+    if (activeTab === 'backup') return 'Backup Dữ Liệu';
+    if (activeTab === 'api') return 'Cổng API Truyện';
+    if (activeTab === 'sql') return 'Supabase SQL';
+    return 'Công Cụ Kỹ Thuật';
+  };
+
+  const handleToggleNavMode = (mode: 'compact' | 'grouped') => {
+    setNavViewMode(mode);
+    try {
+      localStorage.setItem('phuba_admin_nav_mode', mode);
+    } catch {}
+  };
 
   // Admin Accounts Management State (Server-backed)
   const [adminAccounts, setAdminAccounts] = useState<AdminAccount[]>(() => getAdminAccountsCache());
@@ -526,6 +606,7 @@ export const Admin: React.FC<AdminProps> = ({
   const [logoUploading, setLogoUploading] = useState<boolean>(false);
   const [faviconUploading, setFaviconUploading] = useState<boolean>(false);
   const [bannerImageUploading, setBannerImageUploading] = useState<boolean>(false);
+  const [ogImageUploading, setOgImageUploading] = useState<boolean>(false);
 
   useEffect(() => {
     setSettingsForm(siteSettings);
@@ -569,31 +650,31 @@ export const Admin: React.FC<AdminProps> = ({
     onConfirm: () => void;
   } | null>(null);
 
-  const handleBannerImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleOgImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setBannerImageUploading(true);
+    setOgImageUploading(true);
     try {
       const url = await uploadCoverImage(file);
-      const updated = { ...settingsForm, heroBannerImage: url };
+      const updated = { ...settingsForm, ogImage: url };
       setSettingsForm(updated);
       const saved = await saveSiteSettings(updated);
       onUpdateSiteSettings(saved);
-      setSettingsSaveMsg('Đã tải ảnh Banner lên Server và lưu thành công!');
+      setSettingsSaveMsg('Đã tải ảnh Open Graph (Thumbnail mạng xã hội) lên Server và lưu thành công!');
       setTimeout(() => setSettingsSaveMsg(null), 3500);
     } catch (err: any) {
-      setSettingsSaveMsg('Lỗi tải ảnh Banner lên Server: ' + err.message);
+      setSettingsSaveMsg('Lỗi tải ảnh Open Graph lên Server: ' + err.message);
     } finally {
-      setBannerImageUploading(false);
+      setOgImageUploading(false);
     }
   };
 
-  const handleRemoveBannerImage = async () => {
-    const updated = { ...settingsForm, heroBannerImage: '' };
+  const handleRemoveOgImage = async () => {
+    const updated = { ...settingsForm, ogImage: '' };
     setSettingsForm(updated);
     const saved = await saveSiteSettings(updated);
     onUpdateSiteSettings(saved);
-    setSettingsSaveMsg('Đã xóa ảnh nền Banner trên Server!');
+    setSettingsSaveMsg('Đã xóa ảnh Open Graph trên Server!');
     setTimeout(() => setSettingsSaveMsg(null), 3000);
   };
 
@@ -1562,121 +1643,585 @@ export const Admin: React.FC<AdminProps> = ({
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-[#282828] pb-3 flex-wrap">
-        <button
-          onClick={() => {
-            setActiveTab('manage');
-            resetForm();
-          }}
-          className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition cursor-pointer ${
-            activeTab === 'manage'
-              ? 'bg-[#1ed760] text-black font-bold shadow-md shadow-[#1ed760]/20'
-              : 'bg-[#242424]/60 text-[#d1d1d1] hover:bg-[#242424]'
-          }`}
-        >
-          <span>Danh Sách Truyện ({tracks.length})</span>
-        </button>
+      {/* SCIENTIFIC BALANCED CMS NAVIGATION MENU */}
+      <div className="space-y-3">
+        {/* Navigation Toolbar: Title & Style Switcher */}
+        <div className="flex items-center justify-between gap-3 px-1 flex-wrap">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#8e8e8e] flex items-center gap-1.5">
+              <span>Menu Chức Năng Quản Trị</span>
+              <span className="px-1.5 py-0.5 rounded text-[10px] bg-[#242424] text-[#1ed760] font-mono border border-[#333333]">
+                9 Module
+              </span>
+            </span>
+          </div>
 
-        <button
-          onClick={() => {
-            resetForm();
-            setActiveTab('add');
-          }}
-          className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition cursor-pointer ${
-            activeTab === 'add'
-              ? 'bg-[#1ed760] text-black font-bold shadow-md shadow-[#1ed760]/20'
-              : 'bg-[#242424]/60 text-[#d1d1d1] hover:bg-[#242424]'
-          }`}
-        >
-          <Plus size={16} />
-          <span>{editingTrackId ? 'Chỉnh Sửa Truyện' : 'Thêm Truyện Mới'}</span>
-        </button>
+          {/* View Mode Toggle: Menu Gọn (Default) vs Lưới 4 Nhóm */}
+          <div className="inline-flex p-0.5 bg-[#181818] rounded-xl border border-[#282828] text-xs">
+            <button
+              type="button"
+              onClick={() => handleToggleNavMode('compact')}
+              className={`px-3 py-1 rounded-lg font-medium transition cursor-pointer flex items-center gap-1.5 ${
+                navViewMode === 'compact'
+                  ? 'bg-[#282828] text-[#1ed760] font-bold shadow-sm'
+                  : 'text-[#8e8e8e] hover:text-white'
+              }`}
+              title="Menu 1 hàng ngang cân đối có Dropdown Kỹ Thuật"
+            >
+              <Sliders size={13} />
+              <span>Thanh Menu Gọn</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleToggleNavMode('grouped')}
+              className={`px-3 py-1 rounded-lg font-medium transition cursor-pointer flex items-center gap-1.5 ${
+                navViewMode === 'grouped'
+                  ? 'bg-[#282828] text-[#1ed760] font-bold shadow-sm'
+                  : 'text-[#8e8e8e] hover:text-white'
+              }`}
+              title="Chia theo 4 nhóm khối chức năng khoa học đều nhau"
+            >
+              <LayoutGrid size={13} />
+              <span>Lưới 4 Nhóm</span>
+            </button>
+          </div>
+        </div>
 
-        <button
-          onClick={() => setActiveTab('affiliate')}
-          className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition cursor-pointer ${
-            activeTab === 'affiliate'
-              ? 'bg-[#1ed760] text-black font-bold shadow-md shadow-[#1ed760]/20'
-              : 'bg-[#242424]/60 text-[#d1d1d1] hover:bg-[#242424]'
-          }`}
-        >
-          <Shuffle size={16} />
-          <span>Danh Sách Affiliate Random ({affiliateList.length})</span>
-        </button>
+        {/* MODE 1: THANH MENU GỌN GÀNG (7 NÚT CÂN ĐỐI 1 HÀNG TRÊN DESKTOP) */}
+        {navViewMode === 'compact' && (
+          <div className="relative">
+            {/* Desktop / Laptop (lg+): 7 nút đều nhau 1 hàng ngang duy nhất */}
+            <div className="hidden lg:flex items-center gap-2 p-1.5 bg-[#181818] rounded-2xl border border-[#282828] shadow-lg">
+              {/* 1. Danh Sách Truyện */}
+              <button
+                onClick={() => {
+                  setActiveTab('manage');
+                  resetForm();
+                  setIsTechDropdownOpen(false);
+                }}
+                className={`flex-1 h-11 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer select-none text-center ${
+                  activeTab === 'manage'
+                    ? 'bg-[#1ed760] text-black shadow-md shadow-[#1ed760]/20 font-bold'
+                    : 'bg-[#242424]/60 text-[#d1d1d1] hover:bg-[#282828] hover:text-white'
+                }`}
+              >
+                <Radio size={16} className={activeTab === 'manage' ? 'text-black' : 'text-[#1ed760]'} />
+                <span className="truncate">Danh Sách Truyện ({tracks.length})</span>
+              </button>
 
-        <button
-          onClick={() => {
-            setActiveTab('settings');
-            loadSettingsFromServer();
-          }}
-          className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition cursor-pointer ${
-            activeTab === 'settings'
-              ? 'bg-[#1ed760] text-black font-bold shadow-md shadow-[#1ed760]/20'
-              : 'bg-[#242424]/60 text-[#d1d1d1] hover:bg-[#242424]'
-          }`}
-        >
-          <Sliders size={16} />
-          <span>Cài Đặt Website & Banner</span>
-        </button>
+              {/* 2. Thêm Truyện Mới */}
+              <button
+                onClick={() => {
+                  resetForm();
+                  setActiveTab('add');
+                  setIsTechDropdownOpen(false);
+                }}
+                className={`flex-1 h-11 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer select-none text-center ${
+                  activeTab === 'add'
+                    ? 'bg-[#1ed760] text-black shadow-md shadow-[#1ed760]/20 font-bold'
+                    : 'bg-[#242424]/60 text-[#d1d1d1] hover:bg-[#282828] hover:text-white'
+                }`}
+              >
+                <Plus size={16} className={activeTab === 'add' ? 'text-black' : 'text-[#1ed760]'} />
+                <span className="truncate">{editingTrackId ? 'Chỉnh Sửa' : 'Thêm Truyện'}</span>
+              </button>
 
-        <button
-          onClick={() => {
-            setActiveTab('accounts');
-            fetchAdminAccounts().then(accs => setAdminAccounts(accs));
-          }}
-          className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition cursor-pointer ${
-            activeTab === 'accounts'
-              ? 'bg-[#1ed760] text-black font-bold shadow-md shadow-[#1ed760]/20'
-              : 'bg-[#242424]/60 text-[#d1d1d1] hover:bg-[#242424]'
-          }`}
-        >
-          <Users size={16} />
-          <span>Tài Khoản Quản Trị ({adminAccounts.length})</span>
-        </button>
+              {/* 3. Đo Lường Traffic */}
+              <button
+                onClick={() => {
+                  setActiveTab('traffic');
+                  loadTrafficStats();
+                  setIsTechDropdownOpen(false);
+                }}
+                className={`flex-1 h-11 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer select-none text-center ${
+                  activeTab === 'traffic'
+                    ? 'bg-[#1ed760] text-black shadow-md shadow-[#1ed760]/20 font-bold'
+                    : 'bg-[#242424]/60 text-[#d1d1d1] hover:bg-[#282828] hover:text-white'
+                }`}
+              >
+                <Activity size={16} className={activeTab === 'traffic' ? 'text-black' : 'text-[#1ed760]'} />
+                <span className="truncate">Đo Lường Traffic</span>
+                {trafficStats?.summary.activeNow ? (
+                  <span className={`w-2 h-2 rounded-full ${activeTab === 'traffic' ? 'bg-black' : 'bg-emerald-400'} animate-pulse`} title="Có khách online"></span>
+                ) : null}
+              </button>
 
-        <button
-          onClick={() => {
-            setActiveTab('backup');
-            loadBackupInfo();
-          }}
-          className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition cursor-pointer ${
-            activeTab === 'backup'
-              ? 'bg-[#1ed760] text-black font-bold shadow-md shadow-[#1ed760]/20'
-              : 'bg-[#242424]/60 text-[#d1d1d1] hover:bg-[#242424]'
-          }`}
-        >
-          <HardDrive size={16} />
-          <span>Backup Dữ Liệu</span>
-        </button>
+              {/* 4. Affiliate Random */}
+              <button
+                onClick={() => {
+                  setActiveTab('affiliate');
+                  setIsTechDropdownOpen(false);
+                }}
+                className={`flex-1 h-11 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer select-none text-center ${
+                  activeTab === 'affiliate'
+                    ? 'bg-[#1ed760] text-black shadow-md shadow-[#1ed760]/20 font-bold'
+                    : 'bg-[#242424]/60 text-[#d1d1d1] hover:bg-[#282828] hover:text-white'
+                }`}
+              >
+                <Shuffle size={16} className={activeTab === 'affiliate' ? 'text-black' : 'text-[#1ed760]'} />
+                <span className="truncate">Affiliate ({affiliateList.length})</span>
+              </button>
 
-        <button
-          onClick={() => {
-            setActiveTab('api');
-            loadSettingsFromServer();
-          }}
-          className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition cursor-pointer ${
-            activeTab === 'api'
-              ? 'bg-[#1ed760] text-black font-bold shadow-md shadow-[#1ed760]/20'
-              : 'bg-[#242424]/60 text-[#d1d1d1] hover:bg-[#242424]'
-          }`}
-        >
-          <Code2 size={16} />
-          <span>Cổng API Truyện (Đăng/Sửa/Xóa)</span>
-        </button>
+              {/* 5. Cài Đặt Website */}
+              <button
+                onClick={() => {
+                  setActiveTab('settings');
+                  loadSettingsFromServer();
+                  setIsTechDropdownOpen(false);
+                }}
+                className={`flex-1 h-11 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer select-none text-center ${
+                  activeTab === 'settings'
+                    ? 'bg-[#1ed760] text-black shadow-md shadow-[#1ed760]/20 font-bold'
+                    : 'bg-[#242424]/60 text-[#d1d1d1] hover:bg-[#282828] hover:text-white'
+                }`}
+              >
+                <Sliders size={16} className={activeTab === 'settings' ? 'text-black' : 'text-[#1ed760]'} />
+                <span className="truncate">Cài Đặt & Banner</span>
+              </button>
 
-        <button
-          onClick={() => setActiveTab('sql')}
-          className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition cursor-pointer ${
-            activeTab === 'sql'
-              ? 'bg-[#1ed760] text-black font-bold shadow-md shadow-[#1ed760]/20'
-              : 'bg-[#242424]/60 text-[#d1d1d1] hover:bg-[#242424]'
-          }`}
-        >
-          <Database size={16} />
-          <span>Cấu Hình Supabase SQL</span>
-        </button>
+              {/* 6. Tài Khoản Admin */}
+              <button
+                onClick={() => {
+                  setActiveTab('accounts');
+                  fetchAdminAccounts().then(accs => setAdminAccounts(accs));
+                  setIsTechDropdownOpen(false);
+                }}
+                className={`flex-1 h-11 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer select-none text-center ${
+                  activeTab === 'accounts'
+                    ? 'bg-[#1ed760] text-black shadow-md shadow-[#1ed760]/20 font-bold'
+                    : 'bg-[#242424]/60 text-[#d1d1d1] hover:bg-[#282828] hover:text-white'
+                }`}
+              >
+                <Users size={16} className={activeTab === 'accounts' ? 'text-black' : 'text-[#1ed760]'} />
+                <span className="truncate">Admin ({adminAccounts.length})</span>
+              </button>
+
+              {/* 7. Dropdown Menu Hệ Thống & Kỹ Thuật (Backup, API, Supabase) */}
+              <div className="relative flex-1" ref={techDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsTechDropdownOpen(!isTechDropdownOpen)}
+                  className={`w-full h-11 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition cursor-pointer select-none text-center ${
+                    isTechTabActive
+                      ? 'bg-[#1ed760] text-black shadow-md shadow-[#1ed760]/20 font-bold'
+                      : 'bg-[#242424]/60 text-[#d1d1d1] hover:bg-[#282828] hover:text-white'
+                  }`}
+                >
+                  <Wrench size={15} className={isTechTabActive ? 'text-black' : 'text-[#1ed760]'} />
+                  <span className="truncate">{getActiveTechLabel()}</span>
+                  <ChevronDown size={14} className={`transition-transform duration-200 shrink-0 ${isTechDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {/* Floating Tech Menu Dropdown */}
+                {isTechDropdownOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-72 bg-[#1c1c1c] rounded-2xl border border-[#333333] shadow-2xl p-2 z-50 animate-fade-in divide-y divide-[#282828]">
+                    <div className="px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-[#8e8e8e]">
+                      Công Cụ Hệ Thống & CSDL
+                    </div>
+
+                    <div className="py-1 space-y-1">
+                      {/* Sub-item 1: Backup */}
+                      <button
+                        onClick={() => {
+                          setActiveTab('backup');
+                          loadBackupInfo();
+                          setIsTechDropdownOpen(false);
+                        }}
+                        className={`w-full text-left p-2.5 rounded-xl text-xs font-semibold flex items-center gap-3 transition cursor-pointer ${
+                          activeTab === 'backup'
+                            ? 'bg-[#1ed760] text-black font-bold'
+                            : 'hover:bg-[#282828] text-white'
+                        }`}
+                      >
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${activeTab === 'backup' ? 'bg-black/20 text-black' : 'bg-[#242424] text-sky-400'}`}>
+                          <HardDrive size={16} />
+                        </div>
+                        <div>
+                          <div className="font-bold">Backup & Dọn Rác File</div>
+                          <div className={`text-[10px] ${activeTab === 'backup' ? 'text-black/80' : 'text-[#8e8e8e]'}`}>
+                            Sao lưu db.json & quét MP3 thừa
+                          </div>
+                        </div>
+                      </button>
+
+                      {/* Sub-item 2: Cổng API */}
+                      <button
+                        onClick={() => {
+                          setActiveTab('api');
+                          loadSettingsFromServer();
+                          setIsTechDropdownOpen(false);
+                        }}
+                        className={`w-full text-left p-2.5 rounded-xl text-xs font-semibold flex items-center gap-3 transition cursor-pointer ${
+                          activeTab === 'api'
+                            ? 'bg-[#1ed760] text-black font-bold'
+                            : 'hover:bg-[#282828] text-white'
+                        }`}
+                      >
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${activeTab === 'api' ? 'bg-black/20 text-black' : 'bg-[#242424] text-purple-400'}`}>
+                          <Code2 size={16} />
+                        </div>
+                        <div>
+                          <div className="font-bold">Cổng API Truyện RESTful</div>
+                          <div className={`text-[10px] ${activeTab === 'api' ? 'text-black/80' : 'text-[#8e8e8e]'}`}>
+                            Đăng, sửa, xóa truyện tự động
+                          </div>
+                        </div>
+                      </button>
+
+                      {/* Sub-item 3: Supabase SQL */}
+                      <button
+                        onClick={() => {
+                          setActiveTab('sql');
+                          setIsTechDropdownOpen(false);
+                        }}
+                        className={`w-full text-left p-2.5 rounded-xl text-xs font-semibold flex items-center gap-3 transition cursor-pointer ${
+                          activeTab === 'sql'
+                            ? 'bg-[#1ed760] text-black font-bold'
+                            : 'hover:bg-[#282828] text-white'
+                        }`}
+                      >
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${activeTab === 'sql' ? 'bg-black/20 text-black' : 'bg-[#242424] text-emerald-400'}`}>
+                          <Database size={16} />
+                        </div>
+                        <div>
+                          <div className="font-bold">Cấu Hình Supabase SQL</div>
+                          <div className={`text-[10px] ${activeTab === 'sql' ? 'text-black/80' : 'text-[#8e8e8e]'}`}>
+                            Đồng bộ CSDL PostgreSQL đám mây
+                          </div>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Tablet & Small Screens (sm to lg): Grid 4 cột đều nhau */}
+            <div className="hidden sm:grid lg:hidden grid-cols-4 gap-2 p-2 bg-[#181818] rounded-2xl border border-[#282828]">
+              <button
+                onClick={() => { setActiveTab('manage'); resetForm(); }}
+                className={`h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                  activeTab === 'manage' ? 'bg-[#1ed760] text-black font-bold' : 'bg-[#242424] text-[#d1d1d1]'
+                }`}
+              >
+                <Radio size={15} />
+                <span className="truncate">Truyện ({tracks.length})</span>
+              </button>
+              <button
+                onClick={() => { resetForm(); setActiveTab('add'); }}
+                className={`h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                  activeTab === 'add' ? 'bg-[#1ed760] text-black font-bold' : 'bg-[#242424] text-[#d1d1d1]'
+                }`}
+              >
+                <Plus size={15} />
+                <span className="truncate">Thêm Mới</span>
+              </button>
+              <button
+                onClick={() => { setActiveTab('traffic'); loadTrafficStats(); }}
+                className={`h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                  activeTab === 'traffic' ? 'bg-[#1ed760] text-black font-bold' : 'bg-[#242424] text-[#d1d1d1]'
+                }`}
+              >
+                <Activity size={15} />
+                <span className="truncate">Traffic</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('affiliate')}
+                className={`h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                  activeTab === 'affiliate' ? 'bg-[#1ed760] text-black font-bold' : 'bg-[#242424] text-[#d1d1d1]'
+                }`}
+              >
+                <Shuffle size={15} />
+                <span className="truncate">Affiliate ({affiliateList.length})</span>
+              </button>
+              <button
+                onClick={() => { setActiveTab('settings'); loadSettingsFromServer(); }}
+                className={`h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                  activeTab === 'settings' ? 'bg-[#1ed760] text-black font-bold' : 'bg-[#242424] text-[#d1d1d1]'
+                }`}
+              >
+                <Sliders size={15} />
+                <span className="truncate">Cài Đặt</span>
+              </button>
+              <button
+                onClick={() => { setActiveTab('accounts'); fetchAdminAccounts().then(accs => setAdminAccounts(accs)); }}
+                className={`h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                  activeTab === 'accounts' ? 'bg-[#1ed760] text-black font-bold' : 'bg-[#242424] text-[#d1d1d1]'
+                }`}
+              >
+                <Users size={15} />
+                <span className="truncate">Admin ({adminAccounts.length})</span>
+              </button>
+              <button
+                onClick={() => { setActiveTab('backup'); loadBackupInfo(); }}
+                className={`h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                  activeTab === 'backup' ? 'bg-[#1ed760] text-black font-bold' : 'bg-[#242424] text-[#d1d1d1]'
+                }`}
+              >
+                <HardDrive size={15} />
+                <span className="truncate">Backup</span>
+              </button>
+              <button
+                onClick={() => { setActiveTab('api'); loadSettingsFromServer(); }}
+                className={`h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                  activeTab === 'api' ? 'bg-[#1ed760] text-black font-bold' : 'bg-[#242424] text-[#d1d1d1]'
+                }`}
+              >
+                <Code2 size={15} />
+                <span className="truncate">Cổng API</span>
+              </button>
+            </div>
+
+            {/* Mobile View (<sm): Grid 2 cột vuông vức, đều nhau 100% */}
+            <div className="grid sm:hidden grid-cols-2 gap-2 p-2 bg-[#181818] rounded-2xl border border-[#282828]">
+              <button
+                onClick={() => { setActiveTab('manage'); resetForm(); }}
+                className={`h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                  activeTab === 'manage' ? 'bg-[#1ed760] text-black font-bold' : 'bg-[#242424] text-[#d1d1d1]'
+                }`}
+              >
+                <Radio size={14} />
+                <span className="truncate">Truyện ({tracks.length})</span>
+              </button>
+              <button
+                onClick={() => { resetForm(); setActiveTab('add'); }}
+                className={`h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                  activeTab === 'add' ? 'bg-[#1ed760] text-black font-bold' : 'bg-[#242424] text-[#d1d1d1]'
+                }`}
+              >
+                <Plus size={14} />
+                <span className="truncate">Thêm Truyện</span>
+              </button>
+              <button
+                onClick={() => { setActiveTab('traffic'); loadTrafficStats(); }}
+                className={`h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                  activeTab === 'traffic' ? 'bg-[#1ed760] text-black font-bold' : 'bg-[#242424] text-[#d1d1d1]'
+                }`}
+              >
+                <Activity size={14} />
+                <span className="truncate">Traffic</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('affiliate')}
+                className={`h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                  activeTab === 'affiliate' ? 'bg-[#1ed760] text-black font-bold' : 'bg-[#242424] text-[#d1d1d1]'
+                }`}
+              >
+                <Shuffle size={14} />
+                <span className="truncate">Affiliate ({affiliateList.length})</span>
+              </button>
+              <button
+                onClick={() => { setActiveTab('settings'); loadSettingsFromServer(); }}
+                className={`h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                  activeTab === 'settings' ? 'bg-[#1ed760] text-black font-bold' : 'bg-[#242424] text-[#d1d1d1]'
+                }`}
+              >
+                <Sliders size={14} />
+                <span className="truncate">Cài Đặt</span>
+              </button>
+              <button
+                onClick={() => { setActiveTab('accounts'); fetchAdminAccounts().then(accs => setAdminAccounts(accs)); }}
+                className={`h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                  activeTab === 'accounts' ? 'bg-[#1ed760] text-black font-bold' : 'bg-[#242424] text-[#d1d1d1]'
+                }`}
+              >
+                <Users size={14} />
+                <span className="truncate">Admin ({adminAccounts.length})</span>
+              </button>
+              <button
+                onClick={() => { setActiveTab('backup'); loadBackupInfo(); }}
+                className={`h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                  activeTab === 'backup' ? 'bg-[#1ed760] text-black font-bold' : 'bg-[#242424] text-[#d1d1d1]'
+                }`}
+              >
+                <HardDrive size={14} />
+                <span className="truncate">Backup</span>
+              </button>
+              <button
+                onClick={() => { setActiveTab('api'); loadSettingsFromServer(); }}
+                className={`h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                  activeTab === 'api' ? 'bg-[#1ed760] text-black font-bold' : 'bg-[#242424] text-[#d1d1d1]'
+                }`}
+              >
+                <Code2 size={14} />
+                <span className="truncate">Cổng API</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* MODE 2: LƯỚI 4 NHÓM KHOA HỌC (CÁC KHỐI CHỨC NĂNG CÂN ĐỐI 100%) */}
+        {navViewMode === 'grouped' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            {/* NHÓM 1: QUẢN LÝ NỘI DUNG TRUYỆN */}
+            <div className="p-3 rounded-2xl bg-[#181818] border border-[#282828] space-y-2">
+              <div className="flex items-center justify-between text-xs font-bold text-white px-1">
+                <span className="flex items-center gap-1.5 text-[#1ed760]">
+                  <Radio size={14} />
+                  <span>1. QUẢN LÝ TRUYỆN</span>
+                </span>
+                <span className="text-[10px] text-[#8e8e8e] font-mono">{tracks.length} truyện</span>
+              </div>
+              <div className="grid grid-cols-2 gap-1.5">
+                <button
+                  onClick={() => { setActiveTab('manage'); resetForm(); }}
+                  className={`py-2.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                    activeTab === 'manage'
+                      ? 'bg-[#1ed760] text-black font-bold shadow-md'
+                      : 'bg-[#242424] text-[#d1d1d1] hover:bg-[#2e2e2e]'
+                  }`}
+                >
+                  <Radio size={13} />
+                  <span className="truncate">Danh Sách</span>
+                </button>
+                <button
+                  onClick={() => { resetForm(); setActiveTab('add'); }}
+                  className={`py-2.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                    activeTab === 'add'
+                      ? 'bg-[#1ed760] text-black font-bold shadow-md'
+                      : 'bg-[#242424] text-[#d1d1d1] hover:bg-[#2e2e2e]'
+                  }`}
+                >
+                  <Plus size={13} />
+                  <span className="truncate">Thêm Mới</span>
+                </button>
+              </div>
+            </div>
+
+            {/* NHÓM 2: HIỆU QUẢ & DOANH THU */}
+            <div className="p-3 rounded-2xl bg-[#181818] border border-[#282828] space-y-2">
+              <div className="flex items-center justify-between text-xs font-bold text-white px-1">
+                <span className="flex items-center gap-1.5 text-sky-400">
+                  <Activity size={14} />
+                  <span>2. THỐNG KÊ & TIẾP THỊ</span>
+                </span>
+                <span className="text-[10px] text-[#8e8e8e] font-mono">{affiliateList.length} link</span>
+              </div>
+              <div className="grid grid-cols-2 gap-1.5">
+                <button
+                  onClick={() => { setActiveTab('traffic'); loadTrafficStats(); }}
+                  className={`py-2.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                    activeTab === 'traffic'
+                      ? 'bg-[#1ed760] text-black font-bold shadow-md'
+                      : 'bg-[#242424] text-[#d1d1d1] hover:bg-[#2e2e2e]'
+                  }`}
+                >
+                  <Activity size={13} />
+                  <span className="truncate">Traffic</span>
+                  {trafficStats?.summary.activeNow ? (
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  ) : null}
+                </button>
+                <button
+                  onClick={() => setActiveTab('affiliate')}
+                  className={`py-2.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                    activeTab === 'affiliate'
+                      ? 'bg-[#1ed760] text-black font-bold shadow-md'
+                      : 'bg-[#242424] text-[#d1d1d1] hover:bg-[#2e2e2e]'
+                  }`}
+                >
+                  <Shuffle size={13} />
+                  <span className="truncate">Affiliate</span>
+                </button>
+              </div>
+            </div>
+
+            {/* NHÓM 3: CẤU HÌNH & TÀI KHOẢN */}
+            <div className="p-3 rounded-2xl bg-[#181818] border border-[#282828] space-y-2">
+              <div className="flex items-center justify-between text-xs font-bold text-white px-1">
+                <span className="flex items-center gap-1.5 text-amber-400">
+                  <Sliders size={14} />
+                  <span>3. CẤU HÌNH & QUẢN TRỊ</span>
+                </span>
+                <span className="text-[10px] text-[#8e8e8e] font-mono">{adminAccounts.length} admin</span>
+              </div>
+              <div className="grid grid-cols-2 gap-1.5">
+                <button
+                  onClick={() => { setActiveTab('settings'); loadSettingsFromServer(); }}
+                  className={`py-2.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                    activeTab === 'settings'
+                      ? 'bg-[#1ed760] text-black font-bold shadow-md'
+                      : 'bg-[#242424] text-[#d1d1d1] hover:bg-[#2e2e2e]'
+                  }`}
+                >
+                  <Sliders size={13} />
+                  <span className="truncate">Website</span>
+                </button>
+                <button
+                  onClick={() => { setActiveTab('accounts'); fetchAdminAccounts().then(accs => setAdminAccounts(accs)); }}
+                  className={`py-2.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                    activeTab === 'accounts'
+                      ? 'bg-[#1ed760] text-black font-bold shadow-md'
+                      : 'bg-[#242424] text-[#d1d1d1] hover:bg-[#2e2e2e]'
+                  }`}
+                >
+                  <Users size={13} />
+                  <span className="truncate">Tài Khoản</span>
+                </button>
+              </div>
+            </div>
+
+            {/* NHÓM 4: HỆ THỐNG KỸ THUẬT */}
+            <div className="p-3 rounded-2xl bg-[#181818] border border-[#282828] space-y-2">
+              <div className="flex items-center justify-between text-xs font-bold text-white px-1">
+                <span className="flex items-center gap-1.5 text-purple-400">
+                  <Wrench size={14} />
+                  <span>4. HỆ THỐNG & CSDL</span>
+                </span>
+                <span className="text-[10px] text-[#8e8e8e] font-mono">3 công cụ</span>
+              </div>
+              <div className="grid grid-cols-3 gap-1.5">
+                <button
+                  onClick={() => { setActiveTab('backup'); loadBackupInfo(); }}
+                  className={`py-2.5 px-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition cursor-pointer ${
+                    activeTab === 'backup'
+                      ? 'bg-[#1ed760] text-black font-bold shadow-md'
+                      : 'bg-[#242424] text-[#d1d1d1] hover:bg-[#2e2e2e]'
+                  }`}
+                  title="Backup dữ liệu & dọn rác uploads"
+                >
+                  <HardDrive size={13} />
+                  <span className="truncate">Backup</span>
+                </button>
+                <button
+                  onClick={() => { setActiveTab('api'); loadSettingsFromServer(); }}
+                  className={`py-2.5 px-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition cursor-pointer ${
+                    activeTab === 'api'
+                      ? 'bg-[#1ed760] text-black font-bold shadow-md'
+                      : 'bg-[#242424] text-[#d1d1d1] hover:bg-[#2e2e2e]'
+                  }`}
+                  title="Cổng API RESTful"
+                >
+                  <Code2 size={13} />
+                  <span className="truncate">API</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('sql')}
+                  className={`py-2.5 px-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition cursor-pointer ${
+                    activeTab === 'sql'
+                      ? 'bg-[#1ed760] text-black font-bold shadow-md'
+                      : 'bg-[#242424] text-[#d1d1d1] hover:bg-[#2e2e2e]'
+                  }`}
+                  title="Cấu hình CSDL Supabase PostgreSQL"
+                >
+                  <Database size={13} />
+                  <span className="truncate">SQL</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* TAB TRAFFIC: ĐO LƯỜNG TRAFFIC KHÁCH TRUY CẬP WEBSITE */}
+      {activeTab === 'traffic' && (
+        <AdminTraffic
+          trafficStats={trafficStats}
+          isLoading={isLoadingTraffic}
+          onRefresh={loadTrafficStats}
+          onReset={handleResetTraffic}
+        />
+      )}
 
       {/* TAB 1: MANAGE TRACKS */}
       {activeTab === 'manage' && (
@@ -3072,41 +3617,6 @@ https://s.lazada.vn/s.flashsale_deal`}
                   />
                 </div>
 
-                {/* Upload Ảnh Nền Banner Lên Server */}
-                <div>
-                  <label className="text-[#d1d1d1] font-semibold block mb-1">
-                    Ảnh Nền Banner Tùy Chỉnh (Lưu trên Server - Tùy chọn)
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={settingsForm.heroBannerImage || ''}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, heroBannerImage: e.target.value })}
-                      placeholder="https://... hoặc bấm Upload ảnh lên Server"
-                      className="flex-1 px-3 py-2 rounded-xl bg-[#121212] border border-[#333333] text-xs text-white focus:outline-none focus:border-[#1ed760] font-mono"
-                    />
-                    <label className="px-3 py-2 rounded-xl bg-[#242424] hover:bg-[#333333] text-slate-200 border border-[#333333] text-xs font-semibold cursor-pointer shrink-0 transition flex items-center gap-1.5">
-                      <Upload size={14} />
-                      <span>{bannerImageUploading ? 'Đang tải...' : 'Upload'}</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleBannerImageUpload}
-                        className="hidden"
-                      />
-                    </label>
-                    {settingsForm.heroBannerImage && (
-                      <button
-                        type="button"
-                        onClick={handleRemoveBannerImage}
-                        className="px-2.5 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs font-semibold cursor-pointer transition shrink-0"
-                        title="Xóa ảnh nền Banner trên Server"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    )}
-                  </div>
-                </div>
               </div>
 
               {/* LIVE PREVIEW BANNER */}
@@ -3114,17 +3624,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                 <span className="text-[10px] text-[#b3b3b3] uppercase font-bold tracking-wider block mb-2">
                   Xem Trước Banner Thực Tế Ngoài Trang Chủ (Live Preview):
                 </span>
-                <div className="relative rounded-2xl overflow-hidden bg-gradient-to-r from-[#121212] via-slate-950 to-[#0e131d] border border-[#1ed760]/25 p-4 space-y-2">
-                  {settingsForm.heroBannerImage && (
-                    <div className="absolute inset-0 z-0">
-                      <img
-                        src={settingsForm.heroBannerImage}
-                        alt="Banner Preview"
-                        className="w-full h-full object-cover opacity-30"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-r from-[#0b0f17]/90 via-[#0b0f17]/75 to-[#0b0f17]/50" />
-                    </div>
-                  )}
+                <div className="relative rounded-2xl overflow-hidden bg-gradient-to-r from-[#1db954]/20 via-[#181818] to-[#121212] border border-[#1ed760]/25 p-4 space-y-2">
                   <div className="relative z-10 space-y-2">
                     {settingsForm.heroBadge && (
                       <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#1ed760]/15 border border-[#1ed760]/30 text-[#1ed760] text-[10px] font-semibold">
@@ -3139,7 +3639,7 @@ https://s.lazada.vn/s.flashsale_deal`}
                     </p>
                     {settingsForm.heroButtonText && (
                       <div className="pt-1">
-                        <span className="inline-block px-3 py-1 rounded-lg text-[10px] font-bold bg-[#1ed760] text-black font-bold">
+                        <span className="inline-block px-3 py-1 rounded-lg text-[10px] font-bold bg-[#1ed760] text-black">
                           {settingsForm.heroButtonText} →
                         </span>
                       </div>
@@ -3149,14 +3649,125 @@ https://s.lazada.vn/s.flashsale_deal`}
               </div>
             </div>
 
-            {/* 2. CẤU HÌNH LOGO & FAVICON */}
+            {/* 2. CẤU HÌNH OPEN GRAPH IMAGE (THUMBNAIL CHIA SẺ MẠNG XÃ HỘI) */}
+            <div className="p-6 rounded-2xl bg-[#181818] border border-[#282828] space-y-4">
+              <div className="flex items-center justify-between border-b border-[#282828] pb-3">
+                <h4 className="text-xs font-bold text-[#1ed760] uppercase tracking-wider flex items-center gap-2">
+                  <Share2 size={16} />
+                  <span>2. Open Graph Image (Thumbnail Chia Sẻ Mạng Xã Hội)</span>
+                </h4>
+                <span className="text-[10px] text-[#b3b3b3] font-mono">
+                  Zalo • Facebook • Messenger
+                </span>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <div>
+                  <label className="text-[#d1d1d1] font-semibold block mb-1">
+                    Đường Dẫn Ảnh Thumbnail Chia Sẻ (og:image)
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={settingsForm.ogImage || ''}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, ogImage: e.target.value })}
+                      placeholder="https://... hoặc bấm Upload ảnh lên Server"
+                      className="flex-1 px-3 py-2 rounded-xl bg-[#121212] border border-[#333333] text-xs text-white focus:outline-none focus:border-[#1ed760] font-mono"
+                    />
+                    <label className="px-3 py-2 rounded-xl bg-[#242424] hover:bg-[#333333] text-slate-200 border border-[#333333] text-xs font-semibold cursor-pointer shrink-0 transition flex items-center gap-1.5">
+                      <Upload size={14} />
+                      <span>{ogImageUploading ? 'Đang tải...' : 'Upload'}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleOgImageUpload}
+                        className="hidden"
+                      />
+                    </label>
+                    {settingsForm.ogImage && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveOgImage}
+                        className="px-2.5 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs font-semibold cursor-pointer transition shrink-0"
+                        title="Xóa ảnh Open Graph trên Server"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-[#727272] mt-1.5 leading-relaxed">
+                    * Hình ảnh xem trước (Thumbnail Card) khi gửi link website qua Zalo, Facebook, Messenger, Telegram... Kích thước khuyến nghị chuẩn: <b>1200 x 630 px</b> (tỷ lệ 1.91:1) hoặc <b>16:9</b>.
+                  </p>
+                </div>
+
+                {/* LIVE PREVIEW SOCIAL SHARE CARD */}
+                <div className="pt-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] text-[#b3b3b3] uppercase font-bold tracking-wider">
+                      Mô Phỏng Thẻ Chia Sẻ Khi Gửi Link Qua Zalo / Facebook:
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#1ed760]/15 text-[#1ed760] font-mono font-semibold border border-[#1ed760]/30">
+                      og:image 1200×630
+                    </span>
+                  </div>
+
+                  <div className="rounded-2xl overflow-hidden bg-[#121212] border border-[#282828] hover:border-[#383838] transition shadow-lg">
+                    {/* 1.91:1 Aspect Ratio Preview Container */}
+                    <div className="relative aspect-[1.91/1] w-full bg-[#242424] flex items-center justify-center overflow-hidden border-b border-[#282828]">
+                      {settingsForm.ogImage ? (
+                        <img
+                          src={settingsForm.ogImage}
+                          alt="Open Graph Thumbnail Preview"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : settingsForm.logoUrl ? (
+                        <div className="flex flex-col items-center justify-center gap-2 p-4 text-center">
+                          <img
+                            src={settingsForm.logoUrl}
+                            alt="Logo Fallback"
+                            className="w-16 h-16 rounded-2xl object-cover border border-[#1ed760]/40 shadow-md"
+                          />
+                          <span className="text-xs text-[#b3b3b3]">
+                            (Đang dùng tạm Logo website làm thumbnail chia sẻ)
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center gap-2 p-4 text-center text-[#727272]">
+                          <div className="w-12 h-12 rounded-xl bg-[#181818] border border-[#333333] flex items-center justify-center text-[#1ed760]">
+                            <Share2 size={24} />
+                          </div>
+                          <p className="text-xs text-[#b3b3b3]">
+                            Chưa có ảnh Open Graph. Bấm <b>Upload</b> để website hiển thị đẹp mắt khi chia sẻ trên Zalo/Facebook.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Social Card Info Bar */}
+                    <div className="p-3.5 space-y-1 bg-[#181818]">
+                      <div className="text-[10px] uppercase font-mono tracking-wider text-[#727272] truncate">
+                        {typeof window !== 'undefined' ? window.location.host : 'goiomaudio.online'}
+                      </div>
+                      <div className="font-bold text-white text-xs sm:text-sm line-clamp-1">
+                        {settingsForm.siteName || 'Gối Ôm Audio'} – {settingsForm.siteTagline || 'Web Nghe Truyện Audio Online Miễn Phí'}
+                      </div>
+                      <div className="text-[11px] text-[#b3b3b3] line-clamp-2 leading-relaxed">
+                        {settingsForm.heroDescription || 'Thưởng thức truyện audio online miễn phí không cần tài khoản.'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. CẤU HÌNH LOGO & FAVICON */}
             <div className="space-y-6">
               
               {/* LOGO */}
               <div className="p-6 rounded-2xl bg-[#181818] border border-[#282828] space-y-4">
                 <h4 className="text-xs font-bold text-[#1ed760] uppercase tracking-wider flex items-center gap-2 border-b border-[#282828] pb-3">
                   <Globe size={16} />
-                  <span>2. Logo & Tên Thương Hiệu Website</span>
+                  <span>3. Logo & Tên Thương Hiệu Website</span>
                 </h4>
 
                 <div className="space-y-3 text-xs">
@@ -3251,7 +3862,7 @@ https://s.lazada.vn/s.flashsale_deal`}
               <div className="p-6 rounded-2xl bg-[#181818] border border-[#282828] space-y-4">
                 <h4 className="text-xs font-bold text-[#1ed760] uppercase tracking-wider flex items-center gap-2 border-b border-[#282828] pb-3">
                   <BookmarkCheck size={16} />
-                  <span>3. Favicon (Biểu Tượng Tab Trình Duyệt)</span>
+                  <span>4. Favicon (Biểu Tượng Tab Trình Duyệt)</span>
                 </h4>
 
                 <div className="space-y-3 text-xs">

@@ -1321,4 +1321,80 @@ export const deleteSingleAudioFileOnServer = async (
   }
 };
 
+// ===========================================================================
+// 11. TRAFFIC ANALYTICS & VISITOR MEASUREMENT API
+// ===========================================================================
+export interface TrafficAnalyticsResponse {
+  summary: {
+    totalPageviews: number;
+    totalUniqueVisitors: number;
+    todayPageviews: number;
+    todayUniqueVisitors: number;
+    activeNow: number;
+    totalUnlockClicks: number;
+    todayUnlockClicks: number;
+    conversionRate: string;
+  };
+  daily: Array<{
+    date: string;
+    pageviews: number;
+    uniqueVisitors: number;
+    unlockClicks: number;
+  }>;
+  devices: Record<string, number>;
+  operatingSystems: Record<string, number>;
+  browsers: Record<string, number>;
+  sources: Record<string, number>;
+  topPages: Array<{ path: string; count: number }>;
+  recentVisits: Array<{
+    id: string;
+    timestamp: string;
+    ipHash: string;
+    path: string;
+    referrer: string;
+    referrerSource: string;
+    device: string;
+    os: string;
+    browser: string;
+    screenWidth?: number;
+  }>;
+}
+
+export const fetchTrafficAnalytics = async (): Promise<TrafficAnalyticsResponse | null> => {
+  try {
+    const res = await fetch('/api/traffic/stats');
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {
+    console.warn('Error fetching traffic analytics:', err);
+  }
+  return null;
+};
+
+export const resetTrafficAnalyticsOnServer = async (): Promise<{ success: boolean; message: string }> => {
+  try {
+    const res = await fetch('/api/traffic/reset', { method: 'POST' });
+    return await res.json();
+  } catch (err: any) {
+    return { success: false, message: err.message || 'Lỗi khi reset traffic' };
+  }
+};
+
+export const recordClientVisit = (path?: string, referrer?: string, screenWidth?: number): void => {
+  try {
+    const payload = {
+      path: path || (typeof window !== 'undefined' ? window.location.pathname : '/'),
+      referrer: referrer || (typeof document !== 'undefined' ? document.referrer : ''),
+      screenWidth: screenWidth || (typeof window !== 'undefined' ? window.innerWidth : 0),
+    };
+    fetch('/api/traffic/visit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }).catch(() => {});
+  } catch {}
+};
+
+
 

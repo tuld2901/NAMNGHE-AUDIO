@@ -77,6 +77,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   siteTagline: 'Web Nghe Truyện Audio Online Miễn Phí',
   logoUrl: '',
   faviconUrl: 'https://api.iconify.design/lucide:headphones.svg?color=%23f59e0b',
+  ogImage: '',
   heroBadge: 'Gối Ôm Audio • Kho Truyện Audio Chất Lượng Cao',
   heroTitle: 'Thưởng Thức Truyện Audio Mọi Lúc Mọi Nơi',
   heroDescription: 'Hàng trăm bộ truyện ma rùng rợn, tiên hiệp huyền ảo, kiếm hiệp giang hồ và ngôn tình sâu lắng. Tối ưu nghe trên điện thoại và máy tính, nghe miễn phí không cần tài khoản.',

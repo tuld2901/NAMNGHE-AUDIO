@@ -16,8 +16,8 @@ export function getTrackHash(track: { id?: string; title?: string }): number {
 /**
  * Lấy số lượt nghe chuẩn riêng biệt cho từng truyện:
  * - Nếu admin đã chỉnh số lượt nghe cụ thể > 0 trong CMS thì ưu tiên hiển thị con số đó.
- * - Nếu lượt nghe = 0 hoặc chưa có, tự động sinh số liệu giả lập tự nhiên, riêng biệt cho từng truyện
- *   dựa trên hash của ID và tiêu đề (từ 850 đến 45.000 lượt nghe).
+ * - Nếu lượt nghe = 0 hoặc chưa có, tự động sinh số liệu ảo trong khoảng từ 10.000 đến 30.000 lượt nghe
+ *   dựa trên hash của ID và tiêu đề.
  * - Nhờ vậy: MỖI TRUYỆN CÓ MỘT CON SỐ LƯỢT NGHE KHÁC NHAU, KHÔNG TRUYỆN NÀO BỊ TRÙNG LẶP NHAU!
  */
 export function getTrackPlayCount(track: { id?: string; title?: string; play_count?: number }): number {
@@ -25,16 +25,14 @@ export function getTrackPlayCount(track: { id?: string; title?: string; play_cou
     return track.play_count;
   }
   const hash = getTrackHash(track);
-  // Bảng phân bổ lượt nghe thực tế đa dạng theo các dải
-  const tiers = [860, 1450, 3280, 6940, 12600, 18700, 24800, 31900, 42500, 58200];
-  const tierIndex = hash % tiers.length;
-  const base = tiers[tierIndex];
-  const offset = (hash % 120) * 10;
-  return base + offset;
+  // Giá trị lượt nghe ảo từ khoảng 10.000 đến 30.000
+  const spread = 20000;
+  const offset = hash % (spread + 1);
+  return 10000 + offset;
 }
 
 /**
- * Format play count cho tiếng Việt (VD: "24,5 N lượt nghe" hoặc "850 lượt nghe")
+ * Format play count cho tiếng Việt (VD: "24,5 N lượt nghe" hoặc "18,2 N lượt nghe")
  */
 export function formatPlayCount(count?: number): string {
   const val = count ?? 0;
@@ -47,36 +45,25 @@ export function formatPlayCount(count?: number): string {
 
 /**
  * Tính số người đang nghe trực tuyến riêng biệt và hoàn toàn nhất quán cho từng truyện:
- * - Tùy theo độ hot (lượt nghe) và hash riêng của từng truyện mà sinh ra các con số sinh động (từ 2 đến 36 người)
- * - Mỗi truyện ra một con số khác nhau! Tuyệt đối không bị đồng loạt cùng 1 số (như 48)!
- * - Nhưng đối với CÙNG 1 truyện: ở Mới cập nhật, Đang nghe nhiều, Top lượt nghe, Tất cả audio, hay Trang chi tiết
+ * - Giá trị đang nghe từ 0 đến 20 người
+ * - Phân bổ tự nhiên dựa theo độ hot và hash của từng truyện
+ * - Đối với CÙNG 1 truyện: ở Mới cập nhật, Đang nghe nhiều, Top lượt nghe, Tất cả audio, hay Trang chi tiết
  *   đều hiển thị CHÍNH XÁC CÙNG 1 CON SỐ ĐANG NGHE DUY NHẤT.
  */
 export function getTrackActiveListeners(track: { id?: string; title?: string; play_count?: number }): number {
-  const plays = getTrackPlayCount(track);
   const hash = getTrackHash(track);
-  const variance = (hash % 7) - 3; // -3 đến +3
+  const plays = getTrackPlayCount(track);
 
-  let listeners = 2;
-  if (plays >= 50000) {
-    // 28 - 36 đang nghe
-    listeners = 32 + variance;
-  } else if (plays >= 30000) {
-    // 20 - 27 đang nghe
-    listeners = 23 + variance;
-  } else if (plays >= 15000) {
-    // 12 - 18 đang nghe
-    listeners = 15 + variance;
-  } else if (plays >= 5000) {
-    // 6 - 11 đang nghe
-    listeners = 8 + (hash % 5);
-  } else if (plays >= 1000) {
-    // 3 - 5 đang nghe
-    listeners = 3 + (hash % 3);
-  } else {
-    // 1 - 2 đang nghe
-    listeners = 1 + (hash % 2);
-  }
+  // Tỷ lệ phân bổ theo lượt nghe trong dải 10.000 đến 30.000
+  const normalized = Math.max(0, Math.min(1, (plays - 10000) / 20000));
+  const base = Math.round(normalized * 15); // 0 đến 15
+  const jitter = hash % 6; // 0 đến 5
+  let listeners = base + jitter;
 
-  return Math.max(1, listeners);
+  // Giới hạn nghiêm ngặt từ 0 đến 20
+  if (listeners > 20) listeners = 20;
+  if (listeners < 0) listeners = 0;
+
+  return listeners;
 }
+

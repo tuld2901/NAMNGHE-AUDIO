@@ -230,6 +230,18 @@ export function updateSEOMetadata(track?: Track | null, siteSettings?: SiteSetti
   setMetaTag('property', 'og:site_name', brandName);
   setMetaTag('property', 'og:locale', 'vi_VN');
 
+  // OpenGraph Image & Twitter Image
+  const rawOgImage = track?.thumb_url || siteSettings?.ogImage || siteSettings?.logoUrl || '';
+  if (rawOgImage) {
+    const fullOgImage = rawOgImage.startsWith('http') ? rawOgImage : `${siteUrl}${rawOgImage.startsWith('/') ? '' : '/'}${rawOgImage}`;
+    setMetaTag('property', 'og:image', fullOgImage);
+    setMetaTag('property', 'og:image:secure_url', fullOgImage);
+    setMetaTag('property', 'og:image:alt', title);
+    setMetaTag('property', 'og:image:width', '1200');
+    setMetaTag('property', 'og:image:height', '630');
+    setMetaTag('name', 'twitter:image', fullOgImage);
+  }
+
   // Twitter Cards
   setMetaTag('name', 'twitter:card', 'summary_large_image');
   setMetaTag('name', 'twitter:title', title);

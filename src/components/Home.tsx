@@ -138,17 +138,6 @@ export const Home: React.FC<HomeProps> = React.memo(({
         <>
           {siteSettings?.showHeroBanner !== false ? (
             <div className="relative rounded-3xl overflow-hidden border border-[#282828] bg-gradient-to-r from-[#1db954]/20 via-[#181818] to-[#121212] p-5 sm:p-7 shadow-2xl">
-              {siteSettings?.heroBannerImage && (
-                <div className="absolute inset-0 z-0">
-                  <img
-                    src={siteSettings.heroBannerImage}
-                    alt={siteSettings.heroTitle || 'Banner'}
-                    className="w-full h-full object-cover opacity-25"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-r from-[#121212]/90 via-[#121212]/75 to-[#121212]/50" />
-                </div>
-              )}
-
               <div className="relative z-10 max-w-3xl space-y-2.5">
                 {siteSettings?.heroBadge && (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1db954]/15 border border-[#1db954]/30 text-[#1ed760] text-xs font-semibold">
@@ -355,46 +344,79 @@ export const Home: React.FC<HomeProps> = React.memo(({
 
       {/* SECTION 3: TOP LƯỢT NGHE (1 HÀNG CAROUSEL) */}
       <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4">
+          <div className="flex items-center justify-between sm:justify-start gap-3 w-full sm:w-auto">
+            <h2 className="text-base sm:text-lg font-bold text-white tracking-tight shrink-0">
               Top lượt nghe
             </h2>
-            <div className="flex items-center gap-1.5">
+
+            {/* Desktop tabs right beside title */}
+            <div className="hidden sm:inline-flex items-center p-0.5 bg-[#181818] rounded-full border border-[#282828] gap-1">
+              {(
+                [
+                  { id: 'today', label: 'Hôm nay' },
+                  { id: 'week', label: 'Tuần' },
+                  { id: 'month', label: 'Tháng' },
+                ] as const
+              ).map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setTopTimeFilter(tab.id)}
+                  className={`w-20 py-1 text-center rounded-full text-xs font-medium transition cursor-pointer flex items-center justify-center select-none ${
+                    topTimeFilter === tab.id
+                      ? 'border border-[#1ed760] text-black bg-[#1ed760] shadow-sm font-bold'
+                      : 'text-[#b3b3b3] hover:text-white hover:bg-[#282828]'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Mobile chevrons */}
+            <div className="flex sm:hidden items-center gap-1 text-[#b3b3b3]">
               <button
-                onClick={() => setTopTimeFilter('today')}
-                className={`px-3 py-1 rounded-full text-xs transition cursor-pointer ${
-                  topTimeFilter === 'today'
-                    ? 'border border-[#1ed760] text-black bg-[#1ed760] shadow-md shadow-[#1ed760]/20 font-bold'
-                    : 'bg-[#242424] text-[#b3b3b3] hover:text-white hover:bg-[#2a2a2a] border border-[#333333] font-medium'
-                }`}
+                onClick={() => scrollCarousel(topScrollRef, 'left')}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#282828] text-[#b3b3b3] hover:text-white active:scale-95 transition cursor-pointer"
+                title="Xem trước"
               >
-                Hôm nay
+                <ChevronLeft size={18} />
               </button>
               <button
-                onClick={() => setTopTimeFilter('week')}
-                className={`px-3 py-1 rounded-full text-xs transition cursor-pointer ${
-                  topTimeFilter === 'week'
-                    ? 'border border-[#1ed760] text-black bg-[#1ed760] shadow-md shadow-[#1ed760]/20 font-bold'
-                    : 'bg-[#242424] text-[#b3b3b3] hover:text-white hover:bg-[#2a2a2a] border border-[#333333] font-medium'
-                }`}
+                onClick={() => scrollCarousel(topScrollRef, 'right')}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#282828] text-[#b3b3b3] hover:text-white active:scale-95 transition cursor-pointer"
+                title="Xem tiếp"
               >
-                Tuần
-              </button>
-              <button
-                onClick={() => setTopTimeFilter('month')}
-                className={`px-3 py-1 rounded-full text-xs transition cursor-pointer ${
-                  topTimeFilter === 'month'
-                    ? 'border border-[#1ed760] text-black bg-[#1ed760] shadow-md shadow-[#1ed760]/20 font-bold'
-                    : 'bg-[#242424] text-[#b3b3b3] hover:text-white hover:bg-[#2a2a2a] border border-[#333333] font-medium'
-                }`}
-              >
-                Tháng
+                <ChevronRight size={18} />
               </button>
             </div>
           </div>
 
-          <div className="flex items-center gap-1 text-[#b3b3b3]">
+          {/* Mobile tabs: 3 columns with EXACT equal width */}
+          <div className="grid grid-cols-3 sm:hidden p-1 bg-[#181818] rounded-xl border border-[#282828] w-full gap-1">
+            {(
+              [
+                { id: 'today', label: 'Hôm nay' },
+                { id: 'week', label: 'Tuần' },
+                { id: 'month', label: 'Tháng' },
+              ] as const
+            ).map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setTopTimeFilter(tab.id)}
+                className={`py-1.5 text-center rounded-lg text-xs font-medium transition cursor-pointer flex items-center justify-center select-none ${
+                  topTimeFilter === tab.id
+                    ? 'border border-[#1ed760] text-black bg-[#1ed760] shadow-sm font-bold'
+                    : 'text-[#b3b3b3] hover:text-white hover:bg-[#282828]'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Desktop chevrons */}
+          <div className="hidden sm:flex items-center gap-1 text-[#b3b3b3]">
             <button
               onClick={() => scrollCarousel(topScrollRef, 'left')}
               className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#282828] text-[#b3b3b3] hover:text-white active:scale-95 transition cursor-pointer"

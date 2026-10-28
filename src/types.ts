@@ -67,11 +67,12 @@ export interface SiteSettings {
   siteTagline: string;
   logoUrl?: string;
   faviconUrl?: string;
+  ogImage?: string; // Open Graph Image (Thumbnail chia sẻ mạng xã hội Zalo, Facebook, v.v.)
   heroBadge: string;
   heroTitle: string;
   heroDescription: string;
   heroButtonText?: string;
-  heroBannerImage?: string;
+  heroBannerImage?: string; // Giữ để tương thích dữ liệu cũ
   showHeroBanner?: boolean;
   headerCode?: string; // Mã chèn vào thẻ <head> (Google Analytics, Google Tag Manager, Meta Pixel, Webmaster Tools, v.v.)
   bodyCode?: string;   // Mã chèn trước thẻ </body> (Facebook Chat Plugin, TikTok Pixel, v.v.)

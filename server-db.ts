@@ -473,6 +473,7 @@ export function autoFixMissingChapterDurations(): void {
     if (dbData.siteSettings) {
       const cleanLogo = sanitizePublicWebUrl(dbData.siteSettings.logoUrl);
       const cleanFav = sanitizePublicWebUrl(dbData.siteSettings.faviconUrl);
+      const cleanOg = sanitizePublicWebUrl(dbData.siteSettings.ogImage);
       const cleanBanner = sanitizePublicWebUrl(dbData.siteSettings.heroBannerImage);
       if (cleanLogo !== dbData.siteSettings.logoUrl) {
         dbData.siteSettings.logoUrl = cleanLogo;
@@ -480,6 +481,10 @@ export function autoFixMissingChapterDurations(): void {
       }
       if (cleanFav !== dbData.siteSettings.faviconUrl) {
         dbData.siteSettings.faviconUrl = cleanFav;
+        changed = true;
+      }
+      if (cleanOg !== dbData.siteSettings.ogImage) {
+        dbData.siteSettings.ogImage = cleanOg;
         changed = true;
       }
       if (cleanBanner !== dbData.siteSettings.heroBannerImage) {
@@ -776,6 +781,7 @@ export function getActiveImageUsageSet(): Set<string> {
   if (dbData.siteSettings) {
     addImg(dbData.siteSettings.logoUrl);
     addImg(dbData.siteSettings.faviconUrl);
+    addImg(dbData.siteSettings.ogImage);
     addImg(dbData.siteSettings.heroBannerImage);
   }
   if (Array.isArray(dbData.affiliateLinks)) {
@@ -1305,6 +1311,7 @@ export function saveSiteSettings(settings: Partial<SiteSettings>): SiteSettings 
     siteTagline: settings.siteTagline !== undefined ? String(settings.siteTagline) : dbData.siteSettings.siteTagline,
     logoUrl: settings.logoUrl !== undefined ? String(settings.logoUrl) : (dbData.siteSettings.logoUrl || ''),
     faviconUrl: settings.faviconUrl !== undefined ? String(settings.faviconUrl) : (dbData.siteSettings.faviconUrl || ''),
+    ogImage: settings.ogImage !== undefined ? String(settings.ogImage) : (dbData.siteSettings.ogImage || ''),
     heroBadge: settings.heroBadge !== undefined ? String(settings.heroBadge) : dbData.siteSettings.heroBadge,
     heroTitle: settings.heroTitle !== undefined ? String(settings.heroTitle) : dbData.siteSettings.heroTitle,
     heroDescription: settings.heroDescription !== undefined ? String(settings.heroDescription) : dbData.siteSettings.heroDescription,
