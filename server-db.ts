@@ -1012,6 +1012,46 @@ export async function deleteTrack(id: string): Promise<boolean> {
   return deleted;
 }
 
+export async function batchDeleteTracks(ids: string[]): Promise<number> {
+  if (!Array.isArray(ids) || ids.length === 0) return 0;
+
+  const resolvedIds = new Set<string>();
+  const allAudioFiles: string[] = [];
+  const allImageFiles: string[] = [];
+
+  for (const rawId of ids) {
+    const existing = findTrackInList(dbData.tracks, String(rawId));
+    if (existing && !resolvedIds.has(existing.id)) {
+      resolvedIds.add(existing.id);
+      const files = collectTrackLocalFiles(existing);
+      allAudioFiles.push(...files.audioFiles);
+      allImageFiles.push(...files.imageFiles);
+    }
+  }
+
+  if (resolvedIds.size === 0) return 0;
+  const idList = Array.from(resolvedIds);
+
+  if (serverSupabase) {
+    try {
+      await serverSupabase.from('tracks').delete().in('id', idList);
+    } catch (err) {
+      console.warn('Supabase batch delete tracks failed on server:', err);
+    }
+  }
+
+  const initialLen = dbData.tracks.length;
+  dbData.tracks = dbData.tracks.filter(t => !resolvedIds.has(t.id));
+  const deletedCount = initialLen - dbData.tracks.length;
+
+  if (deletedCount > 0) {
+    saveDatabase(dbData);
+    removeUnreferencedTrackFiles(allAudioFiles, allImageFiles);
+  }
+
+  return deletedCount;
+}
+
 export async function incrementTrackPlay(id: string): Promise<void> {
   if (serverSupabase) {
     serverSupabase.rpc('increment_track_play_count', { track_id: id }).then(() => {}, () => {});

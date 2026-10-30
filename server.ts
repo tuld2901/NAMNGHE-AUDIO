@@ -20,6 +20,7 @@ import {
   addChapterToTrack,
   deleteChapterFromTrack,
   deleteTrack,
+  batchDeleteTracks,
   incrementTrackPlay,
   resetTracks,
   getCategories,
@@ -941,6 +942,20 @@ async function startServer() {
       const track = await addChapterToTrack(req.params.id, req.body);
       if (!track) return res.status(404).json({ error: 'Không tìm thấy truyện để thêm tập' });
       res.json(track);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post('/api/tracks/batch-delete', async (req, res) => {
+    try {
+      if (!verifyExternalApiKey(req, res)) return;
+      const ids = Array.isArray(req.body?.ids) ? req.body.ids : [];
+      if (ids.length === 0) {
+        return res.status(400).json({ success: false, error: 'Danh sách ID truyện cần xóa trống' });
+      }
+      const deletedCount = await batchDeleteTracks(ids);
+      res.json({ success: true, deletedCount });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }

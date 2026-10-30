@@ -266,6 +266,36 @@ export const deleteTrack = async (id: string): Promise<boolean> => {
 };
 
 /**
+ * Batch delete multiple tracks from Server
+ */
+export const deleteMultipleTracks = async (ids: string[]): Promise<number> => {
+  if (!ids || ids.length === 0) return 0;
+  const idSet = new Set(ids);
+  try {
+    const res = await fetch('/api/tracks/batch-delete', {
+      method: 'POST',
+      headers: getApiAuthHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ ids })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      cachedTracks = cachedTracks.filter(t => !idSet.has(t.id));
+      return typeof data.deletedCount === 'number' ? data.deletedCount : ids.length;
+    }
+  } catch (err) {
+    console.error('Error batch deleting tracks on server:', err);
+  }
+
+  // Fallback to individual delete if needed
+  let deleted = 0;
+  for (const id of ids) {
+    const ok = await deleteTrack(id);
+    if (ok) deleted++;
+  }
+  return deleted;
+};
+
+/**
  * Increment track play count on Server
  */
 export const incrementPlayCount = async (trackId: string): Promise<void> => {

@@ -25,6 +25,7 @@ import {
   createTrack, 
   updateTrack, 
   deleteTrack, 
+  deleteMultipleTracks,
   uploadAudioFile, 
   uploadCoverImage,
   slugifyChapterTitle,
@@ -826,6 +827,8 @@ export const Admin: React.FC<AdminProps> = ({
 
   // Search & Filter in Table
   const [tableSearch, setTableSearch] = useState<string>('');
+  const [selectedTrackIds, setSelectedTrackIds] = useState<string[]>([]);
+  const [lastClickedTrackIdx, setLastClickedTrackIdx] = useState<number | null>(null);
   const [sqlCopied, setSqlCopied] = useState<boolean>(false);
 
   // SQL Console & Health State
@@ -838,6 +841,8 @@ export const Admin: React.FC<AdminProps> = ({
 
   useEffect(() => {
     setHealthReport(validateDatabaseIntegrity(tracks));
+    const validIds = new Set(tracks.map((t) => t.id));
+    setSelectedTrackIds((prev) => prev.filter((id) => validIds.has(id)));
   }, [tracks]);
 
   const handleRunSQL = () => {
@@ -1596,10 +1601,72 @@ export const Admin: React.FC<AdminProps> = ({
       isDestructive: true,
       onConfirm: async () => {
         await deleteTrack(id);
+        setSelectedTrackIds((prev) => prev.filter((item) => item !== id));
         onRefreshTracks();
         loadBackupInfo();
+        setManageCleanupMsg({
+          type: 'success',
+          text: `Đã xóa bộ truyện "${title}" thành công.`
+        });
       }
     });
+  };
+
+  const handleBatchDeleteTracks = () => {
+    if (selectedTrackIds.length === 0) {
+      setManageCleanupMsg({
+        type: 'error',
+        text: 'Vui lòng tích chọn ít nhất 1 bộ truyện trong bảng bên dưới để thực hiện xóa!'
+      });
+      return;
+    }
+
+    const count = selectedTrackIds.length;
+    setConfirmModal({
+      isOpen: true,
+      title: `Xác Nhận Xóa Hàng Loạt (${count} Truyện)`,
+      message: `Bạn có chắc chắn muốn xóa vĩnh viễn ${count} bộ truyện đã tích chọn không? Toàn bộ các tập truyện và file MP3/ảnh bìa liên quan cũng sẽ bị xóa khỏi hệ thống.`,
+      confirmLabel: `Xóa ${count} Truyện Đã Chọn`,
+      isDestructive: true,
+      onConfirm: async () => {
+        const idsToDelete = [...selectedTrackIds];
+        const deletedCount = await deleteMultipleTracks(idsToDelete);
+        setSelectedTrackIds([]);
+        setLastClickedTrackIdx(null);
+        onRefreshTracks();
+        loadBackupInfo();
+        setManageCleanupMsg({
+          type: 'success',
+          text: `Đã xóa hàng loạt thành công ${deletedCount || count} bộ truyện!`
+        });
+      }
+    });
+  };
+
+  const handleToggleSelectTrack = (
+    trackId: string,
+    index: number,
+    checked: boolean,
+    shiftKey: boolean
+  ) => {
+    if (shiftKey && lastClickedTrackIdx !== null && filteredTracks.length > 0) {
+      const start = Math.min(lastClickedTrackIdx, index);
+      const end = Math.max(lastClickedTrackIdx, index);
+      const rangeIds = filteredTracks.slice(start, end + 1).map((t) => t.id);
+      if (checked) {
+        setSelectedTrackIds((prev) => Array.from(new Set([...prev, ...rangeIds])));
+      } else {
+        const rangeSet = new Set(rangeIds);
+        setSelectedTrackIds((prev) => prev.filter((id) => !rangeSet.has(id)));
+      }
+    } else {
+      if (checked) {
+        setSelectedTrackIds((prev) => (prev.includes(trackId) ? prev : [...prev, trackId]));
+      } else {
+        setSelectedTrackIds((prev) => prev.filter((id) => id !== trackId));
+      }
+    }
+    setLastClickedTrackIdx(index);
   };
 
   const resetForm = () => {
@@ -2470,6 +2537,42 @@ export const Admin: React.FC<AdminProps> = ({
             />
 
             <div className="flex items-center gap-2 flex-wrap">
+              {selectedTrackIds.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedTrackIds([]);
+                    setLastClickedTrackIdx(null);
+                  }}
+                  className="px-3 py-2 rounded-xl text-xs font-medium bg-[#242424] hover:bg-[#333333] text-[#b3b3b3] hover:text-white border border-[#333333] transition cursor-pointer"
+                  title="Bỏ tích chọn tất cả"
+                >
+                  Bỏ chọn ({selectedTrackIds.length})
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={handleBatchDeleteTracks}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer border ${
+                  selectedTrackIds.length > 0
+                    ? 'bg-rose-600 hover:bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-600/20'
+                    : 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border-rose-500/30'
+                }`}
+                title={
+                  selectedTrackIds.length > 0
+                    ? `Xóa hàng loạt ${selectedTrackIds.length} bộ truyện đang được tích chọn`
+                    : 'Tích chọn các truyện trong bảng để xóa hàng loạt'
+                }
+              >
+                <Trash2 size={13} />
+                <span>
+                  {selectedTrackIds.length > 0
+                    ? `Xóa (${selectedTrackIds.length})`
+                    : 'Xóa'}
+                </span>
+              </button>
+
               <button
                 type="button"
                 onClick={handleCleanupOrphanedFiles}
@@ -2509,6 +2612,29 @@ export const Admin: React.FC<AdminProps> = ({
               <table className="w-full text-left text-xs">
                 <thead className="bg-[#121212] text-[#b3b3b3] uppercase font-semibold border-b border-[#282828]">
                   <tr>
+                    <th className="p-3.5 w-10 text-center">
+                      <input
+                        type="checkbox"
+                        checked={
+                          filteredTracks.length > 0 &&
+                          filteredTracks.every((t) => selectedTrackIds.includes(t.id))
+                        }
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            const merged = Array.from(
+                              new Set([...selectedTrackIds, ...filteredTracks.map((t) => t.id)])
+                            );
+                            setSelectedTrackIds(merged);
+                          } else {
+                            const visibleSet = new Set(filteredTracks.map((t) => t.id));
+                            setSelectedTrackIds((prev) => prev.filter((id) => !visibleSet.has(id)));
+                          }
+                        }}
+                        className="w-4 h-4 rounded accent-[#1ed760] cursor-pointer"
+                        title="Tích chọn / Bỏ chọn tất cả truyện đang hiển thị"
+                      />
+                    </th>
+                    <th className="p-3.5 w-14 text-center">STT</th>
                     <th className="p-3.5">Truyện</th>
                     <th className="p-3.5">Thể loại</th>
                     <th className="p-3.5">Tác giả / Diễn đọc</th>
@@ -2519,88 +2645,124 @@ export const Admin: React.FC<AdminProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60 text-[#d1d1d1]">
-                  {filteredTracks.map((t) => (
-                    <tr key={t.id} className="hover:bg-[#242424]/30 transition">
-                      <td className="p-3.5">
-                        <div>
-                          <span className="font-bold text-white block truncate max-w-xs">{t.title}</span>
-                          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                            <button
-                              type="button"
-                              onClick={() => handleCopyText(t.id, `id-${t.id}`)}
-                              className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#242424] hover:bg-[#333333] text-[#d1d1d1] border border-[#333333] flex items-center gap-1 cursor-pointer"
-                              title="Click để sao chép ID truyện dùng cho API"
-                            >
-                              <span>ID: {t.id}</span>
-                              {apiCopiedKey === `id-${t.id}` ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} className="text-[#b3b3b3]" />}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleCopyText(`${window.location.origin}${getStoryPath(t)}`, `url-${t.id}`)}
-                              className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#242424] hover:bg-[#333333] text-[#1ed760] border border-[#333333] flex items-center gap-1 cursor-pointer max-w-[180px] truncate"
-                              title={`Click để copy link chuẩn: ${window.location.origin}${getStoryPath(t)}`}
-                            >
-                              <span className="truncate">{getStoryPath(t)}</span>
-                              {apiCopiedKey === `url-${t.id}` ? <Check size={10} className="text-emerald-400 shrink-0" /> : <Copy size={10} className="text-[#b3b3b3] shrink-0" />}
-                            </button>
-                            {t.is_featured && <span className="text-[10px] text-[#1ed760] font-semibold">Gợi ý</span>}
-                            {t.is_hot && <span className="text-[10px] text-rose-400 font-semibold">Hot</span>}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="p-3.5">
-                        <span className="px-2 py-0.5 rounded bg-[#242424] border border-[#333333] text-[#1ed760]">
-                          {t.category}
-                        </span>
-                      </td>
-                      <td className="p-3.5">
-                        <span className="block text-slate-200">{t.author}</span>
-                        <span className="text-[10px] text-[#b3b3b3]">{t.narrator || 'Phú Bà Audio'}</span>
-                      </td>
-                      <td className="p-3.5 font-mono text-[#1ed760]">
-                        {(t.play_count || 0).toLocaleString('vi-VN')}
-                      </td>
-                      <td className="p-3.5">
-                        <span className="font-semibold text-slate-200">{t.chapters?.length || 1}</span>
-                      </td>
-                      <td className="p-3.5">
-                        <a
-                          href={t.affiliate_link || 'https://shopee.vn'}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-[#1ed760] hover:underline flex items-center gap-1 max-w-[120px] truncate"
-                        >
-                          <span className="truncate">{t.affiliate_link || 'https://shopee.vn'}</span>
-                          <ExternalLink size={12} className="shrink-0" />
-                        </a>
-                      </td>
-                      <td className="p-3.5 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            onClick={() => onPreviewTrack(t)}
-                            className="p-1.5 rounded-lg bg-[#242424] hover:bg-[#333333] text-[#d1d1d1] hover:text-white transition cursor-pointer"
-                            title="Nghe thử"
-                          >
-                            <Play size={14} className="fill-current" />
-                          </button>
-                          <button
-                            onClick={() => handleEditTrack(t)}
-                            className="p-1.5 rounded-lg bg-[#1ed760]/10 hover:bg-[#1ed760]/20 text-[#1ed760] border border-[#1ed760]/20 transition cursor-pointer"
-                            title="Sửa"
-                          >
-                            <Edit3 size={14} />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteTrack(t.id, t.title)}
-                            className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition cursor-pointer"
-                            title="Xóa"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
+                  {filteredTracks.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} className="p-8 text-center text-[#b3b3b3]">
+                        Không có bộ truyện nào trong danh sách.
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    filteredTracks.map((t, idx) => {
+                      const isSelected = selectedTrackIds.includes(t.id);
+                      return (
+                        <tr
+                          key={t.id}
+                          className={`hover:bg-[#242424]/40 transition ${
+                            isSelected ? 'bg-[#1ed760]/5' : ''
+                          }`}
+                        >
+                          <td className="p-3.5 text-center">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={(e) => {
+                                const nativeEvent = e.nativeEvent as MouseEvent;
+                                handleToggleSelectTrack(
+                                  t.id,
+                                  idx,
+                                  e.target.checked,
+                                  Boolean(nativeEvent?.shiftKey)
+                                );
+                              }}
+                              className="w-4 h-4 rounded accent-[#1ed760] cursor-pointer"
+                              title="Tích chọn truyện này (Giữ phím Shift + Click để chọn nhanh nhiều dòng liên tiếp)"
+                            />
+                          </td>
+                          <td className="p-3.5 text-center font-mono font-bold text-[#b3b3b3]">
+                            {idx + 1}
+                          </td>
+                          <td className="p-3.5">
+                            <div>
+                              <span className="font-bold text-white block truncate max-w-xs">{t.title}</span>
+                              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopyText(t.id, `id-${t.id}`)}
+                                  className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#242424] hover:bg-[#333333] text-[#d1d1d1] border border-[#333333] flex items-center gap-1 cursor-pointer"
+                                  title="Click để sao chép ID truyện dùng cho API"
+                                >
+                                  <span>ID: {t.id}</span>
+                                  {apiCopiedKey === `id-${t.id}` ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} className="text-[#b3b3b3]" />}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopyText(`${window.location.origin}${getStoryPath(t)}`, `url-${t.id}`)}
+                                  className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#242424] hover:bg-[#333333] text-[#1ed760] border border-[#333333] flex items-center gap-1 cursor-pointer max-w-[180px] truncate"
+                                  title={`Click để copy link chuẩn: ${window.location.origin}${getStoryPath(t)}`}
+                                >
+                                  <span className="truncate">{getStoryPath(t)}</span>
+                                  {apiCopiedKey === `url-${t.id}` ? <Check size={10} className="text-emerald-400 shrink-0" /> : <Copy size={10} className="text-[#b3b3b3] shrink-0" />}
+                                </button>
+                                {t.is_featured && <span className="text-[10px] text-[#1ed760] font-semibold">Gợi ý</span>}
+                                {t.is_hot && <span className="text-[10px] text-rose-400 font-semibold">Hot</span>}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-3.5">
+                            <span className="px-2 py-0.5 rounded bg-[#242424] border border-[#333333] text-[#1ed760]">
+                              {t.category}
+                            </span>
+                          </td>
+                          <td className="p-3.5">
+                            <span className="block text-slate-200">{t.author}</span>
+                            <span className="text-[10px] text-[#b3b3b3]">{t.narrator || 'Phú Bà Audio'}</span>
+                          </td>
+                          <td className="p-3.5 font-mono text-[#1ed760]">
+                            {(t.play_count || 0).toLocaleString('vi-VN')}
+                          </td>
+                          <td className="p-3.5">
+                            <span className="font-semibold text-slate-200">{t.chapters?.length || 1}</span>
+                          </td>
+                          <td className="p-3.5">
+                            <a
+                              href={t.affiliate_link || 'https://shopee.vn'}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-[#1ed760] hover:underline flex items-center gap-1 max-w-[120px] truncate"
+                            >
+                              <span className="truncate">{t.affiliate_link || 'https://shopee.vn'}</span>
+                              <ExternalLink size={12} className="shrink-0" />
+                            </a>
+                          </td>
+                          <td className="p-3.5 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                onClick={() => onPreviewTrack(t)}
+                                className="p-1.5 rounded-lg bg-[#242424] hover:bg-[#333333] text-[#d1d1d1] hover:text-white transition cursor-pointer"
+                                title="Nghe thử"
+                              >
+                                <Play size={14} className="fill-current" />
+                              </button>
+                              <button
+                                onClick={() => handleEditTrack(t)}
+                                className="p-1.5 rounded-lg bg-[#1ed760]/10 hover:bg-[#1ed760]/20 text-[#1ed760] border border-[#1ed760]/20 transition cursor-pointer"
+                                title="Sửa"
+                              >
+                                <Edit3 size={14} />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteTrack(t.id, t.title)}
+                                className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition cursor-pointer"
+                                title="Xóa"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
                 </tbody>
               </table>
             </div>
