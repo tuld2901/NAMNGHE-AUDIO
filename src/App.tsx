@@ -15,6 +15,12 @@ import { Home } from './components/Home';
 import { StoryPage } from './components/StoryPage';
 import { Player } from './components/Player';
 import { LockScreenModal } from './components/LockScreenModal';
+import {
+  StaticPageView,
+  STATIC_PAGES_CONFIG,
+  getStaticPageByPath,
+  StaticPageSlug,
+} from './components/StaticPageView';
 import { AudioProvider, useAudio } from './context/AudioContext';
 
 const Admin = React.lazy(() =>
@@ -108,14 +114,16 @@ function AppContent({
 
       const cleanSegment = pathname.replace(/^\/+/, '').replace(/\/+$/, '').trim();
       const lowerSegment = cleanSegment.toLowerCase();
+      const matchedStatic = getStaticPageByPath(lowerSegment);
 
       if (
         !cleanSegment ||
         lowerSegment === 'index.html' ||
-        lowerSegment === 'app-config'
+        lowerSegment === 'app-config' ||
+        matchedStatic
       ) {
         setActiveStoryParam(null);
-        if (!cleanSegment || lowerSegment === 'index.html') {
+        if (!cleanSegment || lowerSegment === 'index.html' || matchedStatic) {
           setSelectedStoryTrack(null);
         }
       } else {
@@ -135,41 +143,56 @@ function AppContent({
   // Determine current view - CHỈ áp dụng cho đường dẫn /app-config để bảo mật tuyệt đối
   const normalizedPath = currentPath.replace(/^\/+/, '').replace(/\/+$/, '').toLowerCase();
   const isAdminView = normalizedPath === 'app-config';
+  const activeStaticPage = useMemo(() => getStaticPageByPath(normalizedPath), [normalizedPath]);
 
   // Find active track using selected track or clean SEO slug/ID (/ten-truyen)
   const currentViewingStory = useMemo(() => {
+    if (activeStaticPage) return null;
     if (selectedStoryTrack) {
       return tracks.find((t) => t.id === selectedStoryTrack.id) || selectedStoryTrack;
     }
     if (!activeStoryParam) return null;
     return findTrackBySlugOrId(tracks, activeStoryParam);
-  }, [selectedStoryTrack, activeStoryParam, tracks]);
+  }, [selectedStoryTrack, activeStoryParam, tracks, activeStaticPage]);
 
   // Keep canonical URL clean (/ten-truyen) when story is resolved from slug--id or id
   useEffect(() => {
-    if (currentViewingStory && !isAdminView) {
+    if (currentViewingStory && !isAdminView && !activeStaticPage) {
       const canonicalStoryPath = getStoryPath(currentViewingStory);
       if (window.location.pathname !== canonicalStoryPath) {
         window.history.replaceState({}, '', canonicalStoryPath);
         setCurrentPath(canonicalStoryPath);
       }
     }
-  }, [currentViewingStory, isAdminView]);
+  }, [currentViewingStory, isAdminView, activeStaticPage]);
 
-  const isStoryPageView = Boolean(currentViewingStory && !isAdminView);
+  const isStoryPageView = Boolean(currentViewingStory && !isAdminView && !activeStaticPage);
 
   // Dynamic SEO metadata update for Google (Title, Description, OpenGraph, JSON-LD)
   useEffect(() => {
     if (!isAdminView) {
-      updateSEOMetadata(currentViewingStory, siteSettings);
+      if (activeStaticPage) {
+        document.title = `${activeStaticPage.title} - ${siteSettings.siteName || 'Gối Ôm Audio'}`;
+      } else {
+        updateSEOMetadata(currentViewingStory, siteSettings);
+      }
     }
-  }, [currentViewingStory, siteSettings, isAdminView]);
+  }, [currentViewingStory, siteSettings, isAdminView, activeStaticPage]);
 
   // Navigate helpers using HTML5 History API (no # in URL)
   const handleNavigateToStory = useCallback((track: Track) => {
     const path = getStoryPath(track);
     setSelectedStoryTrack(track);
     setActiveStoryParam(path.replace(/^\/+/, ''));
+    setCurrentPath(path);
+    window.history.pushState({}, '', path);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  const handleNavigateToStaticPage = useCallback((slug: StaticPageSlug) => {
+    const path = `/${slug}`;
+    setSelectedStoryTrack(null);
+    setActiveStoryParam(null);
     setCurrentPath(path);
     window.history.pushState({}, '', path);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -275,6 +298,14 @@ function AppContent({
                 />
               </Suspense>
             </div>
+          ) : activeStaticPage ? (
+            /* CÁC TRANG TĨNH CHÂN TRANG: GIỚI THIỆU, LIÊN HỆ, CHÍNH SÁCH BẢO MẬT, ĐIỀU KHOẢN SỬ DỤNG, MIỄN TRỪ TRÁCH NHIỆM & BẢN QUYỀN */
+            <StaticPageView
+              activePage={activeStaticPage}
+              siteSettings={siteSettings}
+              onNavigatePage={handleNavigateToStaticPage}
+              onBackToHome={handleBackToHome}
+            />
           ) : isStoryPageView && currentViewingStory ? (
             /* TRANG PHÁT NHẠC VÀ NGHE TRUYỆN ĐẦY ĐỦ CÁC TẬP */
             <StoryPage
@@ -312,27 +343,67 @@ function AppContent({
       />
 
       {/* Spotify Style Dark Footer (Luôn nằm dưới trình chạy nhạc khi kéo xuống cuối trang) */}
-      <footer className="border-t border-[#282828] bg-[#000000] py-5 text-[#b3b3b3] text-xs">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
-          <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-start">
-            <span className="font-bold text-white">{siteSettings.siteName || 'Gối Ôm Audio'}</span>
-            <span className="text-[#535353]">•</span>
-            <span>{siteSettings.siteTagline || 'Nghe miễn phí, không cần tài khoản'}</span>
-          </div>
+      <footer className="border-t border-[#282828] bg-[#000000] py-6 text-[#b3b3b3] text-xs">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col gap-4">
+          {/* Hàng trên: Thương hiệu & các đường dẫn trang thông tin / chính sách */}
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
+            <div className="flex items-center gap-2 flex-wrap justify-center md:justify-start">
+              <button
+                type="button"
+                onClick={handleBackToHome}
+                className="font-bold text-white hover:text-[#1ed760] transition cursor-pointer"
+              >
+                {siteSettings.siteName || 'Gối Ôm Audio'}
+              </button>
+              <span className="text-[#535353]">•</span>
+              <span>{siteSettings.siteTagline || 'Nghe miễn phí, không cần tài khoản'}</span>
+            </div>
 
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => {
-                if (tracks.length > 0) {
-                  setPendingTrack(tracks[0]);
-                  setPendingChapter(tracks[0].chapters?.[0] || null);
-                  setIsLockModalOpen(true);
-                }
-              }}
-              className="hover:text-[#1ed760] transition cursor-pointer"
+            {/* Các đường dẫn trang: Giới thiệu, Liên hệ, Chính sách bảo mật, Điều khoản sử dụng, Miễn trừ trách nhiệm & Bản quyền */}
+            <nav
+              aria-label="Liên kết chân trang"
+              className="flex flex-wrap items-center justify-center md:justify-end gap-x-4 gap-y-2"
             >
-              Ủng hộ kênh ❤️
-            </button>
+              {STATIC_PAGES_CONFIG.map((page, index) => {
+                const isActive = activeStaticPage?.slug === page.slug;
+                return (
+                  <React.Fragment key={page.slug}>
+                    <a
+                      href={page.path}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleNavigateToStaticPage(page.slug);
+                      }}
+                      className={`transition cursor-pointer ${
+                        isActive
+                          ? 'text-[#1ed760] font-bold underline underline-offset-4'
+                          : 'text-[#b3b3b3] hover:text-[#1ed760]'
+                      }`}
+                    >
+                      {page.shortTitle}
+                    </a>
+                    {index < STATIC_PAGES_CONFIG.length - 1 && (
+                      <span className="text-[#383838] hidden sm:inline">•</span>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+
+              <span className="text-[#383838] hidden sm:inline">•</span>
+              <button
+                type="button"
+                onClick={() => {
+                  if (tracks.length > 0) {
+                    setPendingTrack(tracks[0]);
+                    setPendingChapter(tracks[0].chapters?.[0] || null);
+                    setIsLockModalOpen(true);
+                  }
+                }}
+                className="hover:text-[#1ed760] transition cursor-pointer font-medium text-white/90"
+              >
+                Ủng hộ kênh ❤️
+              </button>
+            </nav>
           </div>
         </div>
       </footer>

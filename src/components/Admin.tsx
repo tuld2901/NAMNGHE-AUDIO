@@ -7,9 +7,11 @@ import {
   AlertTriangle, Power, Filter, Search, Code2, Terminal, Download, PlayCircle,
   CheckSquare, Zap, Users, UserPlus, Key, Eye, EyeOff,
   HardDrive, Archive, FileJson, FileAudio, RotateCcw, Server, Clock, Activity,
-  ChevronDown, LayoutGrid, Wrench, Radio, QrCode, Smartphone
+  ChevronDown, LayoutGrid, Wrench, Radio, QrCode, Smartphone, FileText
 } from 'lucide-react';
 import { Track, Chapter, AffiliateItem, AffiliateCategory, SiteSettings, AdminAccount } from '../types';
+import { DEFAULT_SITE_SETTINGS } from '../services/defaultData';
+import { STATIC_PAGES_CONFIG, StaticPageSlug } from './StaticPageView';
 import { getStoryPath } from '../services/seo';
 import { 
   executeClientSQL, 
@@ -100,7 +102,8 @@ export const Admin: React.FC<AdminProps> = ({
   const [isAuthLoading, setIsAuthLoading] = useState<boolean>(false);
 
   // Active View in Admin
-  const [activeTab, setActiveTab] = useState<'manage' | 'traffic' | 'add' | 'affiliate' | 'settings' | 'accounts' | 'backup' | 'api' | 'sql'>('manage');
+  const [activeTab, setActiveTab] = useState<'manage' | 'traffic' | 'add' | 'affiliate' | 'settings' | 'pages' | 'accounts' | 'backup' | 'api' | 'sql'>('manage');
+  const [selectedStaticPageSlug, setSelectedStaticPageSlug] = useState<StaticPageSlug>('gioi-thieu');
 
   // Traffic Analytics State (Server-backed)
   const [trafficStats, setTrafficStats] = useState<TrafficAnalyticsResponse | null>(null);
@@ -164,10 +167,10 @@ export const Admin: React.FC<AdminProps> = ({
 
   const isTechTabActive = activeTab === 'backup' || activeTab === 'api' || activeTab === 'sql';
   const getActiveTechLabel = () => {
-    if (activeTab === 'backup') return 'Backup Dữ Liệu';
-    if (activeTab === 'api') return 'Cổng API Truyện';
-    if (activeTab === 'sql') return 'Supabase SQL';
-    return 'Công Cụ Kỹ Thuật';
+    if (activeTab === 'backup') return 'Backup';
+    if (activeTab === 'api') return 'Cổng API';
+    if (activeTab === 'sql') return 'Supabase';
+    return 'Kỹ Thuật';
   };
 
   const handleToggleNavMode = (mode: 'compact' | 'grouped') => {
@@ -1883,14 +1886,14 @@ export const Admin: React.FC<AdminProps> = ({
       </div>
 
       {/* SCIENTIFIC BALANCED CMS NAVIGATION MENU */}
-      <div className="space-y-3">
+      <div className="space-y-2.5">
         {/* Navigation Toolbar: Title & Style Switcher */}
         <div className="flex items-center justify-between gap-3 px-1 flex-wrap">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#8e8e8e] flex items-center gap-1.5">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#8e8e8e] flex items-center gap-2">
               <span>Menu Chức Năng Quản Trị</span>
-              <span className="px-1.5 py-0.5 rounded text-[10px] bg-[#242424] text-[#1ed760] font-mono border border-[#333333]">
-                9 Module
+              <span className="px-2 py-0.5 rounded-md text-[10px] bg-[#242424] text-[#1ed760] font-mono border border-[#333333]">
+                10 Module
               </span>
             </span>
           </div>
@@ -1905,7 +1908,7 @@ export const Admin: React.FC<AdminProps> = ({
                   ? 'bg-[#282828] text-[#1ed760] font-bold shadow-sm'
                   : 'text-[#8e8e8e] hover:text-white'
               }`}
-              title="Menu 1 hàng ngang cân đối có Dropdown Kỹ Thuật"
+              title="Menu 8 cột cân đối đều nhau 100% có Dropdown Kỹ Thuật"
             >
               <Sliders size={13} />
               <span>Thanh Menu Gọn</span>
@@ -1926,129 +1929,195 @@ export const Admin: React.FC<AdminProps> = ({
           </div>
         </div>
 
-        {/* MODE 1: THANH MENU GỌN GÀNG (7 NÚT CÂN ĐỐI 1 HÀNG TRÊN DESKTOP) */}
+        {/* MODE 1: THANH MENU GỌN GÀNG (LƯỚI 8 CỘT ĐỀU NHAU 100%, KHÔNG TRÀN KHUNG) */}
         {navViewMode === 'compact' && (
           <div className="relative">
-            {/* Desktop / Laptop (lg+): 7 nút đều nhau 1 hàng ngang duy nhất */}
-            <div className="hidden lg:flex items-center gap-2 p-1.5 bg-[#181818] rounded-2xl border border-[#282828] shadow-lg">
-              {/* 1. Danh Sách Truyện */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-1.5 p-1.5 bg-[#181818] rounded-2xl border border-[#282828] shadow-lg">
+              {/* 1. Kho Truyện */}
               <button
+                type="button"
                 onClick={() => {
                   setActiveTab('manage');
                   resetForm();
                   setIsTechDropdownOpen(false);
                 }}
-                className={`flex-1 h-11 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer select-none text-center ${
+                title={`Danh sách truyện audio (${tracks.length} truyện)`}
+                className={`w-full min-w-0 h-10 px-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer select-none border ${
                   activeTab === 'manage'
-                    ? 'bg-[#1ed760] text-black shadow-md shadow-[#1ed760]/20 font-bold'
-                    : 'bg-[#242424]/60 text-[#d1d1d1] hover:bg-[#282828] hover:text-white'
+                    ? 'bg-[#1ed760] text-black border-[#1ed760] shadow-md shadow-[#1ed760]/20 font-bold'
+                    : 'bg-[#222222] text-[#d1d1d1] border-[#2c2c2c] hover:bg-[#2a2a2a] hover:text-white hover:border-[#3a3a3a]'
                 }`}
               >
-                <Radio size={16} className={activeTab === 'manage' ? 'text-black' : 'text-[#1ed760]'} />
-                <span className="truncate">Danh Sách Truyện ({tracks.length})</span>
+                <Radio size={14} className={`shrink-0 ${activeTab === 'manage' ? 'text-black' : 'text-[#1ed760]'}`} />
+                <span className="truncate">Kho Truyện</span>
+                <span
+                  className={`px-1.5 py-0.2 rounded-md text-[10px] font-mono shrink-0 ${
+                    activeTab === 'manage'
+                      ? 'bg-black/20 text-black font-bold'
+                      : 'bg-[#161616] text-[#9e9e9e]'
+                  }`}
+                >
+                  {tracks.length}
+                </span>
               </button>
 
               {/* 2. Thêm Truyện Mới */}
               <button
+                type="button"
                 onClick={() => {
                   resetForm();
                   setActiveTab('add');
                   setIsTechDropdownOpen(false);
                 }}
-                className={`flex-1 h-11 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer select-none text-center ${
+                title="Thêm bộ truyện mới hoặc chỉnh sửa truyện"
+                className={`w-full min-w-0 h-10 px-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer select-none border ${
                   activeTab === 'add'
-                    ? 'bg-[#1ed760] text-black shadow-md shadow-[#1ed760]/20 font-bold'
-                    : 'bg-[#242424]/60 text-[#d1d1d1] hover:bg-[#282828] hover:text-white'
+                    ? 'bg-[#1ed760] text-black border-[#1ed760] shadow-md shadow-[#1ed760]/20 font-bold'
+                    : 'bg-[#222222] text-[#d1d1d1] border-[#2c2c2c] hover:bg-[#2a2a2a] hover:text-white hover:border-[#3a3a3a]'
                 }`}
               >
-                <Plus size={16} className={activeTab === 'add' ? 'text-black' : 'text-[#1ed760]'} />
-                <span className="truncate">{editingTrackId ? 'Chỉnh Sửa' : 'Thêm Truyện'}</span>
+                <Plus size={15} className={`shrink-0 ${activeTab === 'add' ? 'text-black' : 'text-[#1ed760]'}`} />
+                <span className="truncate">{editingTrackId ? 'Sửa Truyện' : 'Thêm Truyện'}</span>
               </button>
 
               {/* 3. Đo Lường Traffic */}
               <button
+                type="button"
                 onClick={() => {
                   setActiveTab('traffic');
                   loadTrafficStats();
                   setIsTechDropdownOpen(false);
                 }}
-                className={`flex-1 h-11 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer select-none text-center ${
+                title="Đo lường Traffic và thống kê người nghe theo thời gian thực"
+                className={`w-full min-w-0 h-10 px-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer select-none border ${
                   activeTab === 'traffic'
-                    ? 'bg-[#1ed760] text-black shadow-md shadow-[#1ed760]/20 font-bold'
-                    : 'bg-[#242424]/60 text-[#d1d1d1] hover:bg-[#282828] hover:text-white'
+                    ? 'bg-[#1ed760] text-black border-[#1ed760] shadow-md shadow-[#1ed760]/20 font-bold'
+                    : 'bg-[#222222] text-[#d1d1d1] border-[#2c2c2c] hover:bg-[#2a2a2a] hover:text-white hover:border-[#3a3a3a]'
                 }`}
               >
-                <Activity size={16} className={activeTab === 'traffic' ? 'text-black' : 'text-[#1ed760]'} />
-                <span className="truncate">Đo Lường Traffic</span>
+                <Activity size={14} className={`shrink-0 ${activeTab === 'traffic' ? 'text-black' : 'text-[#1ed760]'}`} />
+                <span className="truncate">Traffic</span>
                 {trafficStats?.summary.activeNow ? (
-                  <span className={`w-2 h-2 rounded-full ${activeTab === 'traffic' ? 'bg-black' : 'bg-emerald-400'} animate-pulse`} title="Có khách online"></span>
+                  <span
+                    className={`w-2 h-2 rounded-full shrink-0 ${
+                      activeTab === 'traffic' ? 'bg-black' : 'bg-emerald-400'
+                    } animate-pulse`}
+                    title="Có khách đang online"
+                  />
                 ) : null}
               </button>
 
               {/* 4. Affiliate Random */}
               <button
+                type="button"
                 onClick={() => {
                   setActiveTab('affiliate');
                   setIsTechDropdownOpen(false);
                 }}
-                className={`flex-1 h-11 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer select-none text-center ${
+                title={`Quản lý danh sách link tiếp thị Affiliate (${affiliateList.length} link)`}
+                className={`w-full min-w-0 h-10 px-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer select-none border ${
                   activeTab === 'affiliate'
-                    ? 'bg-[#1ed760] text-black shadow-md shadow-[#1ed760]/20 font-bold'
-                    : 'bg-[#242424]/60 text-[#d1d1d1] hover:bg-[#282828] hover:text-white'
+                    ? 'bg-[#1ed760] text-black border-[#1ed760] shadow-md shadow-[#1ed760]/20 font-bold'
+                    : 'bg-[#222222] text-[#d1d1d1] border-[#2c2c2c] hover:bg-[#2a2a2a] hover:text-white hover:border-[#3a3a3a]'
                 }`}
               >
-                <Shuffle size={16} className={activeTab === 'affiliate' ? 'text-black' : 'text-[#1ed760]'} />
-                <span className="truncate">Affiliate ({affiliateList.length})</span>
+                <Shuffle size={14} className={`shrink-0 ${activeTab === 'affiliate' ? 'text-black' : 'text-[#1ed760]'}`} />
+                <span className="truncate">Affiliate</span>
+                <span
+                  className={`px-1.5 py-0.2 rounded-md text-[10px] font-mono shrink-0 ${
+                    activeTab === 'affiliate'
+                      ? 'bg-black/20 text-black font-bold'
+                      : 'bg-[#161616] text-[#9e9e9e]'
+                  }`}
+                >
+                  {affiliateList.length}
+                </span>
               </button>
 
               {/* 5. Cài Đặt Website */}
               <button
+                type="button"
                 onClick={() => {
                   setActiveTab('settings');
                   loadSettingsFromServer();
                   setIsTechDropdownOpen(false);
                 }}
-                className={`flex-1 h-11 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer select-none text-center ${
+                title="Cài đặt thương hiệu, SEO, màu sắc & banner website"
+                className={`w-full min-w-0 h-10 px-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer select-none border ${
                   activeTab === 'settings'
-                    ? 'bg-[#1ed760] text-black shadow-md shadow-[#1ed760]/20 font-bold'
-                    : 'bg-[#242424]/60 text-[#d1d1d1] hover:bg-[#282828] hover:text-white'
+                    ? 'bg-[#1ed760] text-black border-[#1ed760] shadow-md shadow-[#1ed760]/20 font-bold'
+                    : 'bg-[#222222] text-[#d1d1d1] border-[#2c2c2c] hover:bg-[#2a2a2a] hover:text-white hover:border-[#3a3a3a]'
                 }`}
               >
-                <Sliders size={16} className={activeTab === 'settings' ? 'text-black' : 'text-[#1ed760]'} />
-                <span className="truncate">Cài Đặt & Banner</span>
+                <Sliders size={14} className={`shrink-0 ${activeTab === 'settings' ? 'text-black' : 'text-[#1ed760]'}`} />
+                <span className="truncate">Cài Đặt Web</span>
               </button>
 
-              {/* 6. Tài Khoản Admin */}
+              {/* 6. Trang Tĩnh & Chính Sách (Footer) */}
               <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('pages');
+                  loadSettingsFromServer();
+                  setIsTechDropdownOpen(false);
+                }}
+                title="Chỉnh sửa 5 trang chân trang: Giới thiệu, Liên hệ, Chính sách bảo mật, Điều khoản sử dụng, Miễn trừ trách nhiệm & Bản quyền"
+                className={`w-full min-w-0 h-10 px-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer select-none border ${
+                  activeTab === 'pages'
+                    ? 'bg-[#1ed760] text-black border-[#1ed760] shadow-md shadow-[#1ed760]/20 font-bold'
+                    : 'bg-[#222222] text-[#d1d1d1] border-[#2c2c2c] hover:bg-[#2a2a2a] hover:text-white hover:border-[#3a3a3a]'
+                }`}
+              >
+                <FileText size={14} className={`shrink-0 ${activeTab === 'pages' ? 'text-black' : 'text-[#1ed760]'}`} />
+                <span className="truncate">Chính Sách</span>
+              </button>
+
+              {/* 7. Tài Khoản Admin */}
+              <button
+                type="button"
                 onClick={() => {
                   setActiveTab('accounts');
                   fetchAdminAccounts().then(accs => setAdminAccounts(accs));
                   setIsTechDropdownOpen(false);
                 }}
-                className={`flex-1 h-11 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer select-none text-center ${
+                title={`Quản lý tài khoản Quản trị viên & Google Authenticator 2FA (${adminAccounts.length} tài khoản)`}
+                className={`w-full min-w-0 h-10 px-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer select-none border ${
                   activeTab === 'accounts'
-                    ? 'bg-[#1ed760] text-black shadow-md shadow-[#1ed760]/20 font-bold'
-                    : 'bg-[#242424]/60 text-[#d1d1d1] hover:bg-[#282828] hover:text-white'
+                    ? 'bg-[#1ed760] text-black border-[#1ed760] shadow-md shadow-[#1ed760]/20 font-bold'
+                    : 'bg-[#222222] text-[#d1d1d1] border-[#2c2c2c] hover:bg-[#2a2a2a] hover:text-white hover:border-[#3a3a3a]'
                 }`}
               >
-                <Users size={16} className={activeTab === 'accounts' ? 'text-black' : 'text-[#1ed760]'} />
-                <span className="truncate">Admin ({adminAccounts.length})</span>
+                <Users size={14} className={`shrink-0 ${activeTab === 'accounts' ? 'text-black' : 'text-[#1ed760]'}`} />
+                <span className="truncate">Admin</span>
+                <span
+                  className={`px-1.5 py-0.2 rounded-md text-[10px] font-mono shrink-0 ${
+                    activeTab === 'accounts'
+                      ? 'bg-black/20 text-black font-bold'
+                      : 'bg-[#161616] text-[#9e9e9e]'
+                  }`}
+                >
+                  {adminAccounts.length}
+                </span>
               </button>
 
-              {/* 7. Dropdown Menu Hệ Thống & Kỹ Thuật (Backup, API, Supabase) */}
-              <div className="relative flex-1" ref={techDropdownRef}>
+              {/* 8. Dropdown Menu Hệ Thống & Kỹ Thuật (Backup, API, Supabase) */}
+              <div className="relative w-full min-w-0" ref={techDropdownRef}>
                 <button
                   type="button"
                   onClick={() => setIsTechDropdownOpen(!isTechDropdownOpen)}
-                  className={`w-full h-11 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition cursor-pointer select-none text-center ${
+                  title="Công cụ kỹ thuật: Backup dữ liệu, Cổng API RESTful, Cấu hình Supabase SQL"
+                  className={`w-full min-w-0 h-10 px-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer select-none border ${
                     isTechTabActive
-                      ? 'bg-[#1ed760] text-black shadow-md shadow-[#1ed760]/20 font-bold'
-                      : 'bg-[#242424]/60 text-[#d1d1d1] hover:bg-[#282828] hover:text-white'
+                      ? 'bg-[#1ed760] text-black border-[#1ed760] shadow-md shadow-[#1ed760]/20 font-bold'
+                      : 'bg-[#222222] text-[#d1d1d1] border-[#2c2c2c] hover:bg-[#2a2a2a] hover:text-white hover:border-[#3a3a3a]'
                   }`}
                 >
-                  <Wrench size={15} className={isTechTabActive ? 'text-black' : 'text-[#1ed760]'} />
+                  <Wrench size={14} className={`shrink-0 ${isTechTabActive ? 'text-black' : 'text-[#1ed760]'}`} />
                   <span className="truncate">{getActiveTechLabel()}</span>
-                  <ChevronDown size={14} className={`transition-transform duration-200 shrink-0 ${isTechDropdownOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown
+                    size={13}
+                    className={`transition-transform duration-200 shrink-0 ${isTechDropdownOpen ? 'rotate-180' : ''}`}
+                  />
                 </button>
 
                 {/* Floating Tech Menu Dropdown */}
@@ -2061,6 +2130,7 @@ export const Admin: React.FC<AdminProps> = ({
                     <div className="py-1 space-y-1">
                       {/* Sub-item 1: Backup */}
                       <button
+                        type="button"
                         onClick={() => {
                           setActiveTab('backup');
                           loadBackupInfo();
@@ -2072,12 +2142,12 @@ export const Admin: React.FC<AdminProps> = ({
                             : 'hover:bg-[#282828] text-white'
                         }`}
                       >
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${activeTab === 'backup' ? 'bg-black/20 text-black' : 'bg-[#242424] text-sky-400'}`}>
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${activeTab === 'backup' ? 'bg-black/20 text-black' : 'bg-[#242424] text-sky-400'}`}>
                           <HardDrive size={16} />
                         </div>
-                        <div>
-                          <div className="font-bold">Backup & Dọn Rác File</div>
-                          <div className={`text-[10px] ${activeTab === 'backup' ? 'text-black/80' : 'text-[#8e8e8e]'}`}>
+                        <div className="min-w-0">
+                          <div className="font-bold truncate">Backup & Dọn Rác File</div>
+                          <div className={`text-[10px] truncate ${activeTab === 'backup' ? 'text-black/80' : 'text-[#8e8e8e]'}`}>
                             Sao lưu db.json & quét MP3 thừa
                           </div>
                         </div>
@@ -2085,6 +2155,7 @@ export const Admin: React.FC<AdminProps> = ({
 
                       {/* Sub-item 2: Cổng API */}
                       <button
+                        type="button"
                         onClick={() => {
                           setActiveTab('api');
                           loadSettingsFromServer();
@@ -2096,12 +2167,12 @@ export const Admin: React.FC<AdminProps> = ({
                             : 'hover:bg-[#282828] text-white'
                         }`}
                       >
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${activeTab === 'api' ? 'bg-black/20 text-black' : 'bg-[#242424] text-purple-400'}`}>
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${activeTab === 'api' ? 'bg-black/20 text-black' : 'bg-[#242424] text-purple-400'}`}>
                           <Code2 size={16} />
                         </div>
-                        <div>
-                          <div className="font-bold">Cổng API Truyện RESTful</div>
-                          <div className={`text-[10px] ${activeTab === 'api' ? 'text-black/80' : 'text-[#8e8e8e]'}`}>
+                        <div className="min-w-0">
+                          <div className="font-bold truncate">Cổng API Truyện RESTful</div>
+                          <div className={`text-[10px] truncate ${activeTab === 'api' ? 'text-black/80' : 'text-[#8e8e8e]'}`}>
                             Đăng, sửa, xóa truyện tự động
                           </div>
                         </div>
@@ -2109,6 +2180,7 @@ export const Admin: React.FC<AdminProps> = ({
 
                       {/* Sub-item 3: Supabase SQL */}
                       <button
+                        type="button"
                         onClick={() => {
                           setActiveTab('sql');
                           setIsTechDropdownOpen(false);
@@ -2119,12 +2191,12 @@ export const Admin: React.FC<AdminProps> = ({
                             : 'hover:bg-[#282828] text-white'
                         }`}
                       >
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${activeTab === 'sql' ? 'bg-black/20 text-black' : 'bg-[#242424] text-emerald-400'}`}>
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${activeTab === 'sql' ? 'bg-black/20 text-black' : 'bg-[#242424] text-emerald-400'}`}>
                           <Database size={16} />
                         </div>
-                        <div>
-                          <div className="font-bold">Cấu Hình Supabase SQL</div>
-                          <div className={`text-[10px] ${activeTab === 'sql' ? 'text-black/80' : 'text-[#8e8e8e]'}`}>
+                        <div className="min-w-0">
+                          <div className="font-bold truncate">Cấu Hình Supabase SQL</div>
+                          <div className={`text-[10px] truncate ${activeTab === 'sql' ? 'text-black/80' : 'text-[#8e8e8e]'}`}>
                             Đồng bộ CSDL PostgreSQL đám mây
                           </div>
                         </div>
@@ -2134,166 +2206,14 @@ export const Admin: React.FC<AdminProps> = ({
                 )}
               </div>
             </div>
-
-            {/* Tablet & Small Screens (sm to lg): Grid 4 cột đều nhau */}
-            <div className="hidden sm:grid lg:hidden grid-cols-4 gap-2 p-2 bg-[#181818] rounded-2xl border border-[#282828]">
-              <button
-                onClick={() => { setActiveTab('manage'); resetForm(); }}
-                className={`h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
-                  activeTab === 'manage' ? 'bg-[#1ed760] text-black font-bold' : 'bg-[#242424] text-[#d1d1d1]'
-                }`}
-              >
-                <Radio size={15} />
-                <span className="truncate">Truyện ({tracks.length})</span>
-              </button>
-              <button
-                onClick={() => { resetForm(); setActiveTab('add'); }}
-                className={`h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
-                  activeTab === 'add' ? 'bg-[#1ed760] text-black font-bold' : 'bg-[#242424] text-[#d1d1d1]'
-                }`}
-              >
-                <Plus size={15} />
-                <span className="truncate">Thêm Mới</span>
-              </button>
-              <button
-                onClick={() => { setActiveTab('traffic'); loadTrafficStats(); }}
-                className={`h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
-                  activeTab === 'traffic' ? 'bg-[#1ed760] text-black font-bold' : 'bg-[#242424] text-[#d1d1d1]'
-                }`}
-              >
-                <Activity size={15} />
-                <span className="truncate">Traffic</span>
-              </button>
-              <button
-                onClick={() => setActiveTab('affiliate')}
-                className={`h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
-                  activeTab === 'affiliate' ? 'bg-[#1ed760] text-black font-bold' : 'bg-[#242424] text-[#d1d1d1]'
-                }`}
-              >
-                <Shuffle size={15} />
-                <span className="truncate">Affiliate ({affiliateList.length})</span>
-              </button>
-              <button
-                onClick={() => { setActiveTab('settings'); loadSettingsFromServer(); }}
-                className={`h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
-                  activeTab === 'settings' ? 'bg-[#1ed760] text-black font-bold' : 'bg-[#242424] text-[#d1d1d1]'
-                }`}
-              >
-                <Sliders size={15} />
-                <span className="truncate">Cài Đặt</span>
-              </button>
-              <button
-                onClick={() => { setActiveTab('accounts'); fetchAdminAccounts().then(accs => setAdminAccounts(accs)); }}
-                className={`h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
-                  activeTab === 'accounts' ? 'bg-[#1ed760] text-black font-bold' : 'bg-[#242424] text-[#d1d1d1]'
-                }`}
-              >
-                <Users size={15} />
-                <span className="truncate">Admin ({adminAccounts.length})</span>
-              </button>
-              <button
-                onClick={() => { setActiveTab('backup'); loadBackupInfo(); }}
-                className={`h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
-                  activeTab === 'backup' ? 'bg-[#1ed760] text-black font-bold' : 'bg-[#242424] text-[#d1d1d1]'
-                }`}
-              >
-                <HardDrive size={15} />
-                <span className="truncate">Backup</span>
-              </button>
-              <button
-                onClick={() => { setActiveTab('api'); loadSettingsFromServer(); }}
-                className={`h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
-                  activeTab === 'api' ? 'bg-[#1ed760] text-black font-bold' : 'bg-[#242424] text-[#d1d1d1]'
-                }`}
-              >
-                <Code2 size={15} />
-                <span className="truncate">Cổng API</span>
-              </button>
-            </div>
-
-            {/* Mobile View (<sm): Grid 2 cột vuông vức, đều nhau 100% */}
-            <div className="grid sm:hidden grid-cols-2 gap-2 p-2 bg-[#181818] rounded-2xl border border-[#282828]">
-              <button
-                onClick={() => { setActiveTab('manage'); resetForm(); }}
-                className={`h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
-                  activeTab === 'manage' ? 'bg-[#1ed760] text-black font-bold' : 'bg-[#242424] text-[#d1d1d1]'
-                }`}
-              >
-                <Radio size={14} />
-                <span className="truncate">Truyện ({tracks.length})</span>
-              </button>
-              <button
-                onClick={() => { resetForm(); setActiveTab('add'); }}
-                className={`h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
-                  activeTab === 'add' ? 'bg-[#1ed760] text-black font-bold' : 'bg-[#242424] text-[#d1d1d1]'
-                }`}
-              >
-                <Plus size={14} />
-                <span className="truncate">Thêm Truyện</span>
-              </button>
-              <button
-                onClick={() => { setActiveTab('traffic'); loadTrafficStats(); }}
-                className={`h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
-                  activeTab === 'traffic' ? 'bg-[#1ed760] text-black font-bold' : 'bg-[#242424] text-[#d1d1d1]'
-                }`}
-              >
-                <Activity size={14} />
-                <span className="truncate">Traffic</span>
-              </button>
-              <button
-                onClick={() => setActiveTab('affiliate')}
-                className={`h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
-                  activeTab === 'affiliate' ? 'bg-[#1ed760] text-black font-bold' : 'bg-[#242424] text-[#d1d1d1]'
-                }`}
-              >
-                <Shuffle size={14} />
-                <span className="truncate">Affiliate ({affiliateList.length})</span>
-              </button>
-              <button
-                onClick={() => { setActiveTab('settings'); loadSettingsFromServer(); }}
-                className={`h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
-                  activeTab === 'settings' ? 'bg-[#1ed760] text-black font-bold' : 'bg-[#242424] text-[#d1d1d1]'
-                }`}
-              >
-                <Sliders size={14} />
-                <span className="truncate">Cài Đặt</span>
-              </button>
-              <button
-                onClick={() => { setActiveTab('accounts'); fetchAdminAccounts().then(accs => setAdminAccounts(accs)); }}
-                className={`h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
-                  activeTab === 'accounts' ? 'bg-[#1ed760] text-black font-bold' : 'bg-[#242424] text-[#d1d1d1]'
-                }`}
-              >
-                <Users size={14} />
-                <span className="truncate">Admin ({adminAccounts.length})</span>
-              </button>
-              <button
-                onClick={() => { setActiveTab('backup'); loadBackupInfo(); }}
-                className={`h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
-                  activeTab === 'backup' ? 'bg-[#1ed760] text-black font-bold' : 'bg-[#242424] text-[#d1d1d1]'
-                }`}
-              >
-                <HardDrive size={14} />
-                <span className="truncate">Backup</span>
-              </button>
-              <button
-                onClick={() => { setActiveTab('api'); loadSettingsFromServer(); }}
-                className={`h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
-                  activeTab === 'api' ? 'bg-[#1ed760] text-black font-bold' : 'bg-[#242424] text-[#d1d1d1]'
-                }`}
-              >
-                <Code2 size={14} />
-                <span className="truncate">Cổng API</span>
-              </button>
-            </div>
           </div>
         )}
 
         {/* MODE 2: LƯỚI 4 NHÓM KHOA HỌC (CÁC KHỐI CHỨC NĂNG CÂN ĐỐI 100%) */}
         {navViewMode === 'grouped' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
             {/* NHÓM 1: QUẢN LÝ NỘI DUNG TRUYỆN */}
-            <div className="p-3 rounded-2xl bg-[#181818] border border-[#282828] space-y-2">
+            <div className="p-3 rounded-2xl bg-[#181818] border border-[#282828] space-y-2.5">
               <div className="flex items-center justify-between text-xs font-bold text-white px-1">
                 <span className="flex items-center gap-1.5 text-[#1ed760]">
                   <Radio size={14} />
@@ -2303,32 +2223,34 @@ export const Admin: React.FC<AdminProps> = ({
               </div>
               <div className="grid grid-cols-2 gap-1.5">
                 <button
+                  type="button"
                   onClick={() => { setActiveTab('manage'); resetForm(); }}
-                  className={`py-2.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                  className={`h-9 min-w-0 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
                     activeTab === 'manage'
                       ? 'bg-[#1ed760] text-black font-bold shadow-md'
                       : 'bg-[#242424] text-[#d1d1d1] hover:bg-[#2e2e2e]'
                   }`}
                 >
-                  <Radio size={13} />
+                  <Radio size={13} className="shrink-0" />
                   <span className="truncate">Danh Sách</span>
                 </button>
                 <button
+                  type="button"
                   onClick={() => { resetForm(); setActiveTab('add'); }}
-                  className={`py-2.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                  className={`h-9 min-w-0 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
                     activeTab === 'add'
                       ? 'bg-[#1ed760] text-black font-bold shadow-md'
                       : 'bg-[#242424] text-[#d1d1d1] hover:bg-[#2e2e2e]'
                   }`}
                 >
-                  <Plus size={13} />
+                  <Plus size={13} className="shrink-0" />
                   <span className="truncate">Thêm Mới</span>
                 </button>
               </div>
             </div>
 
             {/* NHÓM 2: HIỆU QUẢ & DOANH THU */}
-            <div className="p-3 rounded-2xl bg-[#181818] border border-[#282828] space-y-2">
+            <div className="p-3 rounded-2xl bg-[#181818] border border-[#282828] space-y-2.5">
               <div className="flex items-center justify-between text-xs font-bold text-white px-1">
                 <span className="flex items-center gap-1.5 text-sky-400">
                   <Activity size={14} />
@@ -2338,70 +2260,89 @@ export const Admin: React.FC<AdminProps> = ({
               </div>
               <div className="grid grid-cols-2 gap-1.5">
                 <button
+                  type="button"
                   onClick={() => { setActiveTab('traffic'); loadTrafficStats(); }}
-                  className={`py-2.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                  className={`h-9 min-w-0 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
                     activeTab === 'traffic'
                       ? 'bg-[#1ed760] text-black font-bold shadow-md'
                       : 'bg-[#242424] text-[#d1d1d1] hover:bg-[#2e2e2e]'
                   }`}
                 >
-                  <Activity size={13} />
+                  <Activity size={13} className="shrink-0" />
                   <span className="truncate">Traffic</span>
                   {trafficStats?.summary.activeNow ? (
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
                   ) : null}
                 </button>
                 <button
+                  type="button"
                   onClick={() => setActiveTab('affiliate')}
-                  className={`py-2.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                  className={`h-9 min-w-0 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
                     activeTab === 'affiliate'
                       ? 'bg-[#1ed760] text-black font-bold shadow-md'
                       : 'bg-[#242424] text-[#d1d1d1] hover:bg-[#2e2e2e]'
                   }`}
                 >
-                  <Shuffle size={13} />
+                  <Shuffle size={13} className="shrink-0" />
                   <span className="truncate">Affiliate</span>
                 </button>
               </div>
             </div>
 
             {/* NHÓM 3: CẤU HÌNH & TÀI KHOẢN */}
-            <div className="p-3 rounded-2xl bg-[#181818] border border-[#282828] space-y-2">
+            <div className="p-3 rounded-2xl bg-[#181818] border border-[#282828] space-y-2.5">
               <div className="flex items-center justify-between text-xs font-bold text-white px-1">
                 <span className="flex items-center gap-1.5 text-amber-400">
                   <Sliders size={14} />
-                  <span>3. CẤU HÌNH & QUẢN TRỊ</span>
+                  <span>3. CẤU HÌNH & CHÍNH SÁCH</span>
                 </span>
                 <span className="text-[10px] text-[#8e8e8e] font-mono">{adminAccounts.length} admin</span>
               </div>
-              <div className="grid grid-cols-2 gap-1.5">
+              <div className="grid grid-cols-3 gap-1.5">
                 <button
+                  type="button"
                   onClick={() => { setActiveTab('settings'); loadSettingsFromServer(); }}
-                  className={`py-2.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                  className={`h-9 min-w-0 px-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition cursor-pointer ${
                     activeTab === 'settings'
                       ? 'bg-[#1ed760] text-black font-bold shadow-md'
                       : 'bg-[#242424] text-[#d1d1d1] hover:bg-[#2e2e2e]'
                   }`}
+                  title="Cài đặt thương hiệu & banner"
                 >
-                  <Sliders size={13} />
+                  <Sliders size={13} className="shrink-0" />
                   <span className="truncate">Website</span>
                 </button>
                 <button
+                  type="button"
+                  onClick={() => { setActiveTab('pages'); loadSettingsFromServer(); }}
+                  className={`h-9 min-w-0 px-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition cursor-pointer ${
+                    activeTab === 'pages'
+                      ? 'bg-[#1ed760] text-black font-bold shadow-md'
+                      : 'bg-[#242424] text-[#d1d1d1] hover:bg-[#2e2e2e]'
+                  }`}
+                  title="Chỉnh sửa trang Giới thiệu, Liên hệ, Chính sách bảo mật, Điều khoản sử dụng, Miễn trừ trách nhiệm & Bản quyền"
+                >
+                  <FileText size={13} className="shrink-0" />
+                  <span className="truncate">Chính Sách</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => { setActiveTab('accounts'); fetchAdminAccounts().then(accs => setAdminAccounts(accs)); }}
-                  className={`py-2.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                  className={`h-9 min-w-0 px-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition cursor-pointer ${
                     activeTab === 'accounts'
                       ? 'bg-[#1ed760] text-black font-bold shadow-md'
                       : 'bg-[#242424] text-[#d1d1d1] hover:bg-[#2e2e2e]'
                   }`}
+                  title="Tài khoản quản trị & 2FA"
                 >
-                  <Users size={13} />
-                  <span className="truncate">Tài Khoản</span>
+                  <Users size={13} className="shrink-0" />
+                  <span className="truncate">Admin</span>
                 </button>
               </div>
             </div>
 
             {/* NHÓM 4: HỆ THỐNG KỸ THUẬT */}
-            <div className="p-3 rounded-2xl bg-[#181818] border border-[#282828] space-y-2">
+            <div className="p-3 rounded-2xl bg-[#181818] border border-[#282828] space-y-2.5">
               <div className="flex items-center justify-between text-xs font-bold text-white px-1">
                 <span className="flex items-center gap-1.5 text-purple-400">
                   <Wrench size={14} />
@@ -2411,39 +2352,42 @@ export const Admin: React.FC<AdminProps> = ({
               </div>
               <div className="grid grid-cols-3 gap-1.5">
                 <button
+                  type="button"
                   onClick={() => { setActiveTab('backup'); loadBackupInfo(); }}
-                  className={`py-2.5 px-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition cursor-pointer ${
+                  className={`h-9 min-w-0 px-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition cursor-pointer ${
                     activeTab === 'backup'
                       ? 'bg-[#1ed760] text-black font-bold shadow-md'
                       : 'bg-[#242424] text-[#d1d1d1] hover:bg-[#2e2e2e]'
                   }`}
                   title="Backup dữ liệu & dọn rác uploads"
                 >
-                  <HardDrive size={13} />
+                  <HardDrive size={13} className="shrink-0" />
                   <span className="truncate">Backup</span>
                 </button>
                 <button
+                  type="button"
                   onClick={() => { setActiveTab('api'); loadSettingsFromServer(); }}
-                  className={`py-2.5 px-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition cursor-pointer ${
+                  className={`h-9 min-w-0 px-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition cursor-pointer ${
                     activeTab === 'api'
                       ? 'bg-[#1ed760] text-black font-bold shadow-md'
                       : 'bg-[#242424] text-[#d1d1d1] hover:bg-[#2e2e2e]'
                   }`}
                   title="Cổng API RESTful"
                 >
-                  <Code2 size={13} />
+                  <Code2 size={13} className="shrink-0" />
                   <span className="truncate">API</span>
                 </button>
                 <button
+                  type="button"
                   onClick={() => setActiveTab('sql')}
-                  className={`py-2.5 px-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition cursor-pointer ${
+                  className={`h-9 min-w-0 px-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition cursor-pointer ${
                     activeTab === 'sql'
                       ? 'bg-[#1ed760] text-black font-bold shadow-md'
                       : 'bg-[#242424] text-[#d1d1d1] hover:bg-[#2e2e2e]'
                   }`}
                   title="Cấu hình CSDL Supabase PostgreSQL"
                 >
-                  <Database size={13} />
+                  <Database size={13} className="shrink-0" />
                   <span className="truncate">SQL</span>
                 </button>
               </div>
@@ -4700,6 +4644,243 @@ https://s.lazada.vn/s.flashsale_deal`}
               <span>{isSavingSettings ? 'Đang Lưu Lên Server...' : 'Lưu Thay Đổi Cài Đặt Lên Server'}</span>
             </button>
           </div>
+        </form>
+      )}
+
+      {/* TAB: QUẢN LÝ & CHỈNH SỬA 5 TRANG CHÂN TRANG (GIỚI THIỆU, LIÊN HỆ, CHÍNH SÁCH BẢO MẬT, ĐIỀU KHOẢN SỬ DỤNG, MIỄN TRỪ TRÁCH NHIỆM & BẢN QUYỀN) */}
+      {activeTab === 'pages' && (
+        <form onSubmit={handleSaveSettings} className="space-y-6 animate-fade-in">
+          {/* Header Banner */}
+          <div className="p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-[#1ed760]/15 via-slate-900 to-slate-900 border border-[#1ed760]/30 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="space-y-1.5">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1ed760]/20 border border-[#1ed760]/40 text-[#1ed760] text-xs font-bold">
+                <FileText size={14} />
+                <span>QUẢN LÝ NỘI DUNG TRANG TĨNH & CHÍNH SÁCH FOOTER</span>
+              </div>
+              <h2 className="text-xl font-black text-white">
+                Chỉnh Sửa Nội Dung: Giới Thiệu • Liên Hệ • Chính Sách Bảo Mật • Điều Khoản • Miễn Trừ & Bản Quyền
+              </h2>
+              <p className="text-xs text-[#d1d1d1] max-w-3xl leading-relaxed">
+                Toàn bộ 5 trang thông tin và chính sách hiển thị dưới chân trang (Footer) có thể tùy chỉnh trực tiếp tại đây. Hỗ trợ cả văn bản thuần (tự động xuống dòng) hoặc mã HTML tùy chỉnh. Sau khi chỉnh sửa, bấm <strong className="text-[#1ed760]">Lưu Nội Dung Trang Lên Server</strong> để áp dụng ngay lập tức.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+              <button
+                type="submit"
+                disabled={isSavingSettings}
+                className="px-5 py-2.5 rounded-xl font-bold text-xs bg-gradient-to-r from-[#1ed760] to-[#1db954] hover:from-[#1db954] hover:to-[#1db954] text-slate-950 shadow-lg shadow-[#1ed760]/20 flex items-center gap-2 transition cursor-pointer"
+              >
+                <BookmarkCheck size={16} />
+                <span>{isSavingSettings ? 'Đang Lưu...' : 'Lưu Nội Dung Trang Lên Server'}</span>
+              </button>
+            </div>
+          </div>
+
+          {settingsSaveMsg && (
+            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 size={18} />
+                <span>{settingsSaveMsg}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSettingsSaveMsg(null)}
+                className="text-[#b3b3b3] hover:text-white text-xs cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
+          {/* Bộ chọn 5 trang */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
+            {STATIC_PAGES_CONFIG.map((page, idx) => {
+              const isSelected = selectedStaticPageSlug === page.slug;
+              const currentVal =
+                settingsForm[page.settingsKey] !== undefined
+                  ? String(settingsForm[page.settingsKey])
+                  : String(DEFAULT_SITE_SETTINGS[page.settingsKey] || '');
+              return (
+                <button
+                  key={page.slug}
+                  type="button"
+                  onClick={() => setSelectedStaticPageSlug(page.slug)}
+                  className={`p-3.5 rounded-2xl border text-left transition cursor-pointer flex flex-col justify-between gap-2 ${
+                    isSelected
+                      ? 'bg-[#1ed760]/15 border-[#1ed760] shadow-lg shadow-[#1ed760]/10'
+                      : 'bg-[#181818] border-[#282828] hover:border-[#3e3e3e]'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span
+                      className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                        isSelected
+                          ? 'bg-[#1ed760] text-black'
+                          : 'bg-[#242424] text-[#b3b3b3]'
+                      }`}
+                    >
+                      Trang {idx + 1}
+                    </span>
+                    <span className="text-[10px] font-mono text-[#8e8e8e]">
+                      {page.path}
+                    </span>
+                  </div>
+                  <div>
+                    <div className={`text-xs font-bold line-clamp-1 ${isSelected ? 'text-[#1ed760]' : 'text-white'}`}>
+                      {page.shortTitle}
+                    </div>
+                    <div className="text-[10px] text-[#8e8e8e] mt-0.5">
+                      {currentVal.length.toLocaleString('vi-VN')} ký tự
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Khu vực soạn thảo & xem trước trang đang chọn */}
+          {(() => {
+            const activePageCfg =
+              STATIC_PAGES_CONFIG.find((p) => p.slug === selectedStaticPageSlug) ||
+              STATIC_PAGES_CONFIG[0];
+            const currentContent =
+              settingsForm[activePageCfg.settingsKey] !== undefined
+                ? String(settingsForm[activePageCfg.settingsKey])
+                : String(DEFAULT_SITE_SETTINGS[activePageCfg.settingsKey] || '');
+            const isHtml = /<[a-z][\s\S]*>/i.test(currentContent);
+
+            return (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* Cột Trái: Khung soạn thảo nội dung */}
+                <div className="lg:col-span-7 p-5 sm:p-6 rounded-2xl bg-[#181818] border border-[#282828] space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#282828] pb-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <Edit3 size={16} className="text-[#1ed760]" />
+                        <h3 className="text-sm font-bold text-white">
+                          Soạn Thảo: {activePageCfg.title}
+                        </h3>
+                        <code className="px-2 py-0.5 rounded bg-[#121212] border border-[#333333] text-[11px] text-[#1ed760] font-mono">
+                          {activePageCfg.path}
+                        </code>
+                      </div>
+                      <p className="text-[11px] text-[#b3b3b3] mt-0.5">
+                        {activePageCfg.subtitle}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const defaultVal = String(DEFAULT_SITE_SETTINGS[activePageCfg.settingsKey] || '');
+                          setSettingsForm({
+                            ...settingsForm,
+                            [activePageCfg.settingsKey]: defaultVal,
+                          });
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-[#242424] hover:bg-[#333333] text-[#d1d1d1] hover:text-white border border-[#333333] text-[11px] font-semibold flex items-center gap-1.5 transition cursor-pointer"
+                        title="Khôi phục nội dung mẫu mặc định cho trang này"
+                      >
+                        <RotateCcw size={12} />
+                        <span>Khôi phục mẫu</span>
+                      </button>
+
+                      <a
+                        href={activePageCfg.path}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          window.history.pushState({}, '', activePageCfg.path);
+                          window.dispatchEvent(new PopStateEvent('popstate'));
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-[#1ed760]/15 hover:bg-[#1ed760]/25 text-[#1ed760] border border-[#1ed760]/30 text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer"
+                        title="Mở xem trang này ngoài giao diện người dùng"
+                      >
+                        <ExternalLink size={12} />
+                        <span>Mở trang {activePageCfg.path}</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-semibold text-[#d1d1d1] block mb-2">
+                      Nội dung hiển thị trên trang <span className="text-[#1ed760]">{activePageCfg.shortTitle}</span>:
+                    </label>
+                    <textarea
+                      rows={16}
+                      value={currentContent}
+                      onChange={(e) =>
+                        setSettingsForm({
+                          ...settingsForm,
+                          [activePageCfg.settingsKey]: e.target.value,
+                        })
+                      }
+                      placeholder={`Nhập nội dung cho trang ${activePageCfg.title}...`}
+                      className="w-full p-4 rounded-xl bg-[#121212] border border-[#333333] text-xs sm:text-sm text-white focus:outline-none focus:border-[#1ed760] leading-relaxed font-sans"
+                    />
+                    <div className="flex items-center justify-between text-[11px] text-[#8e8e8e] mt-1.5">
+                      <span>
+                        Mẹo: Có thể viết văn bản thường (xuống dòng tự nhiên) hoặc dùng thẻ HTML (&lt;b&gt;, &lt;h3&gt;, &lt;ul&gt;, &lt;a&gt;...).
+                      </span>
+                      <span className="font-mono">
+                        {currentContent.length.toLocaleString('vi-VN')} ký tự
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-[#282828] flex items-center justify-end gap-3">
+                    <button
+                      type="submit"
+                      disabled={isSavingSettings}
+                      className="px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm bg-gradient-to-r from-[#1ed760] to-[#1db954] hover:from-[#1db954] hover:to-[#1db954] text-slate-950 shadow-lg shadow-[#1ed760]/20 flex items-center gap-2 transition cursor-pointer"
+                    >
+                      <BookmarkCheck size={16} />
+                      <span>{isSavingSettings ? 'Đang Lưu Lên Server...' : 'Lưu Nội Dung Trang Lên Server'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Cột Phải: Xem trước trực tiếp (Live Preview) */}
+                <div className="lg:col-span-5 p-5 sm:p-6 rounded-2xl bg-[#181818] border border-[#282828] space-y-4 flex flex-col">
+                  <div className="flex items-center justify-between border-b border-[#282828] pb-3">
+                    <div className="flex items-center gap-2">
+                      <Eye size={16} className="text-[#1ed760]" />
+                      <h3 className="text-sm font-bold text-white">
+                        Xem Trước Trực Tiếp ({activePageCfg.shortTitle})
+                      </h3>
+                    </div>
+                    <span className="px-2.5 py-0.5 rounded-full bg-[#1ed760]/15 border border-[#1ed760]/30 text-[10px] font-bold text-[#1ed760]">
+                      Live Preview
+                    </span>
+                  </div>
+
+                  <div className="flex-1 rounded-xl bg-[#121212] border border-[#282828] p-4 sm:p-5 overflow-y-auto max-h-[460px] space-y-3">
+                    <div className="border-b border-[#282828] pb-3">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#1ed760] block">
+                        {settingsForm.siteName || 'Gối Ôm Audio'} • Chính Sách & Thông Tin
+                      </span>
+                      <h4 className="text-base font-black text-white mt-0.5">
+                        {activePageCfg.title}
+                      </h4>
+                    </div>
+
+                    {isHtml ? (
+                      <div
+                        className="prose prose-invert max-w-none text-xs sm:text-sm text-[#e5e5e5] leading-relaxed space-y-3"
+                        dangerouslySetInnerHTML={{ __html: currentContent }}
+                      />
+                    ) : (
+                      <div className="text-xs sm:text-sm text-[#e5e5e5] leading-relaxed whitespace-pre-line">
+                        {currentContent || 'Chưa có nội dung...'}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </form>
       )}
 

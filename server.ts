@@ -1503,6 +1503,25 @@ async function startServer() {
       const tracks = await getTracks();
       const today = new Date().toISOString().split('T')[0];
 
+      const staticPagesMeta = [
+        { slug: 'gioi-thieu', title: 'Giới Thiệu' },
+        { slug: 'lien-he', title: 'Liên Hệ' },
+        { slug: 'chinh-sach-bao-mat', title: 'Chính Sách Bảo Mật' },
+        { slug: 'dieu-khoan-su-dung', title: 'Điều Khoản Sử Dụng' },
+        { slug: 'mien-tru-trach-nhiem', title: 'Miễn Trừ Trách Nhiệm & Bản Quyền' },
+      ];
+
+      const staticUrlsXml = staticPagesMeta
+        .map(
+          (p) => `  <url>
+    <loc>${baseUrl}/${p.slug}</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>`
+        )
+        .join('\n');
+
       const urlsXml = tracks
         .map((t) => {
           const slug = slugifyServer(t.title) || t.id;
@@ -1524,6 +1543,7 @@ async function startServer() {
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
+${staticUrlsXml}
 ${urlsXml}
 </urlset>`;
 
@@ -1636,7 +1656,40 @@ ${urlsXml}
 
         let matchedTrackThumb = '';
 
-        if (cleanSlug && cleanSlug !== 'admin' && cleanSlug !== 'quan-tri' && cleanSlug !== 'system-secret-admin') {
+        const staticPageMap: Record<string, { title: string; desc: string }> = {
+          'gioi-thieu': {
+            title: `Giới Thiệu - ${brandName}`,
+            desc: `Giới thiệu về ${brandName} — nền tảng nghe truyện audio trực tuyến miễn phí chất lượng cao.`,
+          },
+          'lien-he': {
+            title: `Liên Hệ - ${brandName}`,
+            desc: `Thông tin liên hệ, góp ý và hợp tác với ban quản trị ${brandName}.`,
+          },
+          'chinh-sach-bao-mat': {
+            title: `Chính Sách Bảo Mật - ${brandName}`,
+            desc: `Chính sách bảo mật thông tin và quyền riêng tư của người nghe tại ${brandName}.`,
+          },
+          'dieu-khoan-su-dung': {
+            title: `Điều Khoản Sử Dụng - ${brandName}`,
+            desc: `Quy định và điều khoản sử dụng dịch vụ nghe truyện trực tuyến tại ${brandName}.`,
+          },
+          'mien-tru-trach-nhiem': {
+            title: `Miễn Trừ Trách Nhiệm & Bản Quyền - ${brandName}`,
+            desc: `Tuyên bố miễn trừ trách nhiệm và chính sách tôn trọng bản quyền tác giả tại ${brandName}.`,
+          },
+        };
+
+        if (cleanSlug && staticPageMap[cleanSlug]) {
+          pageTitle = staticPageMap[cleanSlug].title;
+          pageDesc = staticPageMap[cleanSlug].desc;
+          canonicalUrl = `${baseUrl}/${cleanSlug}`;
+        } else if (
+          cleanSlug &&
+          cleanSlug !== 'admin' &&
+          cleanSlug !== 'quan-tri' &&
+          cleanSlug !== 'system-secret-admin' &&
+          cleanSlug !== 'app-config'
+        ) {
           const tracks = await getTracks();
           const matched = tracks.find(
             (t) =>

@@ -82,6 +82,11 @@ export interface SiteSettings {
   socialBlockerTitle?: string;    // Tiêu đề popup chặn trình duyệt
   socialBlockerDesc?: string;     // Nội dung / Mô tả popup chặn
   socialBlockerBtnText?: string;  // Tên nút bấm mở trình duyệt chuẩn
+  pageAbout?: string;             // Nội dung trang Giới thiệu (/gioi-thieu)
+  pageContact?: string;           // Nội dung trang Liên hệ (/lien-he)
+  pagePrivacy?: string;           // Nội dung trang Chính sách bảo mật (/chinh-sach-bao-mat)
+  pageTerms?: string;             // Nội dung trang Điều khoản sử dụng (/dieu-khoan-su-dung)
+  pageDisclaimer?: string;        // Nội dung trang Miễn trừ trách nhiệm & Bản quyền (/mien-tru-trach-nhiem)
 }
 
 export interface AdminAccount {

@@ -1367,6 +1367,11 @@ export function saveSiteSettings(settings: Partial<SiteSettings>): SiteSettings 
     socialBlockerTitle: settings.socialBlockerTitle !== undefined ? String(settings.socialBlockerTitle) : (dbData.siteSettings.socialBlockerTitle || DEFAULT_SITE_SETTINGS.socialBlockerTitle || 'Vui lòng mở bằng Google Chrome'),
     socialBlockerDesc: settings.socialBlockerDesc !== undefined ? String(settings.socialBlockerDesc) : (dbData.siteSettings.socialBlockerDesc || DEFAULT_SITE_SETTINGS.socialBlockerDesc || 'Website được tối ưu phát âm thanh và nghe liên tục trên ứng dụng Google Chrome. Vui lòng mở bằng Google Chrome để tiếp tục!'),
     socialBlockerBtnText: settings.socialBlockerBtnText !== undefined ? String(settings.socialBlockerBtnText) : (dbData.siteSettings.socialBlockerBtnText || DEFAULT_SITE_SETTINGS.socialBlockerBtnText || 'Mở bằng Google Chrome'),
+    pageAbout: settings.pageAbout !== undefined ? String(settings.pageAbout) : (dbData.siteSettings.pageAbout ?? DEFAULT_SITE_SETTINGS.pageAbout ?? ''),
+    pageContact: settings.pageContact !== undefined ? String(settings.pageContact) : (dbData.siteSettings.pageContact ?? DEFAULT_SITE_SETTINGS.pageContact ?? ''),
+    pagePrivacy: settings.pagePrivacy !== undefined ? String(settings.pagePrivacy) : (dbData.siteSettings.pagePrivacy ?? DEFAULT_SITE_SETTINGS.pagePrivacy ?? ''),
+    pageTerms: settings.pageTerms !== undefined ? String(settings.pageTerms) : (dbData.siteSettings.pageTerms ?? DEFAULT_SITE_SETTINGS.pageTerms ?? ''),
+    pageDisclaimer: settings.pageDisclaimer !== undefined ? String(settings.pageDisclaimer) : (dbData.siteSettings.pageDisclaimer ?? DEFAULT_SITE_SETTINGS.pageDisclaimer ?? ''),
   };
   saveDatabase(dbData);
   return dbData.siteSettings;
