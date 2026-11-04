@@ -41,27 +41,3 @@ export function formatPlayCount(count?: number): string {
   return `${val.toLocaleString('vi-VN')} lượt nghe`;
 }
 
-/**
- * Tính số người đang nghe trực tuyến riêng biệt và hoàn toàn nhất quán cho từng truyện:
- * - Giá trị đang nghe từ 0 đến 20 người
- * - Phân bổ tự nhiên dựa theo độ hot và hash của từng truyện
- * - Đối với CÙNG 1 truyện: ở Mới cập nhật, Đang nghe nhiều, Top lượt nghe, Tất cả audio, hay Trang chi tiết
- *   đều hiển thị CHÍNH XÁC CÙNG 1 CON SỐ ĐANG NGHE DUY NHẤT.
- */
-export function getTrackActiveListeners(track: { id?: string; title?: string; play_count?: number }): number {
-  const hash = getTrackHash(track);
-  const plays = getTrackPlayCount(track);
-
-  // Tỷ lệ phân bổ theo lượt nghe trong dải 10.000 đến 30.000
-  const normalized = Math.max(0, Math.min(1, (plays - 10000) / 20000));
-  const base = Math.round(normalized * 15); // 0 đến 15
-  const jitter = hash % 6; // 0 đến 5
-  let listeners = base + jitter;
-
-  // Giới hạn nghiêm ngặt từ 0 đến 20
-  if (listeners > 20) listeners = 20;
-  if (listeners < 0) listeners = 0;
-
-  return listeners;
-}
-

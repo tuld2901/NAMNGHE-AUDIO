@@ -3,7 +3,7 @@ import { Play, Pause, Moon } from 'lucide-react';
 import { Track, Chapter } from '../types';
 import { useAudio } from '../context/AudioContext';
 import { BrandIcon } from './BrandIcon';
-import { formatPlayCount, getTrackActiveListeners, getTrackPlayCount } from '../services/stats';
+import { formatPlayCount, getTrackPlayCount } from '../services/stats';
 
 interface StoryPageProps {
   track: Track;
@@ -187,12 +187,6 @@ export const StoryPage: React.FC<StoryPageProps> = React.memo(({
           <span className="text-[#b3b3b3] font-mono">
             🎧 {formatPlayCount(getTrackPlayCount(track))}
           </span>
-          {getTrackActiveListeners(track) > 0 && (
-            <span className="text-[#1ed760] font-medium flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#1ed760] inline-block"></span>
-              <span>{getTrackActiveListeners(track)} đang nghe</span>
-            </span>
-          )}
         </div>
 
         {/* Release Date & Author */}
@@ -376,7 +370,6 @@ export const StoryPage: React.FC<StoryPageProps> = React.memo(({
             {recommendedTracks.map((item) => {
               const epCount = item.chapters?.length || 1;
               const firstDur = item.chapters?.[0]?.duration || '25:00';
-              const activeCount = getTrackActiveListeners(item);
 
               return (
                 <div
@@ -413,12 +406,6 @@ export const StoryPage: React.FC<StoryPageProps> = React.memo(({
                       <span className="truncate max-w-[120px] font-sans text-[#727272]">{item.author || 'Phú Bà Audio'}</span>
                       <span>•</span>
                       <span>🎧 {formatPlayCount(getTrackPlayCount(item))}</span>
-                      {activeCount > 0 && (
-                        <span className="text-[#1ed760] font-sans font-medium flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#1ed760] inline-block"></span>
-                          <span>{activeCount}</span>
-                        </span>
-                      )}
                     </div>
                   </div>
 

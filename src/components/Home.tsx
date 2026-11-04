@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useCallback } from 'react';
 import { Search, Headphones, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Track, SiteSettings } from '../types';
-import { formatPlayCount, getTrackActiveListeners, getTrackPlayCount } from '../services/stats';
+import { formatPlayCount, getTrackPlayCount } from '../services/stats';
 
 interface HomeProps {
   tracks: Track[];
@@ -239,7 +239,6 @@ export const Home: React.FC<HomeProps> = React.memo(({
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {newTracks.map((track) => {
-            const activeListeners = getTrackActiveListeners(track);
             return (
               <div
                 key={track.id}
@@ -257,17 +256,11 @@ export const Home: React.FC<HomeProps> = React.memo(({
                   </div>
                 </div>
 
-                <div className="pt-1 space-y-0.5">
+                <div className="pt-1">
                   <div className="flex items-center gap-1.5 text-xs text-[#b3b3b3] font-mono truncate">
                     <Headphones size={13} className="text-[#727272] shrink-0" />
                     <span>{formatPlayCount(getTrackPlayCount(track))}</span>
                   </div>
-                  {activeListeners > 0 && (
-                    <div className="flex items-center gap-1 text-[11px] text-[#1ed760] font-medium">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#1ed760] inline-block"></span>
-                      <span>{activeListeners} đang nghe</span>
-                    </div>
-                  )}
                 </div>
               </div>
             );
@@ -306,7 +299,6 @@ export const Home: React.FC<HomeProps> = React.memo(({
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {trendingTracks.map((track) => {
-            const activeListeners = getTrackActiveListeners(track);
             return (
               <div
                 key={track.id}
@@ -324,17 +316,11 @@ export const Home: React.FC<HomeProps> = React.memo(({
                   </div>
                 </div>
 
-                <div className="pt-1 space-y-0.5">
+                <div className="pt-1">
                   <div className="flex items-center gap-1.5 text-xs text-[#b3b3b3] font-mono truncate">
                     <Headphones size={13} className="text-[#727272] shrink-0" />
                     <span>{formatPlayCount(getTrackPlayCount(track))}</span>
                   </div>
-                  {activeListeners > 0 && (
-                    <div className="flex items-center gap-1 text-[11px] text-[#1ed760] font-medium">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#1ed760] inline-block"></span>
-                      <span>{activeListeners} đang nghe</span>
-                    </div>
-                  )}
                 </div>
               </div>
             );
@@ -441,7 +427,6 @@ export const Home: React.FC<HomeProps> = React.memo(({
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {topTracks.map((track) => {
-            const activeListeners = getTrackActiveListeners(track);
             return (
               <div
                 key={track.id}
@@ -459,17 +444,11 @@ export const Home: React.FC<HomeProps> = React.memo(({
                   </div>
                 </div>
 
-                <div className="pt-1 space-y-0.5">
+                <div className="pt-1">
                   <div className="flex items-center gap-1.5 text-xs text-[#b3b3b3] font-mono truncate">
                     <Headphones size={13} className="text-[#727272] shrink-0" />
                     <span>{formatPlayCount(getTrackPlayCount(track))}</span>
                   </div>
-                  {activeListeners > 0 && (
-                    <div className="flex items-center gap-1 text-[11px] text-[#1ed760] font-medium">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#1ed760] inline-block"></span>
-                      <span>{activeListeners} đang nghe</span>
-                    </div>
-                  )}
                 </div>
               </div>
             );
@@ -582,11 +561,6 @@ export const Home: React.FC<HomeProps> = React.memo(({
                           <Headphones size={13} className="text-[#727272]" />
                           <span>{formatPlayCount(getTrackPlayCount(track))}</span>
                         </div>
-                        {getTrackActiveListeners(track) > 0 && (
-                          <span className="text-[#1ed760] flex items-center gap-1 font-sans text-[11px] font-medium">
-                            • {getTrackActiveListeners(track)} đang nghe
-                          </span>
-                        )}
                       </div>
                     </div>
                   </div>
