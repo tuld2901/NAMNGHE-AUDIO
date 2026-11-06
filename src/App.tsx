@@ -441,6 +441,40 @@ export default function App() {
     });
   }, []);
 
+  // Đồng bộ bộ đếm lượt nghe thật ngay lập tức lên giao diện khi người dùng bấm phát audio
+  useEffect(() => {
+    const handleTrackPlayUpdated = (e: Event) => {
+      const detail = (e as CustomEvent)?.detail;
+      if (!detail || !detail.trackId) return;
+
+      setTracks((prevTracks) =>
+        prevTracks.map((t) => {
+          if (t.id !== detail.trackId) return t;
+          if (typeof detail.play_count === 'number') {
+            return {
+              ...t,
+              play_count: detail.play_count,
+              daily_plays: detail.daily_plays || t.daily_plays,
+              last_played_at: detail.last_played_at || t.last_played_at,
+            };
+          }
+          const todayKey = detail.todayKey || new Date().toISOString().slice(0, 10);
+          const prevDaily = t.daily_plays && typeof t.daily_plays === 'object' ? { ...t.daily_plays } : {};
+          prevDaily[todayKey] = Math.max(0, Math.floor(Number(prevDaily[todayKey]) || 0)) + 1;
+          return {
+            ...t,
+            play_count: Math.max(0, Math.floor(Number(t.play_count) || 0)) + 1,
+            daily_plays: prevDaily,
+            last_played_at: detail.lastPlayedAt || new Date().toISOString(),
+          };
+        })
+      );
+    };
+
+    window.addEventListener('track-play-updated', handleTrackPlayUpdated);
+    return () => window.removeEventListener('track-play-updated', handleTrackPlayUpdated);
+  }, []);
+
   return (
     <AudioProvider allTracks={tracks}>
       <AppContent

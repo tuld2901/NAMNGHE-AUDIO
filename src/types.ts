@@ -40,6 +40,8 @@ export interface Track {
   chapters?: Chapter[];
   is_featured?: boolean;
   is_hot?: boolean;
+  daily_plays?: Record<string, number>;
+  last_played_at?: string;
   created_at?: string;
   updated_at?: string;
 }

@@ -296,17 +296,76 @@ export const deleteMultipleTracks = async (ids: string[]): Promise<number> => {
 };
 
 /**
- * Increment track play count on Server
+ * Increment track play count on Server (100% real play counter & daily stats)
  */
 export const incrementPlayCount = async (trackId: string): Promise<void> => {
-  cachedTracks = cachedTracks.map(t => 
-    t.id === trackId ? { ...t, play_count: (t.play_count || 0) + 1 } : t
-  );
+  let todayKey = '';
+  try {
+    todayKey = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date());
+  } catch {
+    todayKey = new Date(Date.now() + 7 * 3600 * 1000).toISOString().slice(0, 10);
+  }
+  const nowIso = new Date().toISOString();
+
+  cachedTracks = cachedTracks.map((t) => {
+    if (t.id === trackId) {
+      const nextCount = Math.max(0, Math.floor(Number(t.play_count) || 0)) + 1;
+      const prevDaily = t.daily_plays && typeof t.daily_plays === 'object' ? { ...t.daily_plays } : {};
+      prevDaily[todayKey] = Math.max(0, Math.floor(Number(prevDaily[todayKey]) || 0)) + 1;
+      return {
+        ...t,
+        play_count: nextCount,
+        daily_plays: prevDaily,
+        last_played_at: nowIso,
+      };
+    }
+    return t;
+  });
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent('track-play-updated', {
+        detail: { trackId, todayKey, lastPlayedAt: nowIso },
+      })
+    );
+  }
 
   try {
-    await fetch(`/api/tracks/${encodeURIComponent(trackId)}/play`, {
-      method: 'POST'
+    const res = await fetch(`/api/tracks/${encodeURIComponent(trackId)}/play`, {
+      method: 'POST',
     });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && typeof data.play_count === 'number') {
+        cachedTracks = cachedTracks.map((t) =>
+          t.id === trackId
+            ? {
+                ...t,
+                play_count: data.play_count,
+                daily_plays: data.daily_plays || t.daily_plays,
+                last_played_at: data.last_played_at || t.last_played_at,
+              }
+            : t
+        );
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent('track-play-updated', {
+              detail: {
+                trackId,
+                play_count: data.play_count,
+                daily_plays: data.daily_plays,
+                last_played_at: data.last_played_at,
+              },
+            })
+          );
+        }
+      }
+    }
   } catch (err) {
     console.warn('Error sending play increment to server:', err);
   }

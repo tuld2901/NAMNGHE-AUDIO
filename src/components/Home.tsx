@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useCallback } from 'react';
 import { Search, Headphones, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Track, SiteSettings } from '../types';
-import { formatPlayCount, getTrackPlayCount } from '../services/stats';
+import { formatPlayCount, getTrackPlayCount, getTrackPeriodPlays } from '../services/stats';
 
 interface HomeProps {
   tracks: Track[];
@@ -68,36 +68,73 @@ export const Home: React.FC<HomeProps> = React.memo(({
     if (onSearchChange) onSearchChange(val);
   };
 
-  // 1. Mới cập nhật
+  // Helper lấy mốc thời gian đăng truyện chính xác để đẩy truyện mới đăng lên vị trí đầu tiên
+  const getTrackCreatedTime = useCallback((t: Track): number => {
+    if (t.created_at) {
+      const parsed = new Date(t.created_at).getTime();
+      if (isFinite(parsed) && parsed > 0) return parsed;
+    }
+    const idMatch = String(t.id || '').match(/^track-(\d{10,15})/);
+    if (idMatch) {
+      return Number(idMatch[1]);
+    }
+    return 0;
+  }, []);
+
+  // 1. Mới cập nhật: Truyện mới đăng luôn nằm ở đầu tiên và đẩy dần các truyện cũ về sau
   const newTracks = useMemo(() => {
     return [...tracks]
       .sort((a, b) => {
-        const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
-        const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
-        return dateB - dateA;
+        const dateA = getTrackCreatedTime(a);
+        const dateB = getTrackCreatedTime(b);
+        if (dateB !== dateA) return dateB - dateA;
+        return 0;
       })
       .slice(0, 16);
-  }, [tracks]);
+  }, [tracks, getTrackCreatedTime]);
 
-  // 2. Đang nghe nhiều
+  // 2. Đang nghe nhiều: Đề xuất dựa trên số lượt nghe thực tế và hoạt động nghe gần nhất
   const trendingTracks = useMemo(() => {
     return [...tracks]
-      .sort((a, b) => getTrackPlayCount(b) - getTrackPlayCount(a))
-      .slice(0, 16);
-  }, [tracks]);
+      .sort((a, b) => {
+        const totalA = getTrackPlayCount(a);
+        const totalB = getTrackPlayCount(b);
+        if (totalB !== totalA) return totalB - totalA;
 
-  // 3. Top lượt nghe with time filter
+        const weekA = getTrackPeriodPlays(a, 'week');
+        const weekB = getTrackPeriodPlays(b, 'week');
+        if (weekB !== weekA) return weekB - weekA;
+
+        const lastPlayA = a.last_played_at ? new Date(a.last_played_at).getTime() : 0;
+        const lastPlayB = b.last_played_at ? new Date(b.last_played_at).getTime() : 0;
+        if (lastPlayB !== lastPlayA) return lastPlayB - lastPlayA;
+
+        if (Boolean(a.is_hot) !== Boolean(b.is_hot)) return b.is_hot ? 1 : -1;
+        return getTrackCreatedTime(b) - getTrackCreatedTime(a);
+      })
+      .slice(0, 16);
+  }, [tracks, getTrackCreatedTime]);
+
+  // 3. Top lượt nghe: Dựa hoàn toàn vào số liệu lượt nghe thực tế Hôm nay / Tuần / Tháng
   const topTracks = useMemo(() => {
     return [...tracks]
       .sort((a, b) => {
-        const countA = getTrackPlayCount(a);
-        const countB = getTrackPlayCount(b);
-        if (topTimeFilter === 'today') return countB - countA;
-        if (topTimeFilter === 'week') return (countB + (b.title.length % 5) * 50) - (countA + (a.title.length % 5) * 50);
-        return (countB + (b.title.length % 9) * 80) - (countA + (a.title.length % 9) * 80);
+        const periodA = getTrackPeriodPlays(a, topTimeFilter);
+        const periodB = getTrackPeriodPlays(b, topTimeFilter);
+        if (periodB !== periodA) return periodB - periodA;
+
+        const totalA = getTrackPlayCount(a);
+        const totalB = getTrackPlayCount(b);
+        if (totalB !== totalA) return totalB - totalA;
+
+        const lastPlayA = a.last_played_at ? new Date(a.last_played_at).getTime() : 0;
+        const lastPlayB = b.last_played_at ? new Date(b.last_played_at).getTime() : 0;
+        if (lastPlayB !== lastPlayA) return lastPlayB - lastPlayA;
+
+        return getTrackCreatedTime(b) - getTrackCreatedTime(a);
       })
       .slice(0, 16);
-  }, [tracks, topTimeFilter]);
+  }, [tracks, topTimeFilter, getTrackCreatedTime]);
 
   // 4. Tất cả audio filtered list (Tìm kiếm tức thì gõ đến đâu hiển thị ngay danh sách đến đó)
   const filteredAllTracks = useMemo(() => {
@@ -427,6 +464,8 @@ export const Home: React.FC<HomeProps> = React.memo(({
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {topTracks.map((track) => {
+            const periodPlays = getTrackPeriodPlays(track, topTimeFilter);
+            const displayPlays = periodPlays > 0 ? periodPlays : getTrackPlayCount(track);
             return (
               <div
                 key={track.id}
@@ -447,7 +486,7 @@ export const Home: React.FC<HomeProps> = React.memo(({
                 <div className="pt-1">
                   <div className="flex items-center gap-1.5 text-xs text-[#b3b3b3] font-mono truncate">
                     <Headphones size={13} className="text-[#727272] shrink-0" />
-                    <span>{formatPlayCount(getTrackPlayCount(track))}</span>
+                    <span>{formatPlayCount(displayPlays)}</span>
                   </div>
                 </div>
               </div>

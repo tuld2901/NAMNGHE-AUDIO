@@ -974,8 +974,13 @@ async function startServer() {
 
   app.post('/api/tracks/:id/play', async (req, res) => {
     try {
-      await incrementTrackPlay(req.params.id);
-      res.json({ success: true });
+      const updated = await incrementTrackPlay(req.params.id);
+      res.json({
+        success: true,
+        play_count: updated?.play_count ?? 0,
+        daily_plays: updated?.daily_plays ?? {},
+        last_played_at: updated?.last_played_at ?? new Date().toISOString(),
+      });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
