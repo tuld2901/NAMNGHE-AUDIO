@@ -453,7 +453,7 @@ export const Admin: React.FC<AdminProps> = ({
     title: 'Đêm Trăng Máu Nơi Miếu Hoang',
     author: 'Nguyễn Huy',
     narrator: 'Gối Ôm Audio',
-    category: 'Truyện Ma',
+    categories: ['Truyện Ma', 'Trinh Thám'],
     description: 'Bộ truyện ma kinh dị dài kỳ được đăng tự động qua cổng API.',
     chapters: [
       {
@@ -483,7 +483,7 @@ export const Admin: React.FC<AdminProps> = ({
         title: 'Đêm Trăng Máu Nơi Miếu Hoang',
         author: 'Nguyễn Huy',
         narrator: 'Gối Ôm Audio',
-        category: 'Truyện Ma',
+        categories: ['Truyện Ma', 'Trinh Thám'],
         description: 'Bộ truyện ma kinh dị dài kỳ được đăng tự động qua cổng API.',
         chapters: [
           {
@@ -495,12 +495,19 @@ export const Admin: React.FC<AdminProps> = ({
         ]
       }, null, 2));
     } else if (actionType === 'update') {
+      const sampleCategories =
+        sampleTrack?.categories && sampleTrack.categories.length > 0
+          ? sampleTrack.categories
+          : (sampleTrack?.category || 'Ngôn Tình, Hiện Đại')
+              .split(/[,;|]+/)
+              .map((s) => s.trim())
+              .filter(Boolean);
       setApiPlaygroundBody(JSON.stringify({
         action: 'update',
         id: sampleId,
         title: (sampleTrack?.title || 'Truyện cập nhật') + ' (Đã cập nhật)',
         author: sampleTrack?.author || 'Nguyễn Huy',
-        category: sampleTrack?.category || 'Truyện Ma',
+        categories: sampleCategories.length > 1 ? sampleCategories : [...sampleCategories, 'Hiện Đại'],
         description: sampleTrack?.description || 'Nội dung mô tả truyện đã được cập nhật qua cổng API.'
       }, null, 2));
     } else if (actionType === 'add_chapter') {
@@ -807,7 +814,33 @@ export const Admin: React.FC<AdminProps> = ({
   const [formTitle, setFormTitle] = useState<string>('');
   const [formAuthor, setFormAuthor] = useState<string>('');
   const [formNarrator, setFormNarrator] = useState<string>('Phú Bà Audio');
+  const STORY_CATEGORY_OPTIONS = [
+    'Truyện Ma',
+    'Tiên Hiệp',
+    'Kiếm Hiệp',
+    'Ngôn Tình',
+    'Hiện Đại',
+    'Cổ Trang',
+    'Trinh Thám',
+    'Đời Thực',
+    'Truyện Ngắn',
+  ];
   const [formCategory, setFormCategory] = useState<string>('Truyện Ma');
+  const [formCategories, setFormCategories] = useState<string[]>(['Truyện Ma']);
+
+  const handleToggleFormCategory = (cat: string) => {
+    setFormCategories((prev) => {
+      const exists = prev.some((item) => item.toLowerCase() === cat.toLowerCase());
+      let next: string[];
+      if (exists) {
+        next = prev.filter((item) => item.toLowerCase() !== cat.toLowerCase());
+      } else {
+        next = [...prev, cat];
+      }
+      setFormCategory(next.length > 0 ? next.join(', ') : 'Truyện Ma');
+      return next;
+    });
+  };
   const [formMp3Url, setFormMp3Url] = useState<string>('');
   const [formThumbUrl, setFormThumbUrl] = useState<string>('');
   const [formAffiliateLink, setFormAffiliateLink] = useState<string>('https://shopee.vn');
@@ -1529,11 +1562,21 @@ export const Admin: React.FC<AdminProps> = ({
       return;
     }
 
+    const resolvedCategories =
+      formCategories.length > 0
+        ? formCategories
+        : formCategory
+            .split(/[,;|]+/)
+            .map((c) => c.trim())
+            .filter(Boolean);
+    const finalCategories = resolvedCategories.length > 0 ? resolvedCategories : ['Truyện Ma'];
+
     const payload: Partial<Track> = {
       title: formTitle.trim(),
       author: formAuthor.trim() || 'Đang cập nhật',
       narrator: formNarrator.trim() || 'Phú Bà Audio',
-      category: formCategory,
+      category: finalCategories.join(', '),
+      categories: finalCategories,
       mp3_url: formMp3Url.trim() || (formChapters[0]?.mp3_url || 'https://cdn.freesound.org/previews/612/612610_5674468-lq.mp3'),
       thumb_url: formThumbUrl.trim() || 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&auto=format&fit=crop&q=80',
       affiliate_link: formAffiliateLink.trim() || 'https://shopee.vn',
@@ -1568,11 +1611,21 @@ export const Admin: React.FC<AdminProps> = ({
   };
 
   const handleEditTrack = (track: Track) => {
+    const parsedCategories =
+      Array.isArray(track.categories) && track.categories.length > 0
+        ? track.categories.map((c) => String(c).trim()).filter(Boolean)
+        : (track.category || 'Truyện Ma')
+            .split(/[,;|]+/)
+            .map((c) => c.trim())
+            .filter(Boolean);
+    const safeCategories = parsedCategories.length > 0 ? parsedCategories : ['Truyện Ma'];
+
     setEditingTrackId(track.id);
     setFormTitle(track.title);
     setFormAuthor(track.author || '');
     setFormNarrator(track.narrator || 'Phú Bà Audio');
-    setFormCategory(track.category || 'Truyện Ma');
+    setFormCategories(safeCategories);
+    setFormCategory(safeCategories.join(', '));
     setFormMp3Url(track.mp3_url || '');
     setFormThumbUrl(track.thumb_url || '');
     setFormAffiliateLink(track.affiliate_link || 'https://shopee.vn');
@@ -1666,6 +1719,7 @@ export const Admin: React.FC<AdminProps> = ({
     setFormTitle('');
     setFormAuthor('');
     setFormNarrator('Phú Bà Audio');
+    setFormCategories(['Truyện Ma']);
     setFormCategory('Truyện Ma');
     setFormMp3Url('');
     setFormThumbUrl('');
@@ -2638,9 +2692,22 @@ export const Admin: React.FC<AdminProps> = ({
                             </div>
                           </td>
                           <td className="p-3.5">
-                            <span className="px-2 py-0.5 rounded bg-[#242424] border border-[#333333] text-[#1ed760]">
-                              {t.category}
-                            </span>
+                            <div className="flex flex-wrap gap-1 max-w-[200px]">
+                              {(Array.isArray(t.categories) && t.categories.length > 0
+                                ? t.categories
+                                : (t.category || 'Truyện Ma')
+                                    .split(/[,;|]+/)
+                                    .map((c) => c.trim())
+                                    .filter(Boolean)
+                              ).map((catName, cIdx) => (
+                                <span
+                                  key={cIdx}
+                                  className="px-2 py-0.5 rounded bg-[#242424] border border-[#333333] text-[#1ed760] text-[11px] font-medium whitespace-nowrap"
+                                >
+                                  {catName}
+                                </span>
+                              ))}
+                            </div>
                           </td>
                           <td className="p-3.5">
                             <span className="block text-slate-200">{t.author}</span>
@@ -2740,59 +2807,84 @@ export const Admin: React.FC<AdminProps> = ({
                   />
                 </div>
 
-                <div>
-                  <label className="text-xs text-[#d1d1d1] font-medium block mb-1">Tác giả</label>
-                  <input
-                    type="text"
-                    value={formAuthor}
-                    onChange={(e) => setFormAuthor(e.target.value)}
-                    placeholder="VD: Nguyễn Huy"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#121212] border border-[#333333] text-xs text-white focus:outline-none focus:border-[#1ed760]"
-                  />
+                <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-xs text-[#d1d1d1] font-medium block mb-1">Tác giả</label>
+                    <input
+                      type="text"
+                      value={formAuthor}
+                      onChange={(e) => setFormAuthor(e.target.value)}
+                      placeholder="VD: Nguyễn Huy"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#121212] border border-[#333333] text-xs text-white focus:outline-none focus:border-[#1ed760]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-[#d1d1d1] font-medium block mb-1">Diễn đọc / MC</label>
+                    <input
+                      type="text"
+                      value={formNarrator}
+                      onChange={(e) => setFormNarrator(e.target.value)}
+                      placeholder="Phú Bà Audio"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#121212] border border-[#333333] text-xs text-white focus:outline-none focus:border-[#1ed760]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-[#d1d1d1] font-medium block mb-1">
+                      Lượt nghe (Play Count)
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={formPlayCount}
+                      onChange={(e) => setFormPlayCount(Math.max(0, parseInt(e.target.value) || 0))}
+                      placeholder="VD: 0"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#121212] border border-[#333333] text-xs text-white focus:outline-none focus:border-[#1ed760] font-mono"
+                    />
+                  </div>
                 </div>
 
-                <div>
-                  <label className="text-xs text-[#d1d1d1] font-medium block mb-1">Diễn đọc / MC</label>
-                  <input
-                    type="text"
-                    value={formNarrator}
-                    onChange={(e) => setFormNarrator(e.target.value)}
-                    placeholder="Phú Bà Audio"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#121212] border border-[#333333] text-xs text-white focus:outline-none focus:border-[#1ed760]"
-                  />
-                </div>
+                <div className="sm:col-span-2 space-y-2">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <label className="text-xs text-[#d1d1d1] font-medium flex items-center gap-1.5">
+                      <span>Thể loại (Có thể tích chọn nhiều thể loại) *</span>
+                    </label>
+                    <span className="text-[11px] text-[#1ed760] font-medium">
+                      Đã chọn ({formCategories.length}): {formCategories.length > 0 ? formCategories.join(', ') : 'Chưa chọn (mặc định Truyện Ma)'}
+                    </span>
+                  </div>
 
-                <div>
-                  <label className="text-xs text-[#d1d1d1] font-medium block mb-1">Thể loại</label>
-                  <select
-                    value={formCategory}
-                    onChange={(e) => setFormCategory(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#121212] border border-[#333333] text-xs text-white focus:outline-none focus:border-[#1ed760] cursor-pointer"
-                  >
-                    <option value="Truyện Ma">Truyện Ma</option>
-                    <option value="Tiên Hiệp">Tiên Hiệp</option>
-                    <option value="Kiếm Hiệp">Kiếm Hiệp</option>
-                    <option value="Ngôn Tình">Ngôn Tình</option>
-                    <option value="Hiện Đại">Hiện Đại</option>
-                    <option value="Cổ Trang">Cổ Trang</option>
-                    <option value="Trinh Thám">Trinh Thám</option>
-                    <option value="Đời Thực">Đời Thực</option>
-                    <option value="Truyện Ngắn">Truyện Ngắn</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-xs text-[#d1d1d1] font-medium block mb-1">
-                    Lượt nghe (Play Count)
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={formPlayCount}
-                    onChange={(e) => setFormPlayCount(Math.max(0, parseInt(e.target.value) || 0))}
-                    placeholder="VD: 1200"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#121212] border border-[#333333] text-xs text-white focus:outline-none focus:border-[#1ed760] font-mono"
-                  />
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 p-3 rounded-xl bg-[#121212] border border-[#333333]">
+                    {Array.from(new Set([...STORY_CATEGORY_OPTIONS, ...formCategories])).map((catOption) => {
+                      const isChecked = formCategories.some(
+                        (item) => item.toLowerCase() === catOption.toLowerCase()
+                      );
+                      return (
+                        <button
+                          key={catOption}
+                          type="button"
+                          onClick={() => handleToggleFormCategory(catOption)}
+                          className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition cursor-pointer select-none border text-left ${
+                            isChecked
+                              ? 'bg-[#1ed760]/15 text-[#1ed760] border-[#1ed760] font-bold shadow-sm'
+                              : 'bg-[#1c1c1c] text-[#b3b3b3] border-[#2c2c2c] hover:bg-[#262626] hover:text-white'
+                          }`}
+                        >
+                          <span
+                            className={`w-4 h-4 rounded flex items-center justify-center shrink-0 border transition ${
+                              isChecked
+                                ? 'bg-[#1ed760] border-[#1ed760] text-black'
+                                : 'bg-[#121212] border-[#444444] text-transparent'
+                            }`}
+                          >
+                            <Check size={11} strokeWidth={3} />
+                          </span>
+                          <span className="truncate">{catOption}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 <div className="sm:col-span-2">
@@ -6589,8 +6681,8 @@ https://s.lazada.vn/s.flashsale_deal`}
                 let curlCode = '';
 
                 if (apiDocExample === 'create') {
-                  title = 'Đăng Truyện Mới (POST /api/gateway)';
-                  desc = 'Truyền action: "create" (hoặc "dang") kèm tên truyện, tác giả, thể loại và danh sách các tập MP3:';
+                  title = 'Đăng Truyện Mới — Hỗ Trợ Nhiều Thể Loại (POST /api/gateway)';
+                  desc = 'Truyền action: "create" (hoặc "dang"), mảng "categories": ["Thể loại 1", "Thể loại 2"] (hoặc chuỗi "category": "Ngôn Tình, Hiện Đại") kèm danh sách tập MP3:';
                   curlCode = `curl -X POST "${origin}/api/gateway" \\
   -H "Content-Type: application/json"${keyHeader} \\
   -d '{
@@ -6598,7 +6690,7 @@ https://s.lazada.vn/s.flashsale_deal`}
     "title": "Bóng Ma Bên Khung Cửa Sổ",
     "author": "Nguyễn Huy",
     "narrator": "Gối Ôm Audio",
-    "category": "Truyện Ma",
+    "categories": ["Truyện Ma", "Trinh Thám"],
     "description": "Truyện ma kinh dị mới nhất...",
     "chapters": [
       {
@@ -6616,8 +6708,8 @@ https://s.lazada.vn/s.flashsale_deal`}
     ]
   }'`;
                 } else if (apiDocExample === 'update') {
-                  title = 'Sửa Thông Tin Truyện Đang Có (POST /api/gateway)';
-                  desc = 'Truyền action: "update" (hoặc "sua"), id của truyện cần sửa, và các trường muốn thay đổi:';
+                  title = 'Sửa Thông Tin & Thể Loại Truyện Đang Có (POST /api/gateway)';
+                  desc = 'Truyền action: "update" (hoặc "sua"), id của truyện cần sửa, và mảng "categories" (hoặc "category" cách nhau bằng dấu phẩy):';
                   curlCode = `curl -X POST "${origin}/api/gateway" \\
   -H "Content-Type: application/json"${keyHeader} \\
   -d '{
@@ -6625,7 +6717,7 @@ https://s.lazada.vn/s.flashsale_deal`}
     "id": "${sampleId}",
     "title": "Tên Truyện Đã Chỉnh Sửa Mới",
     "author": "Tác Giả Mới",
-    "category": "Tiên Hiệp",
+    "categories": ["Ngôn Tình", "Hiện Đại", "Cổ Trang"],
     "description": "Cập nhật mô tả nội dung truyện..."
   }'`;
                 } else if (apiDocExample === 'add_chapter') {

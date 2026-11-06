@@ -44,17 +44,35 @@ export const StoryPage: React.FC<StoryPageProps> = React.memo(({
 
   // Danh sách "Có lẽ bạn sẽ thích": Loại bỏ trang audio đang mở (track.id) và audio đang phát (currentTrack?.id)
   const recommendedTracks = React.useMemo(() => {
+    const getCatSet = (t: Track) => {
+      const list =
+        Array.isArray(t.categories) && t.categories.length > 0
+          ? t.categories
+          : (t.category || '')
+              .split(/[,;|]+/)
+              .map((s) => s.trim().toLowerCase())
+              .filter(Boolean);
+      return new Set(list.map((s) => s.toLowerCase()));
+    };
+    const currentCats = getCatSet(track);
+    const hasSharedCategory = (item: Track) => {
+      for (const c of getCatSet(item)) {
+        if (currentCats.has(c)) return 1;
+      }
+      return 0;
+    };
+
     const filtered = allTracks.filter(
       (item) => item.id !== track.id && (!currentTrack || item.id !== currentTrack.id)
     );
-    // Ưu tiên cùng thể loại lên trước, sau đó sắp xếp theo lượt nghe thực tế
+    // Ưu tiên có chung thể loại lên trước, sau đó sắp xếp theo lượt nghe thực tế
     return [...filtered].sort((a, b) => {
-      const aSameCat = a.category === track.category ? 1 : 0;
-      const bSameCat = b.category === track.category ? 1 : 0;
+      const aSameCat = hasSharedCategory(a);
+      const bSameCat = hasSharedCategory(b);
       if (aSameCat !== bSameCat) return bSameCat - aSameCat;
       return getTrackPlayCount(b) - getTrackPlayCount(a);
     });
-  }, [allTracks, track.id, track.category, currentTrack]);
+  }, [allTracks, track, currentTrack]);
 
   // Tự động nhận diện thời lượng các tập nếu dữ liệu chưa có sẵn (giới hạn tối đa 3 probe và dọn dẹp bộ nhớ khi unmount)
   const [probedDurations, setProbedDurations] = useState<Record<string | number, string>>({});

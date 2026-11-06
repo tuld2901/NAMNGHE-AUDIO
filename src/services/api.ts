@@ -173,11 +173,20 @@ export const createTrack = async (newTrack: Partial<Track>): Promise<Track> => {
     ? newTrack.chapters
     : [{ id: 1, title: 'Phần 1', duration: '25:00', mp3_url: newTrack.mp3_url || '' }];
 
+  const rawCats = Array.isArray(newTrack.categories) && newTrack.categories.length > 0
+    ? newTrack.categories.map((c) => String(c).trim()).filter(Boolean)
+    : (newTrack.category || 'Truyện Ma')
+        .split(/[,;|]+/)
+        .map((c) => c.trim())
+        .filter(Boolean);
+  const categories = rawCats.length > 0 ? Array.from(new Set(rawCats)) : ['Truyện Ma'];
+
   const payload = {
     title: newTrack.title || 'Truyện mới',
     author: newTrack.author || 'Tác giả',
     narrator: newTrack.narrator || 'Phú Bà Audio',
-    category: newTrack.category || 'Truyện Ngắn',
+    category: categories.join(', '),
+    categories,
     mp3_url: newTrack.mp3_url || '',
     thumb_url: newTrack.thumb_url || 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&auto=format&fit=crop&q=80',
     description: newTrack.description || '',

@@ -32,6 +32,7 @@ export interface Track {
   author: string;
   narrator?: string;
   category: string;
+  categories?: string[];
   mp3_url: string;
   thumb_url?: string;
   description?: string;

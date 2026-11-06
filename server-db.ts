@@ -643,6 +643,47 @@ export async function getTrackById(id: string): Promise<Track | null> {
   return findTrackInList(tracks, id);
 }
 
+export function normalizeCategoriesInput(
+  rawCategories?: unknown,
+  rawCategory?: unknown,
+  fallback = 'Truyện Ma'
+): { categories: string[]; category: string } {
+  const collected: string[] = [];
+  const pushItem = (val: unknown) => {
+    if (!val) return;
+    if (Array.isArray(val)) {
+      val.forEach(pushItem);
+      return;
+    }
+    if (typeof val === 'string') {
+      val
+        .split(/[,;|]+/)
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .forEach((part) => {
+          if (!collected.some((existing) => existing.toLowerCase() === part.toLowerCase())) {
+            collected.push(part);
+          }
+        });
+    }
+  };
+
+  pushItem(rawCategories);
+  pushItem(rawCategory);
+
+  if (collected.length === 0) {
+    pushItem(fallback);
+  }
+  if (collected.length === 0) {
+    collected.push('Truyện Ma');
+  }
+
+  return {
+    categories: collected,
+    category: collected.join(', '),
+  };
+}
+
 export async function addTrack(payload: Partial<Track> & { cover_url?: string; image_url?: string; audio_url?: string; url?: string }): Promise<Track> {
   const storyTitle = (payload.title || 'Truyện mới').trim();
   const fallbackTopAudio = payload.mp3_url || payload.audio_url || payload.url || '';
@@ -673,13 +714,19 @@ export async function addTrack(payload: Partial<Track> & { cover_url?: string; i
       ];
 
   const primaryMp3 = sanitizePublicWebUrl(rawChapters[0]?.mp3_url || fallbackTopAudio);
+  const { categories: normalizedCategories, category: normalizedCategoryStr } = normalizeCategoriesInput(
+    (payload as any).categories,
+    payload.category,
+    'Truyện Ma'
+  );
 
   const newTrack: Track = {
     id: payload.id && String(payload.id).trim() ? String(payload.id).trim() : 'track-' + Date.now(),
     title: storyTitle,
     author: (payload.author || 'Đang cập nhật').trim(),
     narrator: (payload.narrator || 'Gối Ôm Audio').trim(),
-    category: (payload.category || 'Truyện Ma').trim(),
+    category: normalizedCategoryStr,
+    categories: normalizedCategories,
     mp3_url: primaryMp3,
     thumb_url: sanitizePublicWebUrl(payload.thumb_url || payload.cover_url || payload.image_url) || 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&auto=format&fit=crop&q=80',
     description: payload.description || '',
@@ -881,6 +928,15 @@ export async function updateTrack(
   }
   if (normalizedUpdates.mp3_url) {
     normalizedUpdates.mp3_url = sanitizePublicWebUrl(normalizedUpdates.mp3_url);
+  }
+  if ((updates as any).categories !== undefined || updates.category !== undefined) {
+    const { categories: normCats, category: normCatStr } = normalizeCategoriesInput(
+      (updates as any).categories,
+      updates.category,
+      currentStory.category || 'Truyện Ma'
+    );
+    normalizedUpdates.categories = normCats;
+    normalizedUpdates.category = normCatStr;
   }
   if (normalizedUpdates.affiliate_link) {
     normalizedUpdates.affiliate_link = sanitizePublicWebUrl(normalizedUpdates.affiliate_link, 'https://shopee.vn');
