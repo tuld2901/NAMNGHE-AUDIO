@@ -109,7 +109,6 @@ export const Home: React.FC<HomeProps> = React.memo(({
         const lastPlayB = b.last_played_at ? new Date(b.last_played_at).getTime() : 0;
         if (lastPlayB !== lastPlayA) return lastPlayB - lastPlayA;
 
-        if (Boolean(a.is_hot) !== Boolean(b.is_hot)) return b.is_hot ? 1 : -1;
         return getTrackCreatedTime(b) - getTrackCreatedTime(a);
       })
       .slice(0, 16);

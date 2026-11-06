@@ -184,8 +184,6 @@ export const createTrack = async (newTrack: Partial<Track>): Promise<Track> => {
     play_count: Number(newTrack.play_count) || 0,
     affiliate_link: newTrack.affiliate_link || 'https://shopee.vn',
     chapters,
-    is_featured: Boolean(newTrack.is_featured),
-    is_hot: Boolean(newTrack.is_hot),
   };
 
   try {

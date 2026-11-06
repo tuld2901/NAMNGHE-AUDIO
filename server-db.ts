@@ -686,8 +686,6 @@ export async function addTrack(payload: Partial<Track> & { cover_url?: string; i
     play_count: Number(payload.play_count) || 0,
     affiliate_link: sanitizePublicWebUrl(payload.affiliate_link, 'https://shopee.vn'),
     chapters: rawChapters,
-    is_featured: Boolean(payload.is_featured),
-    is_hot: Boolean(payload.is_hot),
     created_at: new Date().toISOString()
   };
 
@@ -869,6 +867,8 @@ export async function updateTrack(
   delete (normalizedUpdates as any).image_url;
   delete (normalizedUpdates as any).audio_url;
   delete (normalizedUpdates as any).url;
+  delete (normalizedUpdates as any).is_featured;
+  delete (normalizedUpdates as any).is_hot;
 
   if ((updates.cover_url || updates.image_url) && !updates.thumb_url) {
     normalizedUpdates.thumb_url = updates.cover_url || updates.image_url;

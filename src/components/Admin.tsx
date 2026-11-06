@@ -455,8 +455,6 @@ export const Admin: React.FC<AdminProps> = ({
     narrator: 'Gối Ôm Audio',
     category: 'Truyện Ma',
     description: 'Bộ truyện ma kinh dị dài kỳ được đăng tự động qua cổng API.',
-    is_hot: true,
-    is_featured: false,
     chapters: [
       {
         id: 1,
@@ -487,8 +485,6 @@ export const Admin: React.FC<AdminProps> = ({
         narrator: 'Gối Ôm Audio',
         category: 'Truyện Ma',
         description: 'Bộ truyện ma kinh dị dài kỳ được đăng tự động qua cổng API.',
-        is_hot: true,
-        is_featured: false,
         chapters: [
           {
             id: 1,
@@ -505,8 +501,7 @@ export const Admin: React.FC<AdminProps> = ({
         title: (sampleTrack?.title || 'Truyện cập nhật') + ' (Đã cập nhật)',
         author: sampleTrack?.author || 'Nguyễn Huy',
         category: sampleTrack?.category || 'Truyện Ma',
-        description: sampleTrack?.description || 'Nội dung mô tả truyện đã được cập nhật qua cổng API.',
-        is_hot: true
+        description: sampleTrack?.description || 'Nội dung mô tả truyện đã được cập nhật qua cổng API.'
       }, null, 2));
     } else if (actionType === 'add_chapter') {
       const nextEp = (sampleTrack?.chapters?.length || 1) + 1;
@@ -817,8 +812,6 @@ export const Admin: React.FC<AdminProps> = ({
   const [formThumbUrl, setFormThumbUrl] = useState<string>('');
   const [formAffiliateLink, setFormAffiliateLink] = useState<string>('https://shopee.vn');
   const [formDescription, setFormDescription] = useState<string>('');
-  const [formIsFeatured, setFormIsFeatured] = useState<boolean>(false);
-  const [formIsHot, setFormIsHot] = useState<boolean>(false);
   const [formPlayCount, setFormPlayCount] = useState<number>(0);
   const [formChapters, setFormChapters] = useState<Chapter[]>([
     { id: 1, title: 'Phần 1: Khởi đầu', duration: '25:00', mp3_url: '' }
@@ -1545,8 +1538,6 @@ export const Admin: React.FC<AdminProps> = ({
       thumb_url: formThumbUrl.trim() || 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&auto=format&fit=crop&q=80',
       affiliate_link: formAffiliateLink.trim() || 'https://shopee.vn',
       description: formDescription.trim(),
-      is_featured: formIsFeatured,
-      is_hot: formIsHot,
       play_count: Math.max(0, Number(formPlayCount) || 0),
       chapters: formChapters.map(ch => ({
         ...ch,
@@ -1586,8 +1577,6 @@ export const Admin: React.FC<AdminProps> = ({
     setFormThumbUrl(track.thumb_url || '');
     setFormAffiliateLink(track.affiliate_link || 'https://shopee.vn');
     setFormDescription(track.description || '');
-    setFormIsFeatured(Boolean(track.is_featured));
-    setFormIsHot(Boolean(track.is_hot));
     setFormPlayCount(Number(track.play_count) || 0);
     setFormChapters(track.chapters && track.chapters.length > 0 ? track.chapters : [
       { id: 1, title: 'Phần 1', duration: '25:00', mp3_url: track.mp3_url }
@@ -1682,8 +1671,6 @@ export const Admin: React.FC<AdminProps> = ({
     setFormThumbUrl('');
     setFormAffiliateLink('https://shopee.vn');
     setFormDescription('');
-    setFormIsFeatured(false);
-    setFormIsHot(false);
     setFormPlayCount(0);
     setFormChapters([{ id: 1, title: 'Phần 1: Khởi đầu', duration: '25:00', mp3_url: '' }]);
     setFormMessage(null);
@@ -2647,8 +2634,6 @@ export const Admin: React.FC<AdminProps> = ({
                                   <span className="truncate">{getStoryPath(t)}</span>
                                   {apiCopiedKey === `url-${t.id}` ? <Check size={10} className="text-emerald-400 shrink-0" /> : <Copy size={10} className="text-[#b3b3b3] shrink-0" />}
                                 </button>
-                                {t.is_featured && <span className="text-[10px] text-[#1ed760] font-semibold">Gợi ý</span>}
-                                {t.is_hot && <span className="text-[10px] text-rose-400 font-semibold">Hot</span>}
                               </div>
                             </div>
                           </td>
@@ -2808,28 +2793,6 @@ export const Admin: React.FC<AdminProps> = ({
                     placeholder="VD: 1200"
                     className="w-full px-3.5 py-2.5 rounded-xl bg-[#121212] border border-[#333333] text-xs text-white focus:outline-none focus:border-[#1ed760] font-mono"
                   />
-                </div>
-
-                <div className="flex items-center gap-6 pt-3 sm:col-span-2">
-                  <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-200">
-                    <input
-                      type="checkbox"
-                      checked={formIsFeatured}
-                      onChange={(e) => setFormIsFeatured(e.target.checked)}
-                      className="rounded accent-[#1ed760]"
-                    />
-                    <span>Gợi ý hôm nay (Slider 1)</span>
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-200">
-                    <input
-                      type="checkbox"
-                      checked={formIsHot}
-                      onChange={(e) => setFormIsHot(e.target.checked)}
-                      className="rounded accent-rose-500"
-                    />
-                    <span>Đánh dấu Hot 🔥</span>
-                  </label>
                 </div>
 
                 <div className="sm:col-span-2">
@@ -6637,7 +6600,6 @@ https://s.lazada.vn/s.flashsale_deal`}
     "narrator": "Gối Ôm Audio",
     "category": "Truyện Ma",
     "description": "Truyện ma kinh dị mới nhất...",
-    "is_hot": true,
     "chapters": [
       {
         "id": 1,
@@ -6664,8 +6626,7 @@ https://s.lazada.vn/s.flashsale_deal`}
     "title": "Tên Truyện Đã Chỉnh Sửa Mới",
     "author": "Tác Giả Mới",
     "category": "Tiên Hiệp",
-    "description": "Cập nhật mô tả nội dung truyện...",
-    "is_featured": true
+    "description": "Cập nhật mô tả nội dung truyện..."
   }'`;
                 } else if (apiDocExample === 'add_chapter') {
                   title = 'Thêm Tập MP3 Mới Vào Truyện Có Sẵn (POST /api/gateway)';

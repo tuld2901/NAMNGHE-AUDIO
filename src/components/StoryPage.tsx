@@ -47,13 +47,12 @@ export const StoryPage: React.FC<StoryPageProps> = React.memo(({
     const filtered = allTracks.filter(
       (item) => item.id !== track.id && (!currentTrack || item.id !== currentTrack.id)
     );
-    // Ưu tiên cùng thể loại lên trước, sau đó sắp xếp theo độ hot / lượt nghe
+    // Ưu tiên cùng thể loại lên trước, sau đó sắp xếp theo lượt nghe thực tế
     return [...filtered].sort((a, b) => {
       const aSameCat = a.category === track.category ? 1 : 0;
       const bSameCat = b.category === track.category ? 1 : 0;
       if (aSameCat !== bSameCat) return bSameCat - aSameCat;
-      if (Boolean(a.is_hot) !== Boolean(b.is_hot)) return a.is_hot ? -1 : 1;
-      return (b.play_count || 0) - (a.play_count || 0);
+      return getTrackPlayCount(b) - getTrackPlayCount(a);
     });
   }, [allTracks, track.id, track.category, currentTrack]);
 
@@ -388,11 +387,6 @@ export const StoryPage: React.FC<StoryPageProps> = React.memo(({
                       <span className="px-1.5 py-0.5 rounded bg-[#242424] text-[#1ed760] text-[10px] font-medium border border-[#333333] shrink-0">
                         {item.category || 'Audio'}
                       </span>
-                      {item.is_hot && (
-                        <span className="px-1.5 py-0.5 rounded bg-rose-500/15 text-rose-400 text-[10px] font-bold border border-rose-500/30 shrink-0">
-                          Hot
-                        </span>
-                      )}
                       <span className="text-[11px] text-[#b3b3b3] font-mono truncate">
                         {epCount > 1 ? `${epCount} tập` : firstDur}
                       </span>
