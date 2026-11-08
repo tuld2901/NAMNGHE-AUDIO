@@ -605,6 +605,10 @@ export const Admin: React.FC<AdminProps> = ({
         data: json,
         timeMs: elapsed
       });
+      const returnedId = json?.id || json?.data?.id;
+      if (res.ok && returnedId && typeof returnedId === 'string') {
+        setApiPlaygroundTargetId(returnedId);
+      }
       if (res.ok && parsedBody.action !== 'list' && parsedBody.action !== 'get') {
         onRefreshTracks();
       }
@@ -6674,15 +6678,16 @@ https://s.lazada.vn/s.flashsale_deal`}
                 const keyHeader = settingsForm.requireApiKey && settingsForm.apiKey
                   ? ` \\\n  -H "x-api-key: ${settingsForm.apiKey}"`
                   : '';
-                const sampleId = tracks[0]?.id || 'track-1';
+                const sampleId = tracks[0]?.id || 'track-1794166572143';
 
                 let title = '';
                 let desc = '';
                 let curlCode = '';
+                let sampleResponseCode = '';
 
                 if (apiDocExample === 'create') {
-                  title = 'Đăng Truyện Mới — Hỗ Trợ Nhiều Thể Loại (POST /api/gateway)';
-                  desc = 'Truyền action: "create" (hoặc "dang"), mảng "categories": ["Thể loại 1", "Thể loại 2"] (hoặc chuỗi "category": "Ngôn Tình, Hiện Đại") kèm danh sách tập MP3:';
+                  title = 'Đăng Truyện Mới — Trả Về "id" Để Lưu Và Sửa Sau Này (POST /api/gateway)';
+                  desc = 'Khi gọi action: "create" (hoặc "dang"), Server tự sinh mã "id": "track-..." (hoặc nhận "id" tùy chỉnh bạn truyền vào) và trả ngay "id" ở cấp ngoài cùng của JSON kết quả để tool của bạn lưu lại dùng cho lệnh Sửa / Thêm tập / Xóa:';
                   curlCode = `curl -X POST "${origin}/api/gateway" \\
   -H "Content-Type: application/json"${keyHeader} \\
   -d '{
@@ -6707,9 +6712,24 @@ https://s.lazada.vn/s.flashsale_deal`}
       }
     ]
   }'`;
+                  sampleResponseCode = `{
+  "success": true,
+  "action": "create",
+  "id": "${sampleId}",
+  "message": "Đã đăng truyện mới \\"Bóng Ma Bên Khung Cửa Sổ\\" thành công!",
+  "data": {
+    "id": "${sampleId}",
+    "title": "Bóng Ma Bên Khung Cửa Sổ",
+    "author": "Nguyễn Huy",
+    "narrator": "Gối Ôm Audio",
+    "category": "Truyện Ma, Trinh Thám",
+    "categories": ["Truyện Ma", "Trinh Thám"],
+    "chapters": [ ... ]
+  }
+}`;
                 } else if (apiDocExample === 'update') {
-                  title = 'Sửa Thông Tin & Thể Loại Truyện Đang Có (POST /api/gateway)';
-                  desc = 'Truyền action: "update" (hoặc "sua"), id của truyện cần sửa, và mảng "categories" (hoặc "category" cách nhau bằng dấu phẩy):';
+                  title = 'Sửa Thông Tin & Thể Loại Truyện Theo "id" Đã Lưu (POST /api/gateway)';
+                  desc = 'Dùng chính giá trị "id": "track-..." nhận được lúc đăng truyện để truyền vào lệnh "update" (hoặc "sua"):';
                   curlCode = `curl -X POST "${origin}/api/gateway" \\
   -H "Content-Type: application/json"${keyHeader} \\
   -d '{
@@ -6720,9 +6740,21 @@ https://s.lazada.vn/s.flashsale_deal`}
     "categories": ["Ngôn Tình", "Hiện Đại", "Cổ Trang"],
     "description": "Cập nhật mô tả nội dung truyện..."
   }'`;
+                  sampleResponseCode = `{
+  "success": true,
+  "action": "update",
+  "id": "${sampleId}",
+  "message": "Đã cập nhật truyện \\"Tên Truyện Đã Chỉnh Sửa Mới\\" thành công!",
+  "data": {
+    "id": "${sampleId}",
+    "title": "Tên Truyện Đã Chỉnh Sửa Mới",
+    "category": "Ngôn Tình, Hiện Đại, Cổ Trang",
+    "categories": ["Ngôn Tình", "Hiện Đại", "Cổ Trang"]
+  }
+}`;
                 } else if (apiDocExample === 'add_chapter') {
                   title = 'Thêm Tập MP3 Mới Vào Truyện Có Sẵn (POST /api/gateway)';
-                  desc = 'Truyền action: "add_chapter" (hoặc "them_tap"), id của truyện, và thông tin tập mới trong trường chapter:';
+                  desc = 'Truyền action: "add_chapter" (hoặc "them_tap"), "id" của truyện đã lưu, và thông tin tập mới trong trường chapter:';
                   curlCode = `curl -X POST "${origin}/api/gateway" \\
   -H "Content-Type: application/json"${keyHeader} \\
   -d '{
@@ -6761,10 +6793,10 @@ https://s.lazada.vn/s.flashsale_deal`}
                 } else {
                   title = 'Upload File Audio .MP3 Vào uploads/audio/ (POST /api/upload-audio)';
                   desc = 'Tải file .mp3 (tối đa 150MB) lên Server, tự động đổi tên chuẩn SEO và đo thời lượng bằng ffprobe:';
-                  curlCode = `curl -X POST "${origin}/api/upload-audio"${keyHeader} \\
+                  curlCode = `curl -X POST "${origin}/upload-audio"${keyHeader} \\
   -F "storyTitle=Bóng Ma Bên Khung Cửa Sổ" \\
   -F "chapterTitle=Phần 1" \\
-  -F "audio=@/duong-dan/file-truyen-tap-1.mp3"`;
+  -F "audio=@/duong-dan/file-truyen-tap-1.mp3"`.replace('/upload-audio', '/api/upload-audio');
                 }
 
                 return (
@@ -6787,6 +6819,19 @@ https://s.lazada.vn/s.flashsale_deal`}
                     <pre className="p-4 rounded-xl bg-[#121212] border border-[#282828] font-mono text-xs text-emerald-300 overflow-x-auto leading-relaxed">
                       {curlCode}
                     </pre>
+
+                    {sampleResponseCode && (
+                      <div className="space-y-1.5 pt-1">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="font-bold text-sky-300">
+                            Kết quả JSON Server trả về (Lưu lại trường <code className="text-[#1ed760] font-mono">"id"</code> để dùng khi Sửa / Thêm tập / Xóa):
+                          </span>
+                        </div>
+                        <pre className="p-3.5 rounded-xl bg-[#121212] border border-sky-500/30 font-mono text-xs text-sky-200 overflow-x-auto leading-relaxed">
+                          {sampleResponseCode}
+                        </pre>
+                      </div>
+                    )}
                   </div>
                 );
               })()}
@@ -6882,8 +6927,8 @@ https://s.lazada.vn/s.flashsale_deal`}
 
               {/* Live Response Box */}
               {apiPlaygroundResponse && (
-                <div className="p-4 rounded-xl bg-[#121212] border border-[#282828] space-y-2 animate-fade-in">
-                  <div className="flex items-center justify-between border-b border-[#282828] pb-2 text-xs">
+                <div className="p-4 rounded-xl bg-[#121212] border border-[#282828] space-y-2.5 animate-fade-in">
+                  <div className="flex items-center justify-between border-b border-[#282828] pb-2 text-xs flex-wrap gap-2">
                     <span className={`font-bold flex items-center gap-1.5 ${
                       apiPlaygroundResponse.status >= 200 && apiPlaygroundResponse.status < 300
                         ? 'text-emerald-400'
@@ -6896,9 +6941,41 @@ https://s.lazada.vn/s.flashsale_deal`}
                       }`} />
                       <span>HTTP {apiPlaygroundResponse.status}</span>
                     </span>
-                    <span className="text-[11px] font-mono text-[#b3b3b3]">
-                      {apiPlaygroundResponse.timeMs} ms
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {(apiPlaygroundResponse.data?.id || apiPlaygroundResponse.data?.data?.id) && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleCopyText(
+                                String(apiPlaygroundResponse.data?.id || apiPlaygroundResponse.data?.data?.id),
+                                'resp-id'
+                              )
+                            }
+                            className="px-2 py-0.5 rounded bg-[#1ed760]/15 hover:bg-[#1ed760]/25 text-[#1ed760] border border-[#1ed760]/30 font-mono text-[11px] flex items-center gap-1 cursor-pointer"
+                            title="Copy mã ID truyện vừa trả về"
+                          >
+                            <span>"id": "{String(apiPlaygroundResponse.data?.id || apiPlaygroundResponse.data?.data?.id)}"</span>
+                            {apiCopiedKey === 'resp-id' ? <Check size={11} /> : <Copy size={11} />}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const retId = String(apiPlaygroundResponse.data?.id || apiPlaygroundResponse.data?.data?.id);
+                              setApiPlaygroundTargetId(retId);
+                              handleSwitchPlaygroundTemplate('update', retId);
+                            }}
+                            className="px-2 py-0.5 rounded bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/30 text-[11px] font-semibold cursor-pointer"
+                            title="Nạp ngay ID này vào mẫu lệnh Sửa truyện (update)"
+                          >
+                            Dùng ID này để Sửa →
+                          </button>
+                        </>
+                      )}
+                      <span className="text-[11px] font-mono text-[#b3b3b3]">
+                        {apiPlaygroundResponse.timeMs} ms
+                      </span>
+                    </div>
                   </div>
                   <pre className="font-mono text-xs text-slate-200 overflow-x-auto max-h-60 leading-relaxed">
                     {JSON.stringify(apiPlaygroundResponse.data, null, 2)}

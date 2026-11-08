@@ -664,6 +664,7 @@ async function startServer() {
         return res.json({
           success: true,
           action: 'get',
+          id: track.id,
           data: track
         });
       }
@@ -680,6 +681,7 @@ async function startServer() {
         return res.status(201).json({
           success: true,
           action: 'create',
+          id: created.id,
           message: `Đã đăng truyện mới "${created.title}" thành công!`,
           data: created
         });
@@ -709,6 +711,7 @@ async function startServer() {
         return res.json({
           success: true,
           action: 'update',
+          id: updated.id,
           message: `Đã cập nhật truyện "${updated.title}" thành công!`,
           data: updated
         });
@@ -758,6 +761,7 @@ async function startServer() {
         return res.json({
           success: true,
           action: 'add_chapter',
+          id: updated.id,
           message: `Đã thêm tập mới vào truyện "${updated.title}" (Tổng: ${updated.chapters?.length || 1} tập)!`,
           data: updated
         });
@@ -790,6 +794,7 @@ async function startServer() {
         return res.json({
           success: true,
           action: 'delete_chapter',
+          id: updated.id,
           message: `Đã xóa tập #${chapterId} khỏi truyện "${updated.title}".`,
           data: updated
         });
@@ -813,6 +818,7 @@ async function startServer() {
         return res.json({
           success: true,
           action: 'delete',
+          id: targetId,
           message: `Đã xóa truyện có id "${targetId}" và dọn file MP3 liên quan khỏi Server thành công!`,
           deletedId: targetId
         });
