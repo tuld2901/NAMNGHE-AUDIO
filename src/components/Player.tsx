@@ -56,7 +56,7 @@ export const Player: React.FC<PlayerProps> = React.memo(({ onOpenStoryDetail }) 
     : 1;
 
   return (
-    <div className="sticky bottom-0 left-0 right-0 z-30 w-full bg-[#000000] border-t border-[#282828]">
+    <div className="sticky bottom-0 left-0 right-0 z-30 w-full bg-white/95 dark:bg-[#000000] backdrop-blur-md border-t border-slate-200 dark:border-[#282828] shadow-[0_-4px_20px_rgba(0,0,0,0.06)] dark:shadow-none transition-colors duration-200">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 space-y-1.5">
         {/* Top row: Story info + Responsive Playback Controls */}
         <div className="flex items-center justify-between gap-3 sm:gap-6">
@@ -70,10 +70,10 @@ export const Player: React.FC<PlayerProps> = React.memo(({ onOpenStoryDetail }) 
             </div>
 
             <div className="min-w-0">
-              <h4 className="font-bold text-white text-sm leading-tight truncate group-hover:text-[#1ed760] transition">
+              <h4 className="font-bold text-slate-900 dark:text-white text-sm leading-tight truncate group-hover:text-[#16a34a] dark:group-hover:text-[#1ed760] transition">
                 {currentTrack.title}
               </h4>
-              <p className="text-xs text-[#b3b3b3] font-medium truncate mt-0.5">
+              <p className="text-xs text-slate-500 dark:text-[#b3b3b3] font-medium truncate mt-0.5">
                 Tập {currentChapterIdx > 0 ? currentChapterIdx : 1}/{chaptersCount} •{' '}
                 {isPlaying ? 'Đang phát' : 'Tạm dừng'}
               </p>
@@ -85,7 +85,7 @@ export const Player: React.FC<PlayerProps> = React.memo(({ onOpenStoryDetail }) 
             {/* Skip Back / Previous Episode */}
             <button
               onClick={prevChapter}
-              className="w-9 h-9 rounded-full hover:bg-[#282828] active:scale-95 text-[#b3b3b3] hover:text-white flex items-center justify-center transition cursor-pointer"
+              className="w-9 h-9 rounded-full hover:bg-slate-100 dark:hover:bg-[#282828] active:scale-95 text-slate-600 dark:text-[#b3b3b3] hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition cursor-pointer"
               title="Tập trước"
             >
               <SkipBack size={18} />
@@ -107,7 +107,7 @@ export const Player: React.FC<PlayerProps> = React.memo(({ onOpenStoryDetail }) 
             {/* Skip Forward / Next Episode */}
             <button
               onClick={nextChapter}
-              className="w-9 h-9 rounded-full hover:bg-[#282828] active:scale-95 text-[#b3b3b3] hover:text-white flex items-center justify-center transition cursor-pointer"
+              className="w-9 h-9 rounded-full hover:bg-slate-100 dark:hover:bg-[#282828] active:scale-95 text-slate-600 dark:text-[#b3b3b3] hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition cursor-pointer"
               title="Tập kế tiếp"
             >
               <SkipForward size={18} />
@@ -122,8 +122,8 @@ export const Player: React.FC<PlayerProps> = React.memo(({ onOpenStoryDetail }) 
                 }}
                 className={`h-9 px-2.5 sm:px-3 rounded-full text-xs font-semibold font-mono flex items-center gap-1 transition cursor-pointer border active:scale-95 ${
                   isSpeedMenuOpen
-                    ? 'bg-[#1db954]/20 text-[#1ed760] border-[#1ed760]/40 shadow-sm shadow-[#1ed760]/20'
-                    : 'bg-[#242424] hover:bg-[#2a2a2a] text-[#b3b3b3] hover:text-white border-[#333333]'
+                    ? 'bg-[#1db954]/15 dark:bg-[#1db954]/20 text-[#15803d] dark:text-[#1ed760] border-[#1db954]/40 shadow-xs shadow-[#1ed760]/20'
+                    : 'bg-slate-100 hover:bg-slate-200/80 dark:bg-[#242424] dark:hover:bg-[#2a2a2a] text-slate-700 dark:text-[#b3b3b3] hover:text-slate-900 dark:hover:text-white border-slate-200 dark:border-[#333333]'
                 }`}
                 title="Tốc độ phát: Bấm để chọn danh sách"
               >
@@ -136,10 +136,10 @@ export const Player: React.FC<PlayerProps> = React.memo(({ onOpenStoryDetail }) 
                     className="fixed inset-0 z-40"
                     onClick={() => setIsSpeedMenuOpen(false)}
                   />
-                  <div className="absolute bottom-full mb-2 right-0 w-44 bg-[#282828] border border-[#3e3e3e] rounded-2xl shadow-2xl py-1 z-50 animate-fade-in backdrop-blur-md">
-                    <div className="px-3 py-1.5 text-[11px] font-bold text-[#b3b3b3] border-b border-[#333333] uppercase tracking-wider flex items-center justify-between">
+                  <div className="absolute bottom-full mb-2 right-0 w-44 bg-white dark:bg-[#282828] border border-slate-200 dark:border-[#3e3e3e] rounded-2xl shadow-xl dark:shadow-2xl py-1 z-50 animate-fade-in backdrop-blur-md">
+                    <div className="px-3 py-1.5 text-[11px] font-bold text-slate-500 dark:text-[#b3b3b3] border-b border-slate-200 dark:border-[#333333] uppercase tracking-wider flex items-center justify-between">
                       <span>Tốc độ phát</span>
-                      <span className="text-[10px] text-[#1ed760] font-mono font-bold">{playbackSpeed}×</span>
+                      <span className="text-[10px] text-[#16a34a] dark:text-[#1ed760] font-mono font-bold">{playbackSpeed}×</span>
                     </div>
                     {SPEED_OPTIONS.map((opt) => {
                       const isSelected = playbackSpeed === opt.value;
@@ -150,15 +150,15 @@ export const Player: React.FC<PlayerProps> = React.memo(({ onOpenStoryDetail }) 
                             setPlaybackSpeed(opt.value);
                             setIsSpeedMenuOpen(false);
                           }}
-                          className={`w-full text-left px-3 py-2 text-xs hover:bg-[#333333] flex items-center justify-between transition cursor-pointer ${
+                          className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-100 dark:hover:bg-[#333333] flex items-center justify-between transition cursor-pointer ${
                             isSelected
-                              ? 'text-[#1ed760] font-bold bg-[#1db954]/15'
-                              : 'text-white'
+                              ? 'text-[#16a34a] dark:text-[#1ed760] font-bold bg-[#1db954]/10 dark:bg-[#1db954]/15'
+                              : 'text-slate-700 dark:text-white'
                           }`}
                         >
                           <span>{opt.label}</span>
                           {isSelected && (
-                            <span className="text-[11px] text-[#1ed760] font-bold">✓</span>
+                            <span className="text-[11px] text-[#16a34a] dark:text-[#1ed760] font-bold">✓</span>
                           )}
                         </button>
                       );
@@ -177,8 +177,8 @@ export const Player: React.FC<PlayerProps> = React.memo(({ onOpenStoryDetail }) 
                 }}
                 className={`w-9 h-9 rounded-full flex items-center justify-center transition cursor-pointer border active:scale-95 ${
                   sleepTimerMinutes
-                    ? 'bg-[#1db954]/20 text-[#1ed760] border-[#1ed760]/40'
-                    : 'bg-[#242424] hover:bg-[#2a2a2a] text-[#b3b3b3] hover:text-white border-[#333333]'
+                    ? 'bg-[#1db954]/15 dark:bg-[#1db954]/20 text-[#15803d] dark:text-[#1ed760] border-[#1db954]/40'
+                    : 'bg-slate-100 hover:bg-slate-200/80 dark:bg-[#242424] dark:hover:bg-[#2a2a2a] text-slate-700 dark:text-[#b3b3b3] hover:text-slate-900 dark:hover:text-white border-slate-200 dark:border-[#333333]'
                 }`}
                 title="Hẹn giờ tắt"
               >
@@ -191,8 +191,8 @@ export const Player: React.FC<PlayerProps> = React.memo(({ onOpenStoryDetail }) 
                     className="fixed inset-0 z-40"
                     onClick={() => setIsSleepMenuOpen(false)}
                   />
-                  <div className="absolute bottom-full mb-2 right-0 w-36 bg-[#282828] border border-[#3e3e3e] rounded-2xl shadow-2xl py-1 z-50 animate-fade-in">
-                    <div className="px-3 py-1.5 text-[11px] font-bold text-[#b3b3b3] border-b border-[#333333] uppercase tracking-wider">
+                  <div className="absolute bottom-full mb-2 right-0 w-36 bg-white dark:bg-[#282828] border border-slate-200 dark:border-[#3e3e3e] rounded-2xl shadow-xl dark:shadow-2xl py-1 z-50 animate-fade-in">
+                    <div className="px-3 py-1.5 text-[11px] font-bold text-slate-500 dark:text-[#b3b3b3] border-b border-slate-200 dark:border-[#333333] uppercase tracking-wider">
                       Hẹn giờ tắt
                     </div>
                     {[
@@ -205,15 +205,15 @@ export const Player: React.FC<PlayerProps> = React.memo(({ onOpenStoryDetail }) 
                       <button
                         key={idx}
                         onClick={() => handleSetSleep(item.val)}
-                        className={`w-full text-left px-3 py-1.5 text-xs hover:bg-[#333333] flex items-center justify-between cursor-pointer ${
+                        className={`w-full text-left px-3 py-1.5 text-xs hover:bg-slate-100 dark:hover:bg-[#333333] flex items-center justify-between cursor-pointer ${
                           sleepTimerMinutes === item.val
-                            ? 'text-[#1ed760] font-bold'
-                            : 'text-white'
+                            ? 'text-[#16a34a] dark:text-[#1ed760] font-bold'
+                            : 'text-slate-700 dark:text-white'
                         }`}
                       >
                         <span>{item.label}</span>
                         {sleepTimerMinutes === item.val && (
-                          <span className="text-[10px] text-[#1ed760]">✓</span>
+                          <span className="text-[10px] text-[#16a34a] dark:text-[#1ed760]">✓</span>
                         )}
                       </button>
                     ))}

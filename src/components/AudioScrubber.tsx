@@ -128,7 +128,7 @@ export const AudioScrubber: React.FC<AudioScrubberProps> = ({
   return (
     <div className={`w-full flex items-center gap-2 select-none ${className}`}>
       {showTimeLabels && (
-        <span className="text-[10px] text-[#b3b3b3] font-mono shrink-0 w-8 text-right tabular-nums">
+        <span className="text-[10px] text-slate-500 dark:text-[#b3b3b3] font-mono shrink-0 w-8 text-right tabular-nums">
           {formatTime(displayTime)}
         </span>
       )}
@@ -144,10 +144,10 @@ export const AudioScrubber: React.FC<AudioScrubberProps> = ({
         title="Chạm hoặc kéo thanh để tua đến đoạn bạn muốn nghe"
       >
         {/* Background Track */}
-        <div className={`relative w-full ${trackHeightClass} bg-[#4d4d4d] rounded-full overflow-hidden`}>
+        <div className={`relative w-full ${trackHeightClass} bg-slate-200 dark:bg-[#4d4d4d] rounded-full overflow-hidden`}>
           {/* Buffered Fill */}
           <div
-            className="absolute top-0 left-0 h-full bg-[#5e5e5e] rounded-full transition-[width] duration-150"
+            className="absolute top-0 left-0 h-full bg-slate-300 dark:bg-[#5e5e5e] rounded-full transition-[width] duration-150"
             style={{ width: `${bufferedPercent}%` }}
           />
           {/* Active Progress Fill */}
@@ -157,9 +157,9 @@ export const AudioScrubber: React.FC<AudioScrubberProps> = ({
           />
         </div>
 
-        {/* Draggable Knob (Spotify white pill/knob) */}
+        {/* Draggable Knob */}
         <div
-          className={`absolute pointer-events-none rounded-full bg-white shadow-md transform -translate-x-1/2 transition-transform duration-75 ${thumbSizeClass} ${
+          className={`absolute pointer-events-none rounded-full bg-emerald-600 dark:bg-white shadow-md transform -translate-x-1/2 transition-transform duration-75 ${thumbSizeClass} ${
             isDragging ? 'scale-125 ring-2 ring-[#1ed760]/60' : 'opacity-0 group-hover:opacity-100 group-hover:scale-110'
           }`}
           style={{ left: `${progressPercent}%` }}
@@ -167,7 +167,7 @@ export const AudioScrubber: React.FC<AudioScrubberProps> = ({
       </div>
 
       {showTimeLabels && (
-        <span className="text-[10px] text-[#b3b3b3] font-mono shrink-0 w-8 text-left tabular-nums">
+        <span className="text-[10px] text-slate-500 dark:text-[#b3b3b3] font-mono shrink-0 w-8 text-left tabular-nums">
           {duration > 0 ? formatTime(duration) : '--:--'}
         </span>
       )}

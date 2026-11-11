@@ -42,6 +42,30 @@ function AppContent({
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [activeStoryParam, setActiveStoryParam] = useState<string | null>(null);
   const [selectedStoryTrack, setSelectedStoryTrack] = useState<Track | null>(null);
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    try {
+      const saved = localStorage.getItem('ui_theme_mode');
+      return saved === 'dark' ? 'dark' : 'light';
+    } catch {
+      return 'light';
+    }
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+    try {
+      localStorage.setItem('ui_theme_mode', theme);
+    } catch {}
+  }, [theme]);
+
+  const handleToggleTheme = useCallback(() => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  }, []);
 
   // Audio Context
   const {
@@ -261,7 +285,7 @@ function AppContent({
   }, [tracks]);
 
   return (
-    <div className="min-h-screen bg-[#121212] text-white flex flex-col font-sans selection:bg-[#1db954]/30 selection:text-[#1ed760]">
+    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#121212] text-slate-900 dark:text-white flex flex-col font-sans selection:bg-[#1db954]/30 selection:text-[#15803d] dark:selection:text-[#1ed760] transition-colors duration-200">
       {/* Top Navbar */}
       <Navbar
         searchQuery={searchQuery}
@@ -271,6 +295,8 @@ function AppContent({
         onNavigateAdmin={handleNavigateToAdmin}
         isAdminView={isAdminView}
         siteSettings={siteSettings}
+        theme={theme}
+        onToggleTheme={handleToggleTheme}
       />
 
       {/* Main Content + Audio Bar Wrapper (Luôn nằm phía trên Footer, không bao giờ đè lên Footer) */}
@@ -280,7 +306,7 @@ function AppContent({
             <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
               <Suspense
                 fallback={
-                  <div className="py-16 text-center text-sm text-slate-400">
+                  <div className="py-16 text-center text-sm text-slate-500 dark:text-slate-400">
                     Đang tải trang quản trị...
                   </div>
                 }
@@ -342,8 +368,8 @@ function AppContent({
         onUnlockSuccess={handleUnlockSuccess}
       />
 
-      {/* Spotify Style Dark Footer (Luôn nằm dưới trình chạy nhạc khi kéo xuống cuối trang) */}
-      <footer className="border-t border-[#282828] bg-[#000000] py-6 text-[#b3b3b3] text-xs">
+      {/* Footer (Luôn nằm dưới trình chạy nhạc khi kéo xuống cuối trang) */}
+      <footer className="border-t border-slate-200 dark:border-[#282828] bg-white dark:bg-[#000000] py-6 text-slate-600 dark:text-[#b3b3b3] text-xs transition-colors duration-200">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col gap-4">
           {/* Hàng trên: Thương hiệu & các đường dẫn trang thông tin / chính sách */}
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
@@ -351,11 +377,11 @@ function AppContent({
               <button
                 type="button"
                 onClick={handleBackToHome}
-                className="font-bold text-white hover:text-[#1ed760] transition cursor-pointer"
+                className="font-bold text-slate-900 dark:text-white hover:text-[#16a34a] dark:hover:text-[#1ed760] transition cursor-pointer"
               >
                 {siteSettings.siteName || 'Gối Ôm Audio'}
               </button>
-              <span className="text-[#535353]">•</span>
+              <span className="text-slate-300 dark:text-[#535353]">•</span>
               <span>{siteSettings.siteTagline || 'Nghe miễn phí, không cần tài khoản'}</span>
             </div>
 
@@ -376,20 +402,20 @@ function AppContent({
                       }}
                       className={`transition cursor-pointer ${
                         isActive
-                          ? 'text-[#1ed760] font-bold underline underline-offset-4'
-                          : 'text-[#b3b3b3] hover:text-[#1ed760]'
+                          ? 'text-[#16a34a] dark:text-[#1ed760] font-bold underline underline-offset-4'
+                          : 'text-slate-600 dark:text-[#b3b3b3] hover:text-[#16a34a] dark:hover:text-[#1ed760]'
                       }`}
                     >
                       {page.shortTitle}
                     </a>
                     {index < STATIC_PAGES_CONFIG.length - 1 && (
-                      <span className="text-[#383838] hidden sm:inline">•</span>
+                      <span className="text-slate-300 dark:text-[#383838] hidden sm:inline">•</span>
                     )}
                   </React.Fragment>
                 );
               })}
 
-              <span className="text-[#383838] hidden sm:inline">•</span>
+              <span className="text-slate-300 dark:text-[#383838] hidden sm:inline">•</span>
               <button
                 type="button"
                 onClick={() => {
@@ -399,7 +425,7 @@ function AppContent({
                     setIsLockModalOpen(true);
                   }
                 }}
-                className="hover:text-[#1ed760] transition cursor-pointer font-medium text-white/90"
+                className="hover:text-[#16a34a] dark:hover:text-[#1ed760] transition cursor-pointer font-medium text-slate-800 dark:text-white/90"
               >
                 Ủng hộ kênh ❤️
               </button>

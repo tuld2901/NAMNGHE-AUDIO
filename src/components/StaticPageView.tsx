@@ -109,24 +109,24 @@ export const StaticPageView: React.FC<StaticPageViewProps> = ({
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 animate-fade-in">
       {/* Breadcrumb & Back button */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-        <div className="flex items-center gap-2 text-xs text-[#b3b3b3]">
+        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-[#b3b3b3]">
           <button
             type="button"
             onClick={onBackToHome}
-            className="hover:text-[#1ed760] transition cursor-pointer font-medium"
+            className="hover:text-[#16a34a] dark:hover:text-[#1ed760] transition cursor-pointer font-medium"
           >
             Trang chủ
           </button>
-          <ChevronRight size={13} className="text-[#535353]" />
-          <span className="text-white font-semibold">{activePage.title}</span>
+          <ChevronRight size={13} className="text-slate-300 dark:text-[#535353]" />
+          <span className="text-slate-900 dark:text-white font-semibold">{activePage.title}</span>
         </div>
 
         <button
           type="button"
           onClick={onBackToHome}
-          className="px-3.5 py-2 rounded-xl bg-[#181818] hover:bg-[#242424] border border-[#282828] text-xs font-bold text-white flex items-center gap-2 transition cursor-pointer"
+          className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 dark:bg-[#181818] dark:hover:bg-[#242424] border border-slate-200 dark:border-[#282828] text-xs font-bold text-slate-800 dark:text-white flex items-center gap-2 transition cursor-pointer shadow-xs"
         >
-          <ArrowLeft size={14} className="text-[#1ed760]" />
+          <ArrowLeft size={14} className="text-[#16a34a] dark:text-[#1ed760]" />
           <span>Quay lại Trang chủ</span>
         </button>
       </div>
@@ -143,10 +143,10 @@ export const StaticPageView: React.FC<StaticPageViewProps> = ({
               className={`px-3.5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 whitespace-nowrap transition cursor-pointer shrink-0 border ${
                 isActive
                   ? 'bg-[#1ed760] text-black border-[#1ed760] shadow-md shadow-[#1ed760]/20'
-                  : 'bg-[#181818] text-[#d1d1d1] border-[#282828] hover:bg-[#242424] hover:text-white'
+                  : 'bg-white dark:bg-[#181818] text-slate-700 dark:text-[#d1d1d1] border-slate-200 dark:border-[#282828] hover:bg-slate-100 dark:hover:bg-[#242424] hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              <span className={isActive ? 'text-black' : 'text-[#1ed760]'}>
+              <span className={isActive ? 'text-black' : 'text-[#16a34a] dark:text-[#1ed760]'}>
                 {getPageIcon(item.slug, 15)}
               </span>
               <span>{item.shortTitle}</span>
@@ -156,21 +156,21 @@ export const StaticPageView: React.FC<StaticPageViewProps> = ({
       </div>
 
       {/* Main Content Card */}
-      <div className="rounded-2xl bg-[#181818] border border-[#282828] shadow-xl overflow-hidden">
+      <div className="rounded-2xl bg-white dark:bg-[#181818] border border-slate-200 dark:border-[#282828] shadow-lg dark:shadow-xl overflow-hidden">
         {/* Page Header Banner */}
-        <div className="p-6 sm:p-8 bg-gradient-to-r from-[#1ed760]/15 via-[#181818] to-[#181818] border-b border-[#282828]">
+        <div className="p-6 sm:p-8 bg-gradient-to-r from-[#1ed760]/15 via-emerald-50/40 to-white dark:from-[#1ed760]/15 dark:via-[#181818] dark:to-[#181818] border-b border-slate-200 dark:border-[#282828]">
           <div className="flex items-start sm:items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-[#1ed760]/20 border border-[#1ed760]/40 flex items-center justify-center text-[#1ed760] shrink-0">
+            <div className="w-12 h-12 rounded-2xl bg-[#1ed760]/20 border border-[#1ed760]/40 flex items-center justify-center text-[#16a34a] dark:text-[#1ed760] shrink-0">
               {getPageIcon(activePage.slug, 24)}
             </div>
             <div>
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[#1ed760] block mb-1">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[#16a34a] dark:text-[#1ed760] block mb-1">
                 {siteSettings.siteName || 'Gối Ôm Audio'} • Thông Tin & Chính Sách
               </span>
-              <h1 className="text-xl sm:text-2xl font-black text-white">
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
                 {activePage.title}
               </h1>
-              <p className="text-xs sm:text-sm text-[#b3b3b3] mt-1">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-[#b3b3b3] mt-1">
                 {activePage.subtitle}
               </p>
             </div>
@@ -181,20 +181,20 @@ export const StaticPageView: React.FC<StaticPageViewProps> = ({
         <div className="p-6 sm:p-8">
           {hasHtmlTags ? (
             <div
-              className="prose prose-invert max-w-none text-sm sm:text-base text-[#e5e5e5] leading-relaxed space-y-4"
+              className="prose dark:prose-invert max-w-none text-sm sm:text-base text-slate-700 dark:text-[#e5e5e5] leading-relaxed space-y-4"
               dangerouslySetInnerHTML={{ __html: rawContent }}
             />
           ) : (
-            <div className="text-sm sm:text-[15px] text-[#e5e5e5] leading-relaxed space-y-3 whitespace-pre-line">
+            <div className="text-sm sm:text-[15px] text-slate-700 dark:text-[#e5e5e5] leading-relaxed space-y-3 whitespace-pre-line">
               {rawContent}
             </div>
           )}
         </div>
 
         {/* Bottom Quick Links */}
-        <div className="px-6 sm:px-8 py-4 bg-[#121212] border-t border-[#282828] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#b3b3b3]">
+        <div className="px-6 sm:px-8 py-4 bg-slate-50 dark:bg-[#121212] border-t border-slate-200 dark:border-[#282828] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 dark:text-[#b3b3b3]">
           <span>
-            © {new Date().getFullYear()} <strong className="text-white">{siteSettings.siteName || 'Gối Ôm Audio'}</strong>. Mọi quyền được bảo lưu.
+            © {new Date().getFullYear()} <strong className="text-slate-900 dark:text-white">{siteSettings.siteName || 'Gối Ôm Audio'}</strong>. Mọi quyền được bảo lưu.
           </span>
           <div className="flex flex-wrap items-center justify-center gap-3">
             {STATIC_PAGES_CONFIG.filter((p) => p.slug !== activePage.slug).map((p) => (
@@ -202,7 +202,7 @@ export const StaticPageView: React.FC<StaticPageViewProps> = ({
                 key={p.slug}
                 type="button"
                 onClick={() => onNavigatePage(p.slug)}
-                className="hover:text-[#1ed760] transition cursor-pointer underline underline-offset-4"
+                className="hover:text-[#16a34a] dark:hover:text-[#1ed760] transition cursor-pointer underline underline-offset-4"
               >
                 {p.shortTitle}
               </button>
