@@ -2889,29 +2889,13 @@ export const Admin: React.FC<AdminProps> = ({
                         )}
                       </div>
                     </th>
-                    <th
-                      onClick={() => handleToggleTrackSort('affiliate_link')}
-                      className={`p-3.5 cursor-pointer hover:bg-[#1f1f1f] transition ${
-                        tableSortField === 'affiliate_link' ? 'text-[#1ed760]' : 'hover:text-white'
-                      }`}
-                      title="Nhấn để sắp xếp theo Link Affiliate (A → Z / Z → A)"
-                    >
-                      <div className="inline-flex items-center gap-1.5">
-                        <span>Link Affiliate</span>
-                        {tableSortField === 'affiliate_link' ? (
-                          tableSortOrder === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />
-                        ) : (
-                          <ArrowUpDown size={11} className="opacity-40" />
-                        )}
-                      </div>
-                    </th>
                     <th className="p-3.5 text-right">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60 text-[#d1d1d1]">
                   {filteredTracks.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="p-8 text-center text-[#b3b3b3]">
+                      <td colSpan={8} className="p-8 text-center text-[#b3b3b3]">
                         Không có bộ truyện nào trong danh sách.
                       </td>
                     </tr>
@@ -2999,17 +2983,6 @@ export const Admin: React.FC<AdminProps> = ({
                           </td>
                           <td className="p-3.5">
                             <span className="font-semibold text-slate-200">{t.chapters?.length || 1}</span>
-                          </td>
-                          <td className="p-3.5">
-                            <a
-                              href={t.affiliate_link || 'https://shopee.vn'}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-[#1ed760] hover:underline flex items-center gap-1 max-w-[120px] truncate"
-                            >
-                              <span className="truncate">{t.affiliate_link || 'https://shopee.vn'}</span>
-                              <ExternalLink size={12} className="shrink-0" />
-                            </a>
                           </td>
                           <td className="p-3.5 text-right">
                             <div className="flex items-center justify-end gap-1.5">
