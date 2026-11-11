@@ -864,11 +864,38 @@ export const Admin: React.FC<AdminProps> = ({
   const [tableCategoryFilter, setTableCategoryFilter] = useState<string>('ALL');
   const [tableSortField, setTableSortField] = useState<
     'stt' | 'title' | 'category' | 'author' | 'play_count' | 'chapters' | 'affiliate_link' | null
-  >(null);
-  const [tableSortOrder, setTableSortOrder] = useState<'asc' | 'desc'>('asc');
+  >(() => {
+    try {
+      const saved = localStorage.getItem('phuba_admin_sort_field');
+      if (saved === 'none') return null;
+      return (saved as any) || 'title';
+    } catch {
+      return 'title';
+    }
+  });
+  const [tableSortOrder, setTableSortOrder] = useState<'asc' | 'desc'>(() => {
+    try {
+      const saved = localStorage.getItem('phuba_admin_sort_order');
+      return saved === 'desc' ? 'desc' : 'asc';
+    } catch {
+      return 'asc';
+    }
+  });
   const [selectedTrackIds, setSelectedTrackIds] = useState<string[]>([]);
   const [lastClickedTrackIdx, setLastClickedTrackIdx] = useState<number | null>(null);
   const [sqlCopied, setSqlCopied] = useState<boolean>(false);
+
+  const applyTrackSort = (
+    field: 'stt' | 'title' | 'category' | 'author' | 'play_count' | 'chapters' | 'affiliate_link' | null,
+    order: 'asc' | 'desc'
+  ) => {
+    setTableSortField(field);
+    setTableSortOrder(order);
+    try {
+      localStorage.setItem('phuba_admin_sort_field', field || 'none');
+      localStorage.setItem('phuba_admin_sort_order', order);
+    } catch {}
+  };
 
   const handleToggleTrackSort = (
     field: 'stt' | 'title' | 'category' | 'author' | 'play_count' | 'chapters' | 'affiliate_link'
@@ -878,13 +905,11 @@ export const Admin: React.FC<AdminProps> = ({
     const secondOrder: 'asc' | 'desc' = isNumericField ? 'asc' : 'desc';
 
     if (tableSortField !== field) {
-      setTableSortField(field);
-      setTableSortOrder(firstOrder);
+      applyTrackSort(field, firstOrder);
     } else if (tableSortOrder === firstOrder) {
-      setTableSortOrder(secondOrder);
+      applyTrackSort(field, secondOrder);
     } else {
-      setTableSortField(null);
-      setTableSortOrder('asc');
+      applyTrackSort(null, 'asc');
     }
   };
 
@@ -1799,6 +1824,7 @@ export const Admin: React.FC<AdminProps> = ({
 
     if (!tableSortField) return list;
 
+    const collator = new Intl.Collator('vi', { numeric: true, sensitivity: 'base' });
     const dir = tableSortOrder === 'asc' ? 1 : -1;
     return [...list].sort((a, b) => {
       if (tableSortField === 'stt') {
@@ -1807,15 +1833,15 @@ export const Admin: React.FC<AdminProps> = ({
         return (idxA - idxB) * dir;
       }
       if (tableSortField === 'title') {
-        return a.title.localeCompare(b.title, 'vi', { sensitivity: 'base' }) * dir;
+        return collator.compare(a.title || '', b.title || '') * dir;
       }
       if (tableSortField === 'category') {
         const catA = (Array.isArray(a.categories) && a.categories.length > 0 ? a.categories.join(', ') : a.category || '');
         const catB = (Array.isArray(b.categories) && b.categories.length > 0 ? b.categories.join(', ') : b.category || '');
-        return catA.localeCompare(catB, 'vi', { sensitivity: 'base' }) * dir;
+        return collator.compare(catA, catB) * dir;
       }
       if (tableSortField === 'author') {
-        return (a.author || '').localeCompare(b.author || '', 'vi', { sensitivity: 'base' }) * dir;
+        return collator.compare(a.author || '', b.author || '') * dir;
       }
       if (tableSortField === 'play_count') {
         return ((Number(a.play_count) || 0) - (Number(b.play_count) || 0)) * dir;
@@ -1824,7 +1850,7 @@ export const Admin: React.FC<AdminProps> = ({
         return ((a.chapters?.length || 1) - (b.chapters?.length || 1)) * dir;
       }
       if (tableSortField === 'affiliate_link') {
-        return (a.affiliate_link || '').localeCompare(b.affiliate_link || '', 'vi', { sensitivity: 'base' }) * dir;
+        return collator.compare(a.affiliate_link || '', b.affiliate_link || '') * dir;
       }
       return 0;
     });
@@ -2616,6 +2642,29 @@ export const Admin: React.FC<AdminProps> = ({
 
               <div className="flex items-center gap-2 flex-wrap">
                 <select
+                  value={tableSortField ? `${tableSortField}:${tableSortOrder}` : 'none:asc'}
+                  onChange={(e) => {
+                    const [f, o] = e.target.value.split(':');
+                    applyTrackSort(
+                      f === 'none' ? null : (f as any),
+                      o === 'desc' ? 'desc' : 'asc'
+                    );
+                  }}
+                  className="px-3 py-2 rounded-xl bg-[#181818] border border-[#1ed760]/40 text-xs text-[#1ed760] font-semibold focus:outline-none focus:border-[#1ed760] cursor-pointer"
+                  title="Chọn tiêu chí sắp xếp danh sách Kho Audio"
+                >
+                  <option value="title:asc">Sắp xếp: Tên / Số thứ tự (001 → 999, A → Z)</option>
+                  <option value="title:desc">Sắp xếp: Tên / Số thứ tự (999 → 001, Z → A)</option>
+                  <option value="none:asc">Sắp xếp: Mới đăng lên API trước</option>
+                  <option value="stt:desc">Sắp xếp: Cũ nhất đăng trước</option>
+                  <option value="play_count:desc">Sắp xếp: Lượt nghe (Cao → Thấp)</option>
+                  <option value="play_count:asc">Sắp xếp: Lượt nghe (Thấp → Cao)</option>
+                  <option value="chapters:desc">Sắp xếp: Số phần (Nhiều → Ít)</option>
+                  <option value="category:asc">Sắp xếp: Thể loại (A → Z)</option>
+                  <option value="author:asc">Sắp xếp: Tác giả (A → Z)</option>
+                </select>
+
+                <select
                   value={tableCategoryFilter}
                   onChange={(e) => setTableCategoryFilter(e.target.value)}
                   className="px-3 py-2 rounded-xl bg-[#181818] border border-[#333333] text-xs text-white focus:outline-none focus:border-[#1ed760] cursor-pointer"
@@ -2629,20 +2678,18 @@ export const Admin: React.FC<AdminProps> = ({
                   ))}
                 </select>
 
-                {(tableSortField || tableCategoryFilter !== 'ALL' || tableSearch) && (
+                {(tableCategoryFilter !== 'ALL' || tableSearch) && (
                   <button
                     type="button"
                     onClick={() => {
-                      setTableSortField(null);
-                      setTableSortOrder('asc');
                       setTableCategoryFilter('ALL');
                       setTableSearch('');
                     }}
                     className="px-2.5 py-2 rounded-xl bg-[#242424] hover:bg-[#333333] text-[#1ed760] border border-[#333333] text-xs font-semibold flex items-center gap-1 cursor-pointer transition"
-                    title="Đặt lại sắp xếp & bộ lọc về mặc định"
+                    title="Xóa bộ lọc tìm kiếm & thể loại"
                   >
                     <RotateCcw size={12} />
-                    <span>Đặt lại sắp xếp/lọc</span>
+                    <span>Xóa lọc</span>
                   </button>
                 )}
               </div>
