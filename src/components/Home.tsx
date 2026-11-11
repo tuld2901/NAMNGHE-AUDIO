@@ -93,9 +93,10 @@ export const Home: React.FC<HomeProps> = React.memo(({
       .slice(0, 16);
   }, [tracks, getTrackCreatedTime]);
 
-  // 2. Đang nghe nhiều: Đề xuất dựa trên số lượt nghe thực tế và hoạt động nghe gần nhất
+  // 2. Đang nghe nhiều: Chỉ hiển thị các truyện đã có người nghe (> 0 lượt nghe), sắp xếp theo lượt nghe thực tế
   const trendingTracks = useMemo(() => {
-    return [...tracks]
+    return tracks
+      .filter((t) => getTrackPlayCount(t) > 0)
       .sort((a, b) => {
         const totalA = getTrackPlayCount(a);
         const totalB = getTrackPlayCount(b);
@@ -114,9 +115,10 @@ export const Home: React.FC<HomeProps> = React.memo(({
       .slice(0, 16);
   }, [tracks, getTrackCreatedTime]);
 
-  // 3. Top lượt nghe: Dựa hoàn toàn vào số liệu lượt nghe thực tế Hôm nay / Tuần / Tháng
+  // 3. Top lượt nghe: Chỉ hiển thị các truyện đã có lượt nghe (> 0), dựa theo số liệu thực tế Hôm nay / Tuần / Tháng
   const topTracks = useMemo(() => {
-    return [...tracks]
+    return tracks
+      .filter((t) => getTrackPlayCount(t) > 0)
       .sort((a, b) => {
         const periodA = getTrackPeriodPlays(a, topTimeFilter);
         const periodB = getTrackPeriodPlays(b, topTimeFilter);
@@ -246,253 +248,265 @@ export const Home: React.FC<HomeProps> = React.memo(({
         <>
           {/* SECTION 1: MỚI CẬP NHẬT (1 HÀNG CAROUSEL) */}
           <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
-            Mới cập nhật
-          </h2>
-          <div className="flex items-center gap-1 text-[#b3b3b3]">
-            <button
-              onClick={() => scrollCarousel(newTracksScrollRef, 'left')}
-              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#282828] text-[#b3b3b3] hover:text-white active:scale-95 transition cursor-pointer"
-              title="Xem trước"
-            >
-              <ChevronLeft size={18} />
-            </button>
-            <button
-              onClick={() => scrollCarousel(newTracksScrollRef, 'right')}
-              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#282828] text-[#b3b3b3] hover:text-white active:scale-95 transition cursor-pointer"
-              title="Xem tiếp"
-            >
-              <ChevronRight size={18} />
-            </button>
-          </div>
-        </div>
-
-        {/* 1 SINGLE ROW CAROUSEL CONTAINER */}
-        <div
-          ref={newTracksScrollRef}
-          className="flex flex-nowrap items-stretch gap-3 sm:gap-4 overflow-x-auto scrollbar-none snap-x snap-mandatory scroll-smooth pb-1"
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-        >
-          {newTracks.map((track) => {
-            return (
-              <div
-                key={track.id}
-                onClick={() => onSelectStory(track)}
-                className="bg-[#181818] hover:bg-[#282828] rounded-2xl p-4 border border-[#282828] hover:border-[#383838] hover:shadow-xl transition cursor-pointer flex flex-col justify-between h-36 shrink-0 w-[240px] sm:w-[260px] md:w-[calc((100%-32px)/3)] lg:w-[calc((100%-48px)/4)] snap-start select-none group"
-              >
-                <div>
-                  <h3 className="font-bold text-white text-sm sm:text-base leading-snug line-clamp-2 group-hover:text-[#1ed760] transition-colors">
-                    {track.title}
-                  </h3>
-                  <div className="mt-1.5">
-                    <span className="inline-block px-2 py-0.5 rounded-md bg-[#242424] text-[#b3b3b3] font-mono text-[11px] font-medium border border-[#333333]">
-                      Audio Full
-                    </span>
-                  </div>
-                </div>
-
-                <div className="pt-1">
-                  <div className="flex items-center gap-1.5 text-xs text-[#b3b3b3] font-mono truncate">
-                    <Headphones size={13} className="text-[#727272] shrink-0" />
-                    <span>{formatPlayCount(getTrackPlayCount(track))}</span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* SECTION 2: ĐANG NGHE NHIỀU (1 HÀNG CAROUSEL) */}
-      <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
-            Đang nghe nhiều
-          </h2>
-          <div className="flex items-center gap-1 text-[#b3b3b3]">
-            <button
-              onClick={() => scrollCarousel(trendingScrollRef, 'left')}
-              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#282828] text-[#b3b3b3] hover:text-white active:scale-95 transition cursor-pointer"
-              title="Xem trước"
-            >
-              <ChevronLeft size={18} />
-            </button>
-            <button
-              onClick={() => scrollCarousel(trendingScrollRef, 'right')}
-              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#282828] text-[#b3b3b3] hover:text-white active:scale-95 transition cursor-pointer"
-              title="Xem tiếp"
-            >
-              <ChevronRight size={18} />
-            </button>
-          </div>
-        </div>
-
-        {/* 1 SINGLE ROW CAROUSEL CONTAINER */}
-        <div
-          ref={trendingScrollRef}
-          className="flex flex-nowrap items-stretch gap-3 sm:gap-4 overflow-x-auto scrollbar-none snap-x snap-mandatory scroll-smooth pb-1"
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-        >
-          {trendingTracks.map((track) => {
-            return (
-              <div
-                key={track.id}
-                onClick={() => onSelectStory(track)}
-                className="bg-[#181818] hover:bg-[#282828] rounded-2xl p-4 border border-[#282828] hover:border-[#383838] hover:shadow-xl transition cursor-pointer flex flex-col justify-between h-36 shrink-0 w-[240px] sm:w-[260px] md:w-[calc((100%-32px)/3)] lg:w-[calc((100%-48px)/4)] snap-start select-none group"
-              >
-                <div>
-                  <h3 className="font-bold text-white text-sm sm:text-base leading-snug line-clamp-2 group-hover:text-[#1ed760] transition-colors">
-                    {track.title}
-                  </h3>
-                  <div className="mt-1.5">
-                    <span className="inline-block px-2 py-0.5 rounded-md bg-[#242424] text-[#b3b3b3] font-mono text-[11px] font-medium border border-[#333333]">
-                      Audio Full
-                    </span>
-                  </div>
-                </div>
-
-                <div className="pt-1">
-                  <div className="flex items-center gap-1.5 text-xs text-[#b3b3b3] font-mono truncate">
-                    <Headphones size={13} className="text-[#727272] shrink-0" />
-                    <span>{formatPlayCount(getTrackPlayCount(track))}</span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* SECTION 3: TOP LƯỢT NGHE (1 HÀNG CAROUSEL) */}
-      <section className="space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4">
-          <div className="flex items-center justify-between sm:justify-start gap-3 w-full sm:w-auto">
-            <h2 className="text-base sm:text-lg font-bold text-white tracking-tight shrink-0">
-              Top lượt nghe
-            </h2>
-
-            {/* Desktop tabs right beside title */}
-            <div className="hidden sm:inline-flex items-center p-0.5 bg-[#181818] rounded-full border border-[#282828] gap-1">
-              {(
-                [
-                  { id: 'today', label: 'Hôm nay' },
-                  { id: 'week', label: 'Tuần' },
-                  { id: 'month', label: 'Tháng' },
-                ] as const
-              ).map((tab) => (
+            <div className="flex items-center justify-between">
+              <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
+                Mới cập nhật
+              </h2>
+              <div className="flex items-center gap-1 text-[#b3b3b3]">
                 <button
-                  key={tab.id}
-                  onClick={() => setTopTimeFilter(tab.id)}
-                  className={`w-20 py-1 text-center rounded-full text-xs font-medium transition cursor-pointer flex items-center justify-center select-none ${
-                    topTimeFilter === tab.id
-                      ? 'border border-[#1ed760] text-black bg-[#1ed760] shadow-sm font-bold'
-                      : 'text-[#b3b3b3] hover:text-white hover:bg-[#282828]'
-                  }`}
+                  onClick={() => scrollCarousel(newTracksScrollRef, 'left')}
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#282828] text-[#b3b3b3] hover:text-white active:scale-95 transition cursor-pointer"
+                  title="Xem trước"
                 >
-                  {tab.label}
+                  <ChevronLeft size={18} />
                 </button>
-              ))}
+                <button
+                  onClick={() => scrollCarousel(newTracksScrollRef, 'right')}
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#282828] text-[#b3b3b3] hover:text-white active:scale-95 transition cursor-pointer"
+                  title="Xem tiếp"
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </div>
             </div>
 
-            {/* Mobile chevrons */}
-            <div className="flex sm:hidden items-center gap-1 text-[#b3b3b3]">
-              <button
-                onClick={() => scrollCarousel(topScrollRef, 'left')}
-                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#282828] text-[#b3b3b3] hover:text-white active:scale-95 transition cursor-pointer"
-                title="Xem trước"
-              >
-                <ChevronLeft size={18} />
-              </button>
-              <button
-                onClick={() => scrollCarousel(topScrollRef, 'right')}
-                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#282828] text-[#b3b3b3] hover:text-white active:scale-95 transition cursor-pointer"
-                title="Xem tiếp"
-              >
-                <ChevronRight size={18} />
-              </button>
+            {/* 1 SINGLE ROW CAROUSEL CONTAINER */}
+            <div
+              ref={newTracksScrollRef}
+              className="flex flex-nowrap items-stretch gap-3 sm:gap-4 overflow-x-auto scrollbar-none snap-x snap-mandatory scroll-smooth pb-1"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
+              {newTracks.map((track) => {
+                const playCount = getTrackPlayCount(track);
+                return (
+                  <div
+                    key={track.id}
+                    onClick={() => onSelectStory(track)}
+                    className="bg-[#181818] hover:bg-[#282828] rounded-2xl p-4 border border-[#282828] hover:border-[#383838] hover:shadow-xl transition cursor-pointer flex flex-col justify-between h-36 shrink-0 w-[240px] sm:w-[260px] md:w-[calc((100%-32px)/3)] lg:w-[calc((100%-48px)/4)] snap-start select-none group"
+                  >
+                    <div>
+                      <h3 className="font-bold text-white text-sm sm:text-base leading-snug line-clamp-2 group-hover:text-[#1ed760] transition-colors">
+                        {track.title}
+                      </h3>
+                      <div className="mt-1.5">
+                        <span className="inline-block px-2 py-0.5 rounded-md bg-[#242424] text-[#b3b3b3] font-mono text-[11px] font-medium border border-[#333333]">
+                          Audio Full
+                        </span>
+                      </div>
+                    </div>
+
+                    {playCount > 0 && (
+                      <div className="pt-1">
+                        <div className="flex items-center gap-1.5 text-xs text-[#b3b3b3] font-mono truncate">
+                          <Headphones size={13} className="text-[#727272] shrink-0" />
+                          <span>{formatPlayCount(playCount)}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-          </div>
+          </section>
 
-          {/* Mobile tabs: 3 columns with EXACT equal width */}
-          <div className="grid grid-cols-3 sm:hidden p-1 bg-[#181818] rounded-xl border border-[#282828] w-full gap-1">
-            {(
-              [
-                { id: 'today', label: 'Hôm nay' },
-                { id: 'week', label: 'Tuần' },
-                { id: 'month', label: 'Tháng' },
-              ] as const
-            ).map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setTopTimeFilter(tab.id)}
-                className={`py-1.5 text-center rounded-lg text-xs font-medium transition cursor-pointer flex items-center justify-center select-none ${
-                  topTimeFilter === tab.id
-                    ? 'border border-[#1ed760] text-black bg-[#1ed760] shadow-sm font-bold'
-                    : 'text-[#b3b3b3] hover:text-white hover:bg-[#282828]'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Desktop chevrons */}
-          <div className="hidden sm:flex items-center gap-1 text-[#b3b3b3]">
-            <button
-              onClick={() => scrollCarousel(topScrollRef, 'left')}
-              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#282828] text-[#b3b3b3] hover:text-white active:scale-95 transition cursor-pointer"
-              title="Xem trước"
-            >
-              <ChevronLeft size={18} />
-            </button>
-            <button
-              onClick={() => scrollCarousel(topScrollRef, 'right')}
-              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#282828] text-[#b3b3b3] hover:text-white active:scale-95 transition cursor-pointer"
-              title="Xem tiếp"
-            >
-              <ChevronRight size={18} />
-            </button>
-          </div>
-        </div>
-
-        {/* 1 SINGLE ROW CAROUSEL CONTAINER */}
-        <div
-          ref={topScrollRef}
-          className="flex flex-nowrap items-stretch gap-3 sm:gap-4 overflow-x-auto scrollbar-none snap-x snap-mandatory scroll-smooth pb-1"
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-        >
-          {topTracks.map((track) => {
-            const periodPlays = getTrackPeriodPlays(track, topTimeFilter);
-            const displayPlays = periodPlays > 0 ? periodPlays : getTrackPlayCount(track);
-            return (
-              <div
-                key={track.id}
-                onClick={() => onSelectStory(track)}
-                className="bg-[#181818] hover:bg-[#282828] rounded-2xl p-4 border border-[#282828] hover:border-[#383838] hover:shadow-xl transition cursor-pointer flex flex-col justify-between h-36 shrink-0 w-[240px] sm:w-[260px] md:w-[calc((100%-32px)/3)] lg:w-[calc((100%-48px)/4)] snap-start select-none group"
-              >
-                <div>
-                  <h3 className="font-bold text-white text-sm sm:text-base leading-snug line-clamp-2 group-hover:text-[#1ed760] transition-colors">
-                    {track.title}
-                  </h3>
-                  <div className="mt-1.5">
-                    <span className="inline-block px-2 py-0.5 rounded-md bg-[#242424] text-[#b3b3b3] font-mono text-[11px] font-medium border border-[#333333]">
-                      Audio Full
-                    </span>
-                  </div>
-                </div>
-
-                <div className="pt-1">
-                  <div className="flex items-center gap-1.5 text-xs text-[#b3b3b3] font-mono truncate">
-                    <Headphones size={13} className="text-[#727272] shrink-0" />
-                    <span>{formatPlayCount(displayPlays)}</span>
-                  </div>
+          {/* SECTION 2: ĐANG NGHE NHIỀU (CHỈ HIỂN THỊ KHI CÓ TRUYỆN LƯỢT NGHE > 0) */}
+          {trendingTracks.length > 0 && (
+            <section className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
+                  Đang nghe nhiều
+                </h2>
+                <div className="flex items-center gap-1 text-[#b3b3b3]">
+                  <button
+                    onClick={() => scrollCarousel(trendingScrollRef, 'left')}
+                    className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#282828] text-[#b3b3b3] hover:text-white active:scale-95 transition cursor-pointer"
+                    title="Xem trước"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                  <button
+                    onClick={() => scrollCarousel(trendingScrollRef, 'right')}
+                    className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#282828] text-[#b3b3b3] hover:text-white active:scale-95 transition cursor-pointer"
+                    title="Xem tiếp"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
                 </div>
               </div>
-            );
-          })}
-        </div>
-      </section>
+
+              {/* 1 SINGLE ROW CAROUSEL CONTAINER */}
+              <div
+                ref={trendingScrollRef}
+                className="flex flex-nowrap items-stretch gap-3 sm:gap-4 overflow-x-auto scrollbar-none snap-x snap-mandatory scroll-smooth pb-1"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
+                {trendingTracks.map((track) => {
+                  const playCount = getTrackPlayCount(track);
+                  return (
+                    <div
+                      key={track.id}
+                      onClick={() => onSelectStory(track)}
+                      className="bg-[#181818] hover:bg-[#282828] rounded-2xl p-4 border border-[#282828] hover:border-[#383838] hover:shadow-xl transition cursor-pointer flex flex-col justify-between h-36 shrink-0 w-[240px] sm:w-[260px] md:w-[calc((100%-32px)/3)] lg:w-[calc((100%-48px)/4)] snap-start select-none group"
+                    >
+                      <div>
+                        <h3 className="font-bold text-white text-sm sm:text-base leading-snug line-clamp-2 group-hover:text-[#1ed760] transition-colors">
+                          {track.title}
+                        </h3>
+                        <div className="mt-1.5">
+                          <span className="inline-block px-2 py-0.5 rounded-md bg-[#242424] text-[#b3b3b3] font-mono text-[11px] font-medium border border-[#333333]">
+                            Audio Full
+                          </span>
+                        </div>
+                      </div>
+
+                      {playCount > 0 && (
+                        <div className="pt-1">
+                          <div className="flex items-center gap-1.5 text-xs text-[#b3b3b3] font-mono truncate">
+                            <Headphones size={13} className="text-[#727272] shrink-0" />
+                            <span>{formatPlayCount(playCount)}</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
+          {/* SECTION 3: TOP LƯỢT NGHE (CHỈ HIỂN THỊ KHI CÓ TRUYỆN LƯỢT NGHE > 0) */}
+          {topTracks.length > 0 && (
+            <section className="space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4">
+                <div className="flex items-center justify-between sm:justify-start gap-3 w-full sm:w-auto">
+                  <h2 className="text-base sm:text-lg font-bold text-white tracking-tight shrink-0">
+                    Top lượt nghe
+                  </h2>
+
+                  {/* Desktop tabs right beside title */}
+                  <div className="hidden sm:inline-flex items-center p-0.5 bg-[#181818] rounded-full border border-[#282828] gap-1">
+                    {(
+                      [
+                        { id: 'today', label: 'Hôm nay' },
+                        { id: 'week', label: 'Tuần' },
+                        { id: 'month', label: 'Tháng' },
+                      ] as const
+                    ).map((tab) => (
+                      <button
+                        key={tab.id}
+                        onClick={() => setTopTimeFilter(tab.id)}
+                        className={`w-20 py-1 text-center rounded-full text-xs font-medium transition cursor-pointer flex items-center justify-center select-none ${
+                          topTimeFilter === tab.id
+                            ? 'border border-[#1ed760] text-black bg-[#1ed760] shadow-sm font-bold'
+                            : 'text-[#b3b3b3] hover:text-white hover:bg-[#282828]'
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Mobile chevrons */}
+                  <div className="flex sm:hidden items-center gap-1 text-[#b3b3b3]">
+                    <button
+                      onClick={() => scrollCarousel(topScrollRef, 'left')}
+                      className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#282828] text-[#b3b3b3] hover:text-white active:scale-95 transition cursor-pointer"
+                      title="Xem trước"
+                    >
+                      <ChevronLeft size={18} />
+                    </button>
+                    <button
+                      onClick={() => scrollCarousel(topScrollRef, 'right')}
+                      className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#282828] text-[#b3b3b3] hover:text-white active:scale-95 transition cursor-pointer"
+                      title="Xem tiếp"
+                    >
+                      <ChevronRight size={18} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Mobile tabs: 3 columns with EXACT equal width */}
+                <div className="grid grid-cols-3 sm:hidden p-1 bg-[#181818] rounded-xl border border-[#282828] w-full gap-1">
+                  {(
+                    [
+                      { id: 'today', label: 'Hôm nay' },
+                      { id: 'week', label: 'Tuần' },
+                      { id: 'month', label: 'Tháng' },
+                    ] as const
+                  ).map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setTopTimeFilter(tab.id)}
+                      className={`py-1.5 text-center rounded-lg text-xs font-medium transition cursor-pointer flex items-center justify-center select-none ${
+                        topTimeFilter === tab.id
+                          ? 'border border-[#1ed760] text-black bg-[#1ed760] shadow-sm font-bold'
+                          : 'text-[#b3b3b3] hover:text-white hover:bg-[#282828]'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Desktop chevrons */}
+                <div className="hidden sm:flex items-center gap-1 text-[#b3b3b3]">
+                  <button
+                    onClick={() => scrollCarousel(topScrollRef, 'left')}
+                    className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#282828] text-[#b3b3b3] hover:text-white active:scale-95 transition cursor-pointer"
+                    title="Xem trước"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                  <button
+                    onClick={() => scrollCarousel(topScrollRef, 'right')}
+                    className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#282828] text-[#b3b3b3] hover:text-white active:scale-95 transition cursor-pointer"
+                    title="Xem tiếp"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </div>
+              </div>
+
+              {/* 1 SINGLE ROW CAROUSEL CONTAINER */}
+              <div
+                ref={topScrollRef}
+                className="flex flex-nowrap items-stretch gap-3 sm:gap-4 overflow-x-auto scrollbar-none snap-x snap-mandatory scroll-smooth pb-1"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
+                {topTracks.map((track) => {
+                  const periodPlays = getTrackPeriodPlays(track, topTimeFilter);
+                  const displayPlays = periodPlays > 0 ? periodPlays : getTrackPlayCount(track);
+                  return (
+                    <div
+                      key={track.id}
+                      onClick={() => onSelectStory(track)}
+                      className="bg-[#181818] hover:bg-[#282828] rounded-2xl p-4 border border-[#282828] hover:border-[#383838] hover:shadow-xl transition cursor-pointer flex flex-col justify-between h-36 shrink-0 w-[240px] sm:w-[260px] md:w-[calc((100%-32px)/3)] lg:w-[calc((100%-48px)/4)] snap-start select-none group"
+                    >
+                      <div>
+                        <h3 className="font-bold text-white text-sm sm:text-base leading-snug line-clamp-2 group-hover:text-[#1ed760] transition-colors">
+                          {track.title}
+                        </h3>
+                        <div className="mt-1.5">
+                          <span className="inline-block px-2 py-0.5 rounded-md bg-[#242424] text-[#b3b3b3] font-mono text-[11px] font-medium border border-[#333333]">
+                            Audio Full
+                          </span>
+                        </div>
+                      </div>
+
+                      {displayPlays > 0 && (
+                        <div className="pt-1">
+                          <div className="flex items-center gap-1.5 text-xs text-[#b3b3b3] font-mono truncate">
+                            <Headphones size={13} className="text-[#727272] shrink-0" />
+                            <span>{formatPlayCount(displayPlays)}</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          )}
         </>
       )}
 
@@ -536,6 +550,7 @@ export const Home: React.FC<HomeProps> = React.memo(({
               const isThisStoryActive = currentTrack?.id === track.id;
               const isCurrentlyPlaying = isThisStoryActive && isPlaying;
               const durationLabel = track.chapters?.[0]?.duration || '29:05';
+              const playCount = getTrackPlayCount(track);
 
               return (
                 <article
@@ -593,13 +608,15 @@ export const Home: React.FC<HomeProps> = React.memo(({
                         </span>
                       </p>
 
-                      {/* Stats */}
-                      <div className="flex items-center gap-2 text-xs text-[#b3b3b3] font-mono mt-1.5">
-                        <div className="flex items-center gap-1">
-                          <Headphones size={13} className="text-[#727272]" />
-                          <span>{formatPlayCount(getTrackPlayCount(track))}</span>
+                      {/* Stats: chỉ hiển thị khi lượt nghe > 0 */}
+                      {playCount > 0 && (
+                        <div className="flex items-center gap-2 text-xs text-[#b3b3b3] font-mono mt-1.5">
+                          <div className="flex items-center gap-1">
+                            <Headphones size={13} className="text-[#727272]" />
+                            <span>{formatPlayCount(playCount)}</span>
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   </div>
 

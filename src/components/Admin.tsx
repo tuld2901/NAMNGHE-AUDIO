@@ -7,7 +7,8 @@ import {
   AlertTriangle, Power, Filter, Search, Code2, Terminal, Download, PlayCircle,
   CheckSquare, Zap, Users, UserPlus, Key, Eye, EyeOff,
   HardDrive, Archive, FileJson, FileAudio, RotateCcw, Server, Clock, Activity,
-  ChevronDown, LayoutGrid, Wrench, Radio, QrCode, Smartphone, FileText
+  ChevronDown, LayoutGrid, Wrench, Radio, QrCode, Smartphone, FileText,
+  ArrowUpDown, ArrowUp, ArrowDown
 } from 'lucide-react';
 import { Track, Chapter, AffiliateItem, AffiliateCategory, SiteSettings, AdminAccount } from '../types';
 import { DEFAULT_SITE_SETTINGS } from '../services/defaultData';
@@ -858,11 +859,34 @@ export const Admin: React.FC<AdminProps> = ({
   const [formSubmitLoading, setFormSubmitLoading] = useState<boolean>(false);
   const [formMessage, setFormMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Search & Filter in Table
+  // Search, Category Filter & Excel-like Column Sorting in Table
   const [tableSearch, setTableSearch] = useState<string>('');
+  const [tableCategoryFilter, setTableCategoryFilter] = useState<string>('ALL');
+  const [tableSortField, setTableSortField] = useState<
+    'stt' | 'title' | 'category' | 'author' | 'play_count' | 'chapters' | 'affiliate_link' | null
+  >(null);
+  const [tableSortOrder, setTableSortOrder] = useState<'asc' | 'desc'>('asc');
   const [selectedTrackIds, setSelectedTrackIds] = useState<string[]>([]);
   const [lastClickedTrackIdx, setLastClickedTrackIdx] = useState<number | null>(null);
   const [sqlCopied, setSqlCopied] = useState<boolean>(false);
+
+  const handleToggleTrackSort = (
+    field: 'stt' | 'title' | 'category' | 'author' | 'play_count' | 'chapters' | 'affiliate_link'
+  ) => {
+    const isNumericField = field === 'play_count' || field === 'chapters';
+    const firstOrder: 'asc' | 'desc' = isNumericField ? 'desc' : 'asc';
+    const secondOrder: 'asc' | 'desc' = isNumericField ? 'asc' : 'desc';
+
+    if (tableSortField !== field) {
+      setTableSortField(field);
+      setTableSortOrder(firstOrder);
+    } else if (tableSortOrder === firstOrder) {
+      setTableSortOrder(secondOrder);
+    } else {
+      setTableSortField(null);
+      setTableSortOrder('asc');
+    }
+  };
 
   // SQL Console & Health State
   const [sqlInput, setSqlInput] = useState<string>(
@@ -1737,13 +1761,74 @@ export const Admin: React.FC<AdminProps> = ({
   // Dynamic Production SQL Script for Copy & Export
   const SQL_SNIPPET = useMemo(() => generateFullSQLMigration(tracks), [tracks]);
 
-  // Filter table
-  const filteredTracks = tracks.filter(t => 
-    !tableSearch ||
-    t.title.toLowerCase().includes(tableSearch.toLowerCase()) ||
-    t.author.toLowerCase().includes(tableSearch.toLowerCase()) ||
-    t.category.toLowerCase().includes(tableSearch.toLowerCase())
-  );
+  // Filter & Sort table (Excel-style column sorting)
+  const originalIndexMap = useMemo(() => {
+    const map = new Map<string, number>();
+    tracks.forEach((t, i) => map.set(t.id, i + 1));
+    return map;
+  }, [tracks]);
+
+  const filteredTracks = useMemo(() => {
+    const q = tableSearch.trim().toLowerCase();
+    const list = tracks.filter((t) => {
+      const trackCats =
+        Array.isArray(t.categories) && t.categories.length > 0
+          ? t.categories
+          : (t.category || 'Truyện Ma')
+              .split(/[,;|]+/)
+              .map((c) => c.trim())
+              .filter(Boolean);
+
+      if (tableCategoryFilter !== 'ALL') {
+        const matchCat = trackCats.some(
+          (c) => c.toLowerCase() === tableCategoryFilter.toLowerCase()
+        );
+        if (!matchCat) return false;
+      }
+
+      if (!q) return true;
+      return (
+        t.title.toLowerCase().includes(q) ||
+        (t.author || '').toLowerCase().includes(q) ||
+        (t.narrator || '').toLowerCase().includes(q) ||
+        (t.category || '').toLowerCase().includes(q) ||
+        trackCats.some((c) => c.toLowerCase().includes(q)) ||
+        t.id.toLowerCase().includes(q)
+      );
+    });
+
+    if (!tableSortField) return list;
+
+    const dir = tableSortOrder === 'asc' ? 1 : -1;
+    return [...list].sort((a, b) => {
+      if (tableSortField === 'stt') {
+        const idxA = originalIndexMap.get(a.id) ?? 0;
+        const idxB = originalIndexMap.get(b.id) ?? 0;
+        return (idxA - idxB) * dir;
+      }
+      if (tableSortField === 'title') {
+        return a.title.localeCompare(b.title, 'vi', { sensitivity: 'base' }) * dir;
+      }
+      if (tableSortField === 'category') {
+        const catA = (Array.isArray(a.categories) && a.categories.length > 0 ? a.categories.join(', ') : a.category || '');
+        const catB = (Array.isArray(b.categories) && b.categories.length > 0 ? b.categories.join(', ') : b.category || '');
+        return catA.localeCompare(catB, 'vi', { sensitivity: 'base' }) * dir;
+      }
+      if (tableSortField === 'author') {
+        return (a.author || '').localeCompare(b.author || '', 'vi', { sensitivity: 'base' }) * dir;
+      }
+      if (tableSortField === 'play_count') {
+        return ((Number(a.play_count) || 0) - (Number(b.play_count) || 0)) * dir;
+      }
+      if (tableSortField === 'chapters') {
+        return ((a.chapters?.length || 1) - (b.chapters?.length || 1)) * dir;
+      }
+      if (tableSortField === 'affiliate_link') {
+        return (a.affiliate_link || '').localeCompare(b.affiliate_link || '', 'vi', { sensitivity: 'base' }) * dir;
+      }
+      return 0;
+    });
+  }, [tracks, tableSearch, tableCategoryFilter, tableSortField, tableSortOrder, originalIndexMap]);
 
   // If Not Authorized: Render Secure Login
   if (!isAuthorized) {
@@ -1978,7 +2063,7 @@ export const Admin: React.FC<AdminProps> = ({
         {navViewMode === 'compact' && (
           <div className="relative">
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-1.5 p-1.5 bg-[#181818] rounded-2xl border border-[#282828] shadow-lg">
-              {/* 1. Kho Truyện */}
+              {/* 1. Kho Audio */}
               <button
                 type="button"
                 onClick={() => {
@@ -1986,7 +2071,7 @@ export const Admin: React.FC<AdminProps> = ({
                   resetForm();
                   setIsTechDropdownOpen(false);
                 }}
-                title={`Danh sách truyện audio (${tracks.length} truyện)`}
+                title={`Kho Audio (${tracks.length} bộ truyện audio)`}
                 className={`w-full min-w-0 h-10 px-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer select-none border ${
                   activeTab === 'manage'
                     ? 'bg-[#1ed760] text-black border-[#1ed760] shadow-md shadow-[#1ed760]/20 font-bold'
@@ -1994,7 +2079,7 @@ export const Admin: React.FC<AdminProps> = ({
                 }`}
               >
                 <Radio size={14} className={`shrink-0 ${activeTab === 'manage' ? 'text-black' : 'text-[#1ed760]'}`} />
-                <span className="truncate">Kho Truyện</span>
+                <span className="truncate">Kho Audio</span>
                 <span
                   className={`px-1.5 py-0.2 rounded-md text-[10px] font-mono shrink-0 ${
                     activeTab === 'manage'
@@ -2277,7 +2362,7 @@ export const Admin: React.FC<AdminProps> = ({
                   }`}
                 >
                   <Radio size={13} className="shrink-0" />
-                  <span className="truncate">Danh Sách</span>
+                  <span className="truncate">Kho Audio</span>
                 </button>
                 <button
                   type="button"
@@ -2516,14 +2601,52 @@ export const Admin: React.FC<AdminProps> = ({
           )}
 
           {/* Action Row */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <input
-              type="text"
-              placeholder="Tìm kiếm truyện theo tiêu đề, tác giả, thể loại..."
-              value={tableSearch}
-              onChange={(e) => setTableSearch(e.target.value)}
-              className="max-w-md w-full px-4 py-2 rounded-xl bg-[#181818] border border-[#333333] text-xs text-white focus:outline-none focus:border-[#1ed760]"
-            />
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 flex-1">
+              <div className="relative max-w-sm w-full">
+                <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8e8e8e]" />
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm trong Kho Audio (tiêu đề, tác giả, ID)..."
+                  value={tableSearch}
+                  onChange={(e) => setTableSearch(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 rounded-xl bg-[#181818] border border-[#333333] text-xs text-white focus:outline-none focus:border-[#1ed760]"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <select
+                  value={tableCategoryFilter}
+                  onChange={(e) => setTableCategoryFilter(e.target.value)}
+                  className="px-3 py-2 rounded-xl bg-[#181818] border border-[#333333] text-xs text-white focus:outline-none focus:border-[#1ed760] cursor-pointer"
+                  title="Lọc nhanh theo thể loại (giống bộ lọc cột Excel)"
+                >
+                  <option value="ALL">Tất cả thể loại ({tracks.length})</option>
+                  {STORY_CATEGORY_OPTIONS.map((cat) => (
+                    <option key={cat} value={cat}>
+                      Thể loại: {cat}
+                    </option>
+                  ))}
+                </select>
+
+                {(tableSortField || tableCategoryFilter !== 'ALL' || tableSearch) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTableSortField(null);
+                      setTableSortOrder('asc');
+                      setTableCategoryFilter('ALL');
+                      setTableSearch('');
+                    }}
+                    className="px-2.5 py-2 rounded-xl bg-[#242424] hover:bg-[#333333] text-[#1ed760] border border-[#333333] text-xs font-semibold flex items-center gap-1 cursor-pointer transition"
+                    title="Đặt lại sắp xếp & bộ lọc về mặc định"
+                  >
+                    <RotateCcw size={12} />
+                    <span>Đặt lại sắp xếp/lọc</span>
+                  </button>
+                )}
+              </div>
+            </div>
 
             <div className="flex items-center gap-2 flex-wrap">
               {selectedTrackIds.length > 0 && (
@@ -2595,11 +2718,11 @@ export const Admin: React.FC<AdminProps> = ({
             </div>
           </div>
 
-          {/* Tracks Table */}
+          {/* Tracks Table (Excel-style sortable headers) */}
           <div className="rounded-2xl border border-[#282828] overflow-hidden bg-[#181818]/60">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-[#121212] text-[#b3b3b3] uppercase font-semibold border-b border-[#282828]">
+                <thead className="bg-[#121212] text-[#b3b3b3] uppercase font-semibold border-b border-[#282828] select-none">
                   <tr>
                     <th className="p-3.5 w-10 text-center">
                       <input
@@ -2623,13 +2746,118 @@ export const Admin: React.FC<AdminProps> = ({
                         title="Tích chọn / Bỏ chọn tất cả truyện đang hiển thị"
                       />
                     </th>
-                    <th className="p-3.5 w-14 text-center">STT</th>
-                    <th className="p-3.5">Truyện</th>
-                    <th className="p-3.5">Thể loại</th>
-                    <th className="p-3.5">Tác giả / Diễn đọc</th>
-                    <th className="p-3.5">Lượt nghe</th>
-                    <th className="p-3.5">Số phần</th>
-                    <th className="p-3.5">Link Affiliate</th>
+                    <th
+                      onClick={() => handleToggleTrackSort('stt')}
+                      className={`p-3.5 w-16 text-center cursor-pointer hover:bg-[#1f1f1f] transition ${
+                        tableSortField === 'stt' ? 'text-[#1ed760]' : 'hover:text-white'
+                      }`}
+                      title="Nhấn để sắp xếp theo Số thứ tự (1 → N / N → 1)"
+                    >
+                      <div className="inline-flex items-center justify-center gap-1">
+                        <span>STT</span>
+                        {tableSortField === 'stt' ? (
+                          tableSortOrder === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />
+                        ) : (
+                          <ArrowUpDown size={11} className="opacity-40" />
+                        )}
+                      </div>
+                    </th>
+                    <th
+                      onClick={() => handleToggleTrackSort('title')}
+                      className={`p-3.5 cursor-pointer hover:bg-[#1f1f1f] transition ${
+                        tableSortField === 'title' ? 'text-[#1ed760]' : 'hover:text-white'
+                      }`}
+                      title="Nhấn để sắp xếp theo Tên truyện (A → Z / Z → A)"
+                    >
+                      <div className="inline-flex items-center gap-1.5">
+                        <span>Truyện</span>
+                        {tableSortField === 'title' ? (
+                          tableSortOrder === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />
+                        ) : (
+                          <ArrowUpDown size={11} className="opacity-40" />
+                        )}
+                      </div>
+                    </th>
+                    <th
+                      onClick={() => handleToggleTrackSort('category')}
+                      className={`p-3.5 cursor-pointer hover:bg-[#1f1f1f] transition ${
+                        tableSortField === 'category' ? 'text-[#1ed760]' : 'hover:text-white'
+                      }`}
+                      title="Nhấn để sắp xếp theo Thể loại (A → Z / Z → A)"
+                    >
+                      <div className="inline-flex items-center gap-1.5">
+                        <span>Thể loại</span>
+                        {tableSortField === 'category' ? (
+                          tableSortOrder === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />
+                        ) : (
+                          <ArrowUpDown size={11} className="opacity-40" />
+                        )}
+                      </div>
+                    </th>
+                    <th
+                      onClick={() => handleToggleTrackSort('author')}
+                      className={`p-3.5 cursor-pointer hover:bg-[#1f1f1f] transition ${
+                        tableSortField === 'author' ? 'text-[#1ed760]' : 'hover:text-white'
+                      }`}
+                      title="Nhấn để sắp xếp theo Tác giả (A → Z / Z → A)"
+                    >
+                      <div className="inline-flex items-center gap-1.5">
+                        <span>Tác giả / Diễn đọc</span>
+                        {tableSortField === 'author' ? (
+                          tableSortOrder === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />
+                        ) : (
+                          <ArrowUpDown size={11} className="opacity-40" />
+                        )}
+                      </div>
+                    </th>
+                    <th
+                      onClick={() => handleToggleTrackSort('play_count')}
+                      className={`p-3.5 cursor-pointer hover:bg-[#1f1f1f] transition ${
+                        tableSortField === 'play_count' ? 'text-[#1ed760]' : 'hover:text-white'
+                      }`}
+                      title="Nhấn để sắp xếp theo Lượt nghe (Cao → Thấp / Thấp → Cao)"
+                    >
+                      <div className="inline-flex items-center gap-1.5">
+                        <span>Lượt nghe</span>
+                        {tableSortField === 'play_count' ? (
+                          tableSortOrder === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />
+                        ) : (
+                          <ArrowUpDown size={11} className="opacity-40" />
+                        )}
+                      </div>
+                    </th>
+                    <th
+                      onClick={() => handleToggleTrackSort('chapters')}
+                      className={`p-3.5 cursor-pointer hover:bg-[#1f1f1f] transition ${
+                        tableSortField === 'chapters' ? 'text-[#1ed760]' : 'hover:text-white'
+                      }`}
+                      title="Nhấn để sắp xếp theo Số phần / Số tập (Nhiều → Ít / Ít → Nhiều)"
+                    >
+                      <div className="inline-flex items-center gap-1.5">
+                        <span>Số phần</span>
+                        {tableSortField === 'chapters' ? (
+                          tableSortOrder === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />
+                        ) : (
+                          <ArrowUpDown size={11} className="opacity-40" />
+                        )}
+                      </div>
+                    </th>
+                    <th
+                      onClick={() => handleToggleTrackSort('affiliate_link')}
+                      className={`p-3.5 cursor-pointer hover:bg-[#1f1f1f] transition ${
+                        tableSortField === 'affiliate_link' ? 'text-[#1ed760]' : 'hover:text-white'
+                      }`}
+                      title="Nhấn để sắp xếp theo Link Affiliate (A → Z / Z → A)"
+                    >
+                      <div className="inline-flex items-center gap-1.5">
+                        <span>Link Affiliate</span>
+                        {tableSortField === 'affiliate_link' ? (
+                          tableSortOrder === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />
+                        ) : (
+                          <ArrowUpDown size={11} className="opacity-40" />
+                        )}
+                      </div>
+                    </th>
                     <th className="p-3.5 text-right">Thao tác</th>
                   </tr>
                 </thead>
@@ -2668,7 +2896,9 @@ export const Admin: React.FC<AdminProps> = ({
                             />
                           </td>
                           <td className="p-3.5 text-center font-mono font-bold text-[#b3b3b3]">
-                            {idx + 1}
+                            {tableSortField === 'stt' && tableSortOrder === 'desc'
+                              ? filteredTracks.length - idx
+                              : idx + 1}
                           </td>
                           <td className="p-3.5">
                             <div>

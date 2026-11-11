@@ -201,9 +201,11 @@ export const StoryPage: React.FC<StoryPageProps> = React.memo(({
           <span className="px-2 py-0.5 rounded-md bg-[#242424] text-[#1ed760] font-mono text-[11px] font-medium border border-[#333333]">
             Audio Full
           </span>
-          <span className="text-[#b3b3b3] font-mono">
-            🎧 {formatPlayCount(getTrackPlayCount(track))}
-          </span>
+          {getTrackPlayCount(track) > 0 && (
+            <span className="text-[#b3b3b3] font-mono">
+              🎧 {formatPlayCount(getTrackPlayCount(track))}
+            </span>
+          )}
         </div>
 
         {/* Release Date & Author */}
@@ -416,8 +418,12 @@ export const StoryPage: React.FC<StoryPageProps> = React.memo(({
 
                     <div className="flex items-center gap-2.5 text-[11px] text-[#b3b3b3] font-mono">
                       <span className="truncate max-w-[120px] font-sans text-[#727272]">{item.author || 'Phú Bà Audio'}</span>
-                      <span>•</span>
-                      <span>🎧 {formatPlayCount(getTrackPlayCount(item))}</span>
+                      {getTrackPlayCount(item) > 0 && (
+                        <>
+                          <span>•</span>
+                          <span>🎧 {formatPlayCount(getTrackPlayCount(item))}</span>
+                        </>
+                      )}
                     </div>
                   </div>
 
