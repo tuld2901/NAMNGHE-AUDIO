@@ -7,6 +7,7 @@ import {
   isDailyUnlockedToday, 
   getSiteSettings,
   updateFavicon,
+  applyTrackingScripts,
   recordClientVisit
 } from './services/api';
 import { getStoryPath, findTrackBySlugOrId, updateSEOMetadata } from './services/seo';
@@ -76,9 +77,7 @@ function AppContent({
 
   // Apply custom Header and Body tracking code (Google Analytics, Meta Pixel, etc.)
   useEffect(() => {
-    import('./services/api').then(({ applyTrackingScripts }) => {
-      applyTrackingScripts(siteSettings.headerCode, siteSettings.bodyCode);
-    });
+    applyTrackingScripts(siteSettings.headerCode, siteSettings.bodyCode);
   }, [siteSettings.headerCode, siteSettings.bodyCode]);
 
   // Đồng bộ cấu hình website & thương hiệu vào popup chặn trình duyệt mạng xã hội

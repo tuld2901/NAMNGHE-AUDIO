@@ -1,14 +1,18 @@
 import { Track, SiteSettings } from '../types';
 
+const slugCache = new Map<string, string>();
+
 /**
  * Convert Vietnamese text with accents to SEO-friendly ASCII slug
  * Example: "Phú Bà Audio Số 340" -> "phu-ba-audio-so-340"
  */
 export function slugify(text: string): string {
   if (!text) return '';
+  const str = text.toString();
+  const cached = slugCache.get(str);
+  if (cached !== undefined) return cached;
 
-  return text
-    .toString()
+  const result = str
     .toLowerCase()
     .normalize('NFD') // Normalize diacritics
     .replace(/[\u0300-\u036f]/g, '') // Remove accent marks
@@ -17,6 +21,12 @@ export function slugify(text: string): string {
     .trim()
     .replace(/\s+/g, '-') // Replace spaces with -
     .replace(/-+/g, '-'); // Remove duplicate -
+
+  if (slugCache.size > 2000) {
+    slugCache.clear();
+  }
+  slugCache.set(str, result);
+  return result;
 }
 
 /**

@@ -59,7 +59,9 @@ import {
   cleanupOrphanedUploadFiles,
   deleteSingleUploadAudioFile,
   detectAudioDurationSync,
-  detectAudioDurationSecondsFast
+  detectAudioDurationSecondsFast,
+  getDbVersion,
+  getDbContentVersion
 } from './server-db';
 import {
   recordTrafficVisit,
@@ -209,24 +211,23 @@ async function startServer() {
     limits: { fileSize: 20 * 1024 * 1024 } // 20MB image files
   });
 
-  const audioDurationSecCache = new Map<string, number>();
+  interface AudioFileMeta {
+    filePath: string;
+    size: number;
+    mtimeMs: number;
+    mtimeUtc: string;
+    id3v2Size: number;
+    durationSec: number;
+    expiresAt: number;
+  }
 
-  const getCachedAudioDurationSec = (filePath: string, fallbackDurSec: number): number => {
-    const cached = audioDurationSecCache.get(filePath);
-    if (cached && cached > 0) return cached;
-    const finalDur = detectAudioDurationSecondsFast(filePath, fallbackDurSec);
-    if (finalDur > 0) {
-      audioDurationSecCache.set(filePath, finalDur);
-    }
-    return finalDur;
-  };
+  const audioFileMetaCache = new Map<string, AudioFileMeta>();
 
-  const computeMp3SeekByteOffset = (filePath: string, fileSize: number, seekSeconds: number, totalDurationSec: number): number => {
-    if (seekSeconds <= 0.5 || totalDurationSec <= 0 || fileSize <= 1024) return 0;
+  const readMp3Id3v2Size = (filePath: string, fileSize: number): number => {
+    if (fileSize <= 10) return 0;
     let fd: number | null = null;
     try {
       fd = fs.openSync(filePath, 'r');
-      let id3v2Size = 0;
       const headerBuf = Buffer.alloc(10);
       const headerRead = fs.readSync(fd, headerBuf, 0, 10, 0);
       if (
@@ -235,21 +236,89 @@ async function startServer() {
         headerBuf[1] === 0x44 &&
         headerBuf[2] === 0x33
       ) {
-        id3v2Size =
+        const size =
           10 +
           (((headerBuf[6] & 0x7f) << 21) |
             ((headerBuf[7] & 0x7f) << 14) |
             ((headerBuf[8] & 0x7f) << 7) |
             (headerBuf[9] & 0x7f));
-        if (id3v2Size >= fileSize) id3v2Size = 0;
+        return size < fileSize ? size : 0;
       }
+      return 0;
+    } catch {
+      return 0;
+    } finally {
+      if (fd !== null) {
+        try {
+          fs.closeSync(fd);
+        } catch {}
+      }
+    }
+  };
 
-      const audioDataBytes = Math.max(0, fileSize - id3v2Size);
-      const ratio = Math.max(0, Math.min(0.995, seekSeconds / totalDurationSec));
-      const rawOffset = id3v2Size + Math.floor(ratio * audioDataBytes);
+  const getCachedAudioFileMeta = (filename: string, fallbackDurSec: number): AudioFileMeta | null => {
+    const now = Date.now();
+    const cached = audioFileMetaCache.get(filename);
+    if (cached && now < cached.expiresAt) {
+      if (cached.durationSec <= 0 && fallbackDurSec > 0) {
+        cached.durationSec = fallbackDurSec;
+      }
+      return cached;
+    }
 
-      const scanBuf = Buffer.alloc(4096);
-      const scanRead = fs.readSync(fd, scanBuf, 0, 4096, rawOffset);
+    let filePath = path.join(UPLOAD_AUDIO_DIR, filename);
+    let stat: fs.Stats | null = null;
+    try {
+      stat = fs.statSync(filePath);
+    } catch {
+      filePath = path.join(UPLOAD_ROOT_DIR, filename);
+      try {
+        stat = fs.statSync(filePath);
+      } catch {
+        return null;
+      }
+    }
+    if (!stat || !stat.isFile()) return null;
+
+    const id3v2Size = cached && cached.mtimeMs === stat.mtimeMs && cached.size === stat.size
+      ? cached.id3v2Size
+      : readMp3Id3v2Size(filePath, stat.size);
+
+    const durationSec =
+      cached && cached.mtimeMs === stat.mtimeMs && cached.size === stat.size && cached.durationSec > 0
+        ? cached.durationSec
+        : detectAudioDurationSecondsFast(filePath, fallbackDurSec);
+
+    const meta: AudioFileMeta = {
+      filePath,
+      size: stat.size,
+      mtimeMs: stat.mtimeMs,
+      mtimeUtc: stat.mtime.toUTCString(),
+      id3v2Size,
+      durationSec,
+      expiresAt: now + 30000,
+    };
+
+    if (audioFileMetaCache.size > 2000) {
+      audioFileMetaCache.clear();
+    }
+    audioFileMetaCache.set(filename, meta);
+    return meta;
+  };
+
+  const computeMp3SeekByteOffset = (meta: AudioFileMeta, seekSeconds: number): number => {
+    const { filePath, size: fileSize, id3v2Size, durationSec: totalDurationSec } = meta;
+    if (seekSeconds <= 0.5 || totalDurationSec <= 0 || fileSize <= 1024) return 0;
+
+    const audioDataBytes = Math.max(0, fileSize - id3v2Size);
+    const ratio = Math.max(0, Math.min(0.995, seekSeconds / totalDurationSec));
+    const rawOffset = id3v2Size + Math.floor(ratio * audioDataBytes);
+
+    let fd: number | null = null;
+    try {
+      fd = fs.openSync(filePath, 'r');
+      const scanBuf = Buffer.allocUnsafe(2048);
+      const scanRead = fs.readSync(fd, scanBuf, 0, 2048, rawOffset);
       let frameOffset = 0;
       for (let i = 0; i < scanRead - 4; i++) {
         if (
@@ -266,7 +335,7 @@ async function startServer() {
       }
       return Math.min(rawOffset + frameOffset, fileSize - 1);
     } catch {
-      return 0;
+      return Math.min(rawOffset, fileSize - 1);
     } finally {
       if (fd !== null) {
         try {
@@ -296,37 +365,31 @@ async function startServer() {
       return res.status(200).end();
     }
 
-    let filePath = path.join(UPLOAD_AUDIO_DIR, filename);
-    if (!fs.existsSync(filePath)) {
-      filePath = path.join(UPLOAD_ROOT_DIR, filename);
-      if (!fs.existsSync(filePath)) {
-        return next();
-      }
+    const seekSeconds = parseFloat(String(req.query.t || req.query.seek || '0')) || 0;
+    const fallbackDurSec = parseFloat(String(req.query.dur || '0')) || 0;
+
+    const meta = getCachedAudioFileMeta(filename, fallbackDurSec);
+    if (!meta) {
+      return next();
     }
 
     try {
-      const stat = fs.statSync(filePath);
-      const fileSize = stat.size;
-      const seekSeconds = parseFloat(String(req.query.t || req.query.seek || '0')) || 0;
-      const fallbackDurSec = parseFloat(String(req.query.dur || '0')) || 0;
+      const { filePath, size: fileSize, mtimeMs, mtimeUtc } = meta;
 
       let baseStartByte = 0;
       if (seekSeconds > 0.5) {
-        const totalDurSec = getCachedAudioDurationSec(filePath, fallbackDurSec);
-        baseStartByte = computeMp3SeekByteOffset(filePath, fileSize, seekSeconds, totalDurSec);
+        baseStartByte = computeMp3SeekByteOffset(meta, seekSeconds);
       }
 
       const slicedFileSize = fileSize - baseStartByte;
       const range = req.headers.range;
+      const etag = `W/"${slicedFileSize.toString(16)}-${Math.floor(mtimeMs).toString(16)}-${Math.floor(seekSeconds)}"`;
 
       res.setHeader('Accept-Ranges', 'bytes');
       res.setHeader('Content-Type', 'audio/mpeg');
-      res.setHeader('Last-Modified', stat.mtime.toUTCString());
-      res.setHeader('ETag', `W/"${slicedFileSize.toString(16)}-${Math.floor(stat.mtimeMs).toString(16)}-${Math.floor(seekSeconds)}"`);
+      res.setHeader('Last-Modified', mtimeUtc);
+      res.setHeader('ETag', etag);
 
-      // Crucial for VPS + Cloudflare:
-      // - When seekSeconds > 0.5 (server-sliced seek): prevent any caching of sliced range
-      // - When seekSeconds <= 0.5 (normal playback): allow browser private cache (max-age=3600) for fast buffering, while instructing Cloudflare CDN not to buffer/transform
       if (seekSeconds > 0.5) {
         res.setHeader('Cache-Control', 'private, no-store, no-cache, must-revalidate, no-transform');
         res.setHeader('CDN-Cache-Control', 'no-store');
@@ -367,16 +430,28 @@ async function startServer() {
         const fileStream = fs.createReadStream(filePath, {
           start: diskStart,
           end: diskEnd,
-          highWaterMark: 128 * 1024,
+          highWaterMark: 64 * 1024,
         });
-        req.on('close', () => {
-          fileStream.destroy();
-        });
+        let destroyed = false;
+        const cleanupStream = () => {
+          if (!destroyed) {
+            destroyed = true;
+            fileStream.destroy();
+          }
+        };
+        req.on('close', cleanupStream);
+        res.on('close', cleanupStream);
         fileStream.on('error', () => {
+          cleanupStream();
           if (!res.headersSent) res.status(500).end();
         });
         fileStream.pipe(res);
       } else {
+        if (seekSeconds <= 0.5 && req.headers['if-none-match'] === etag) {
+          res.status(304).end();
+          return;
+        }
+
         res.writeHead(200, {
           'Content-Length': slicedFileSize,
           'Content-Type': 'audio/mpeg',
@@ -391,12 +466,19 @@ async function startServer() {
         const fileStream = fs.createReadStream(filePath, {
           start: baseStartByte,
           end: fileSize - 1,
-          highWaterMark: 128 * 1024,
+          highWaterMark: 64 * 1024,
         });
-        req.on('close', () => {
-          fileStream.destroy();
-        });
+        let destroyed = false;
+        const cleanupStream = () => {
+          if (!destroyed) {
+            destroyed = true;
+            fileStream.destroy();
+          }
+        };
+        req.on('close', cleanupStream);
+        res.on('close', cleanupStream);
         fileStream.on('error', () => {
+          cleanupStream();
           if (!res.headersSent) res.status(500).end();
         });
         fileStream.pipe(res);
@@ -864,37 +946,95 @@ async function startServer() {
 
   app.all(['/api/gateway', '/api/v1/stories/gateway', '/api/v1/gateway'], gatewayMiddleware);
 
+  // --- HIGH-CONCURRENCY IN-MEMORY RESPONSE CACHE FOR /api/bootstrap AND /api/tracks ---
+  interface CachedSerializedResponse {
+    contentVersion: number;
+    fullVersion: number;
+    builtAt: number;
+    etag: string;
+    jsonBuffer: Buffer;
+    gzipBuffer: Buffer;
+  }
+
+  const apiResponseCache = new Map<string, CachedSerializedResponse>();
+
+  const sendCachedJsonResponse = (
+    req: express.Request,
+    res: express.Response,
+    cacheKey: string,
+    buildPayload: () => any
+  ) => {
+    const now = Date.now();
+    const curContentVer = getDbContentVersion();
+    const curFullVer = getDbVersion();
+    let entry = apiResponseCache.get(cacheKey);
+
+    // Rebuild immediately if content changed (track added/edited/deleted, settings updated),
+    // or rebuild at most once every 1000ms if only play_count/clicks incremented.
+    if (
+      !entry ||
+      entry.contentVersion !== curContentVer ||
+      (entry.fullVersion !== curFullVer && now - entry.builtAt > 1000)
+    ) {
+      const jsonStr = JSON.stringify(buildPayload());
+      const jsonBuffer = Buffer.from(jsonStr, 'utf-8');
+      const gzipBuffer = jsonBuffer.length > 1024 ? zlib.gzipSync(jsonBuffer) : jsonBuffer;
+      const etag = `W/"${curContentVer}-${curFullVer}-${jsonBuffer.length}"`;
+      entry = {
+        contentVersion: curContentVer,
+        fullVersion: curFullVer,
+        builtAt: now,
+        etag,
+        jsonBuffer,
+        gzipBuffer,
+      };
+      apiResponseCache.set(cacheKey, entry);
+    }
+
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('ETag', entry.etag);
+
+    if (req.headers['if-none-match'] === entry.etag) {
+      res.status(304).end();
+      return;
+    }
+
+    const acceptEncoding = String(req.headers['accept-encoding'] || '');
+    if (acceptEncoding.includes('gzip') && entry.jsonBuffer.length > 1024) {
+      res.setHeader('Content-Encoding', 'gzip');
+      res.setHeader('Content-Length', entry.gzipBuffer.length);
+      res.end(entry.gzipBuffer);
+      return;
+    }
+
+    res.setHeader('Content-Length', entry.jsonBuffer.length);
+    res.end(entry.jsonBuffer);
+  };
+
   // --- FAST SINGLE-REQUEST BOOTSTRAP ENDPOINT FOR INITIAL PAGE LOAD ---
   app.get('/api/bootstrap', async (req, res) => {
     try {
       const tracks = await getTracks();
-      const siteSettings = getSiteSettings();
       const includeAdminData = req.query.full === '1';
-      const payloadObj = includeAdminData
-        ? { tracks, siteSettings, categories: getCategories(), links: getAffiliateLinks() }
-        : { tracks, siteSettings };
+      const cacheKey = includeAdminData ? 'bootstrap:full' : 'bootstrap:public';
 
-      const jsonStr = JSON.stringify(payloadObj);
-      res.setHeader('Content-Type', 'application/json; charset=utf-8');
-      res.setHeader('Cache-Control', 'no-cache');
-
-      const acceptEncoding = String(req.headers['accept-encoding'] || '');
-      if (acceptEncoding.includes('gzip') && jsonStr.length > 1024) {
-        res.setHeader('Content-Encoding', 'gzip');
-        res.send(zlib.gzipSync(Buffer.from(jsonStr, 'utf-8')));
-        return;
-      }
-      res.send(jsonStr);
+      sendCachedJsonResponse(req, res, cacheKey, () => {
+        const siteSettings = getSiteSettings();
+        return includeAdminData
+          ? { tracks, siteSettings, categories: getCategories(), links: getAffiliateLinks() }
+          : { tracks, siteSettings };
+      });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
   });
 
   // --- TRACKS & STORIES RESTFUL API (/api/tracks AND /api/v1/stories) ---
-  app.get(['/api/tracks', '/api/v1/stories'], async (_req, res) => {
+  app.get(['/api/tracks', '/api/v1/stories'], async (req, res) => {
     try {
       const tracks = await getTracks();
-      res.json(tracks);
+      sendCachedJsonResponse(req, res, 'tracks:list', () => tracks);
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
@@ -1604,11 +1744,54 @@ ${urlsXml}
       cachedIndexHtml = '';
     }
 
+    interface CachedSsrPage {
+      contentVersion: number;
+      fullVersion: number;
+      builtAt: number;
+      htmlBuffer: Buffer;
+      gzipBuffer: Buffer;
+    }
+    const ssrPageCache = new Map<string, CachedSsrPage>();
+    let cachedBootstrapJsonStr = '';
+    let cachedBootstrapContentVer = -1;
+    let cachedBootstrapFullVer = -1;
+    let cachedBootstrapBuiltAt = 0;
+
     app.get('*', async (req, res) => {
       try {
-        let html = cachedIndexHtml || fs.readFileSync(indexHtmlPath, 'utf-8');
-
+        const now = Date.now();
+        const curContentVer = getDbContentVersion();
+        const curFullVer = getDbVersion();
         const baseUrl = getSafePublicBaseUrl(req);
+        const cleanSlug = req.path
+          .replace(/^\/+/, '')
+          .replace(/\/+$/, '')
+          .replace(/^(truyen|story)\//, '')
+          .trim()
+          .toLowerCase();
+
+        const ssrCacheKey = `${baseUrl}|${cleanSlug}`;
+        const cachedPage = ssrPageCache.get(ssrCacheKey);
+        const isPageCacheFresh =
+          cachedPage &&
+          cachedPage.contentVersion === curContentVer &&
+          (cachedPage.fullVersion === curFullVer || now - cachedPage.builtAt < 2000);
+
+        if (isPageCacheFresh && cachedPage) {
+          res.setHeader('Content-Type', 'text/html; charset=utf-8');
+          const acceptEncoding = String(req.headers['accept-encoding'] || '');
+          if (acceptEncoding.includes('gzip')) {
+            res.setHeader('Content-Encoding', 'gzip');
+            res.setHeader('Content-Length', cachedPage.gzipBuffer.length);
+            res.end(cachedPage.gzipBuffer);
+            return;
+          }
+          res.setHeader('Content-Length', cachedPage.htmlBuffer.length);
+          res.end(cachedPage.htmlBuffer);
+          return;
+        }
+
+        let html = cachedIndexHtml || fs.readFileSync(indexHtmlPath, 'utf-8');
         const settings = getSiteSettings();
         const brandName = (settings.siteName || 'Gối Ôm Audio').trim() || 'Gối Ôm Audio';
         const tagline = (settings.siteTagline || 'Web Nghe Truyện Audio Online Miễn Phí').trim();
@@ -1657,13 +1840,6 @@ ${urlsXml}
             },
           ],
         };
-
-        const cleanSlug = req.path
-          .replace(/^\/+/, '')
-          .replace(/\/+$/, '')
-          .replace(/^(truyen|story)\//, '')
-          .trim()
-          .toLowerCase();
 
         let matchedTrackThumb = '';
 
@@ -1741,10 +1917,19 @@ ${urlsXml}
           fullOgImage = rawOgImage.startsWith('http') ? rawOgImage : `${baseUrl}${rawOgImage.startsWith('/') ? '' : '/'}${rawOgImage}`;
         }
 
-        const bootstrapJson = JSON.stringify({
-          tracks: getTracksSync(),
-          siteSettings: settings,
-        }).replace(/</g, '\\u003c');
+        if (
+          !cachedBootstrapJsonStr ||
+          cachedBootstrapContentVer !== curContentVer ||
+          (cachedBootstrapFullVer !== curFullVer && now - cachedBootstrapBuiltAt > 2000)
+        ) {
+          cachedBootstrapJsonStr = JSON.stringify({
+            tracks: getTracksSync(),
+            siteSettings: settings,
+          }).replace(/</g, '\\u003c');
+          cachedBootstrapContentVer = curContentVer;
+          cachedBootstrapFullVer = curFullVer;
+          cachedBootstrapBuiltAt = now;
+        }
 
         html = html
           .replace(/<title>.*?<\/title>/i, `<title>${escapeHtml(pageTitle)}</title>`)
@@ -1794,17 +1979,33 @@ ${urlsXml}
           )
           .replace(
             /<script id="seo-jsonld-schema" type="application\/ld\+json">[\s\S]*?<\/script>/i,
-            `<script id="seo-jsonld-schema" type="application/ld+json">\n${JSON.stringify(jsonLdObj, null, 2)}\n    </script>\n    <script>window.__INITIAL_BOOTSTRAP__=${bootstrapJson};</script>`
+            `<script id="seo-jsonld-schema" type="application/ld+json">\n${JSON.stringify(jsonLdObj, null, 2)}\n    </script>\n    <script>window.__INITIAL_BOOTSTRAP__=${cachedBootstrapJsonStr};</script>`
           );
+
+        const htmlBuffer = Buffer.from(html, 'utf-8');
+        const gzipBuffer = zlib.gzipSync(htmlBuffer);
+
+        if (ssrPageCache.size > 300) {
+          ssrPageCache.clear();
+        }
+        ssrPageCache.set(ssrCacheKey, {
+          contentVersion: curContentVer,
+          fullVersion: curFullVer,
+          builtAt: now,
+          htmlBuffer,
+          gzipBuffer,
+        });
 
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
         const acceptEncoding = String(req.headers['accept-encoding'] || '');
         if (acceptEncoding.includes('gzip')) {
           res.setHeader('Content-Encoding', 'gzip');
-          res.send(zlib.gzipSync(Buffer.from(html, 'utf-8')));
+          res.setHeader('Content-Length', gzipBuffer.length);
+          res.end(gzipBuffer);
           return;
         }
-        res.send(html);
+        res.setHeader('Content-Length', htmlBuffer.length);
+        res.end(htmlBuffer);
       } catch {
         res.sendFile(path.join(distPath, 'index.html'));
       }
@@ -1824,9 +2025,11 @@ ${urlsXml}
     app.use(vite.middlewares);
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
+  const httpServer = app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running at http://0.0.0.0:${PORT}`);
   });
+  httpServer.keepAliveTimeout = 65000;
+  httpServer.headersTimeout = 66000;
 }
 
 startServer();

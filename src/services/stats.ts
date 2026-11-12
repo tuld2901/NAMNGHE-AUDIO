@@ -1,31 +1,52 @@
 import { Track } from '../types';
 
-/**
- * Lấy mã ngày YYYY-MM-DD theo múi giờ Việt Nam (Asia/Ho_Chi_Minh)
- */
-export function getVietnamDateKey(date: Date = new Date()): string {
+const vnDateFormatter = (() => {
   try {
     return new Intl.DateTimeFormat('en-CA', {
       timeZone: 'Asia/Ho_Chi_Minh',
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
-    }).format(date);
+    });
   } catch {
-    const vnTime = new Date(date.getTime() + 7 * 3600 * 1000);
-    return vnTime.toISOString().slice(0, 10);
+    return null;
   }
-}
+})();
 
 /**
- * Lấy danh sách các ngày YYYY-MM-DD trong N ngày gần nhất (tính cả hôm nay)
+ * Lấy mã ngày YYYY-MM-DD theo múi giờ Việt Nam (Asia/Ho_Chi_Minh)
+ */
+export function getVietnamDateKey(date: Date = new Date()): string {
+  try {
+    if (vnDateFormatter) {
+      return vnDateFormatter.format(date);
+    }
+  } catch {}
+  const vnTime = new Date(date.getTime() + 7 * 3600 * 1000);
+  return vnTime.toISOString().slice(0, 10);
+}
+
+let cachedRecentKeysBucket = 0;
+const cachedRecentKeysMap = new Map<number, string[]>();
+
+/**
+ * Lấy danh sách các ngày YYYY-MM-DD trong N ngày gần nhất (tính cả hôm nay), có bộ nhớ đệm theo phút
  */
 export function getRecentDateKeys(days: number): string[] {
-  const keys: string[] = [];
   const now = Date.now();
+  const minuteBucket = Math.floor(now / 60000);
+  if (minuteBucket !== cachedRecentKeysBucket) {
+    cachedRecentKeysBucket = minuteBucket;
+    cachedRecentKeysMap.clear();
+  }
+  const existing = cachedRecentKeysMap.get(days);
+  if (existing) return existing;
+
+  const keys: string[] = [];
   for (let i = 0; i < days; i++) {
     keys.push(getVietnamDateKey(new Date(now - i * 86400000)));
   }
+  cachedRecentKeysMap.set(days, keys);
   return keys;
 }
 

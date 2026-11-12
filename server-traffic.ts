@@ -84,16 +84,30 @@ function loadTrafficData(): TrafficStorage {
   };
 }
 
+let isTrafficWriting = false;
+let hasPendingTrafficWrite = false;
+
 function scheduleSave() {
   if (saveTimer) return;
-  saveTimer = setTimeout(() => {
+  saveTimer = setTimeout(async () => {
     saveTimer = null;
+    if (isTrafficWriting) {
+      hasPendingTrafficWrite = true;
+      return;
+    }
+    isTrafficWriting = true;
     try {
-      fs.writeFileSync(TRAFFIC_FILE, JSON.stringify(inMemoryTraffic, null, 2), 'utf-8');
+      do {
+        hasPendingTrafficWrite = false;
+        const payload = JSON.stringify(inMemoryTraffic, null, 2);
+        await fs.promises.writeFile(TRAFFIC_FILE, payload, 'utf-8');
+      } while (hasPendingTrafficWrite);
     } catch (err) {
       console.warn('Failed to save traffic.json:', err);
+    } finally {
+      isTrafficWriting = false;
     }
-  }, 1000);
+  }, 3000);
 }
 
 function parseUserAgent(uaRaw: string = '') {

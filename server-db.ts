@@ -245,14 +245,28 @@ function loadDatabase(): ServerDBData {
 
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 let isWritingAsync = false;
+let hasPendingAsyncWrite = false;
+let dbVersion = 1;
+let dbContentVersion = 1;
+
+export function getDbVersion(): number {
+  return dbVersion;
+}
+
+export function getDbContentVersion(): number {
+  return dbContentVersion;
+}
 
 function saveDatabase(data: ServerDBData) {
   try {
     dbData = data;
+    dbVersion++;
+    dbContentVersion++;
     if (saveTimeout) {
       clearTimeout(saveTimeout);
       saveTimeout = null;
     }
+    hasPendingAsyncWrite = false;
     fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf-8');
   } catch (err) {
     console.error('Failed to save to db.json:', err);
@@ -264,19 +278,27 @@ function saveDatabase(data: ServerDBData) {
  * so thousands of concurrent listeners never block the Node.js event loop.
  */
 function scheduleSaveDatabase() {
+  dbVersion++;
   if (saveTimeout) return;
   saveTimeout = setTimeout(async () => {
     saveTimeout = null;
-    if (isWritingAsync) return;
+    if (isWritingAsync) {
+      hasPendingAsyncWrite = true;
+      return;
+    }
     isWritingAsync = true;
     try {
-      await fs.promises.writeFile(DB_FILE, JSON.stringify(dbData, null, 2), 'utf-8');
+      do {
+        hasPendingAsyncWrite = false;
+        const payload = JSON.stringify(dbData, null, 2);
+        await fs.promises.writeFile(DB_FILE, payload, 'utf-8');
+      } while (hasPendingAsyncWrite);
     } catch (err) {
       console.error('Failed async save to db.json:', err);
     } finally {
       isWritingAsync = false;
     }
-  }, 1500);
+  }, 2000);
 }
 
 // --- TỰ ĐỘNG TÍNH TOÁN ĐỘ DÀI AUDIO TỪ FILE DISK (FFPROBE / MP3 HEADER / FILE SIZE) ---
@@ -1108,23 +1130,37 @@ export async function batchDeleteTracks(ids: string[]): Promise<number> {
   return deletedCount;
 }
 
-function getServerVietnamDateKey(date: Date = new Date()): string {
+const vnDateFormatter = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Asia/Ho_Chi_Minh',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+let cachedTodayKey = '';
+let cachedTodayKeyExpireMs = 0;
+
+function getServerVietnamDateKey(date?: Date): string {
+  const nowMs = Date.now();
+  if (!date && cachedTodayKey && nowMs < cachedTodayKeyExpireMs) {
+    return cachedTodayKey;
+  }
   try {
-    return new Intl.DateTimeFormat('en-CA', {
-      timeZone: 'Asia/Ho_Chi_Minh',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    }).format(date);
+    const key = vnDateFormatter.format(date || new Date(nowMs));
+    if (!date) {
+      cachedTodayKey = key;
+      cachedTodayKeyExpireMs = nowMs + 30000;
+    }
+    return key;
   } catch {
-    const vnTime = new Date(date.getTime() + 7 * 3600 * 1000);
+    const vnTime = new Date((date ? date.getTime() : nowMs) + 7 * 3600 * 1000);
     return vnTime.toISOString().slice(0, 10);
   }
 }
 
 export async function incrementTrackPlay(id: string): Promise<Track | null> {
   const existing = findTrackInList(dbData.tracks, id);
-  const resolvedId = existing ? existing.id : id;
+  if (!existing) return null;
+  const resolvedId = existing.id;
 
   if (serverSupabase) {
     serverSupabase.rpc('increment_track_play_count', { track_id: resolvedId }).then(() => {}, () => {});
@@ -1132,38 +1168,28 @@ export async function incrementTrackPlay(id: string): Promise<Track | null> {
 
   const todayKey = getServerVietnamDateKey();
   const nowIso = new Date().toISOString();
-  let updatedTrack: Track | null = null;
 
-  dbData.tracks = dbData.tracks.map(t => {
-    if (t.id === resolvedId) {
-      const nextTotalPlays = Math.max(0, Math.floor(Number(t.play_count) || 0)) + 1;
-      const prevDaily = t.daily_plays && typeof t.daily_plays === 'object' ? { ...t.daily_plays } : {};
-      prevDaily[todayKey] = (Math.max(0, Math.floor(Number(prevDaily[todayKey]) || 0))) + 1;
-
-      // Giữ tối đa 40 ngày gần nhất để dữ liệu gọn nhẹ
-      const sortedKeys = Object.keys(prevDaily).sort();
-      if (sortedKeys.length > 40) {
-        const keysToRemove = sortedKeys.slice(0, sortedKeys.length - 40);
-        for (const k of keysToRemove) {
-          delete prevDaily[k];
-        }
-      }
-
-      updatedTrack = {
-        ...t,
-        play_count: nextTotalPlays,
-        daily_plays: prevDaily,
-        last_played_at: nowIso,
-      };
-      return updatedTrack;
-    }
-    return t;
-  });
-
-  if (updatedTrack) {
-    scheduleSaveDatabase();
+  // Mutate in-place for O(1) memory overhead under thousands of concurrent play requests
+  const nextTotalPlays = Math.max(0, Math.floor(Number(existing.play_count) || 0)) + 1;
+  if (!existing.daily_plays || typeof existing.daily_plays !== 'object') {
+    existing.daily_plays = {};
   }
-  return updatedTrack;
+  existing.daily_plays[todayKey] = Math.max(0, Math.floor(Number(existing.daily_plays[todayKey]) || 0)) + 1;
+
+  const keys = Object.keys(existing.daily_plays);
+  if (keys.length > 40) {
+    const sortedKeys = keys.sort();
+    const keysToRemove = sortedKeys.slice(0, sortedKeys.length - 40);
+    for (const k of keysToRemove) {
+      delete existing.daily_plays[k];
+    }
+  }
+
+  existing.play_count = nextTotalPlays;
+  existing.last_played_at = nowIso;
+
+  scheduleSaveDatabase();
+  return existing;
 }
 
 export async function resetTracks(): Promise<Track[]> {

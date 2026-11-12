@@ -1,4 +1,3 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { Track, Chapter, AffiliateItem, AffiliateCategory, SiteSettings, AdminAccount } from '../types';
 import {
   DEFAULT_TRACKS,
@@ -55,10 +54,6 @@ export const isSupabaseConfigured = (): boolean => {
     SUPABASE_URL.startsWith('http')
   );
 };
-
-export const supabase: SupabaseClient | null = isSupabaseConfigured()
-  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-  : null;
 
 // ===========================================================================
 // IN-MEMORY CACHES (Synchronized continuously with Server backend)

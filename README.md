@@ -1,177 +1,130 @@
-# NAMNGHECMS - Installation Guide
+# NAMNGHE-AUDIO (Gối Ôm Audio CMS) — Hướng Dẫn Cài Đặt & Vận Hành
 
-A modern Audio Story CMS & Streaming Web Application powered by Node.js, Express, React, and Tailwind CSS.
-
----
-
-## 1. Prerequisites
-
-- **Node.js**: v18.x or v20.x LTS (Recommended: Node.js 20 LTS)
-- **NPM**: v9+ or v10+
-- **Git**
-- **FFmpeg & FFprobe**: (Recommended) Tự động đo thời lượng chính xác từng giây khi upload MP3:
-  - **Ubuntu / Debian**:
-    ```bash
-    sudo apt update && sudo apt install -y ffmpeg
-    ```
-  - **CentOS / AlmaLinux / Rocky Linux**:
-    ```bash
-    sudo dnf install -y epel-release && sudo dnf install -y ffmpeg
-    ```
-- **Default Port**: `3000` (configurable via `PORT` environment variable)
-
-Check your environment:
-```bash
-node -v
-npm -v
-git --version
-ffprobe -version
-```
+Hệ thống Web Nghe Truyện Audio Online & Quản trị CMS (Node.js, Express, React, Tailwind CSS) đã tối ưu chịu tải cao cho hàng nghìn người nghe cùng lúc.
 
 ---
 
-## 2. Quick Start & Installation
+## 1. Cài Đặt Nhanh Trên VPS (Ubuntu / Debian)
 
-### Step 1: Clone Repository
 ```bash
-git clone https://github.com/tuld2901/NAMNGHE-AUDIO.git
-cd NAMNGHE-AUDIO
-```
-
-### Step 2: Create Required Directories
-
-The backend stores database files, uploaded audio, and backups locally. You **must create** the following directory structure inside the project root:
-
-| Directory Path | Description |
-| :--- | :--- |
-| `data/` | Stores the primary JSON database (`db.json`) containing stories, chapters, and settings. |
-| `uploads/audio/` | Stores all uploaded MP3 audio files (named by slug, e.g., `tap-1-ten-tap.mp3`). |
-| `uploads/images/` | Stores uploaded custom logos, banner graphics, and favicons. |
-| `backups/` | Stores automated system snapshots, manual `.json` exports, and `.tar.gz` archives. |
-
-Run these commands to create all required directories and set read/write permissions:
-```bash
-# 1. Create all required folders at once
-mkdir -p data uploads/audio uploads/images backups
-
-# 2. Grant full read/write permissions for Node.js and Nginx
-chmod 755 /root 2>/dev/null || true
-chmod -R 777 data uploads backups
-```
-
-### Step 3: Install Dependencies & Build
-```bash
-# MUST use --legacy-peer-deps to avoid React 19 peer dependency resolution conflicts:
-npm install --legacy-peer-deps
-npm run build
-```
-
-*(If you ever encounter an `edgesOut` or npm lock conflict, run: `rm -rf package-lock.json node_modules && npm cache clean --force && npm install --legacy-peer-deps`)*
-
----
-
-## 3. Running the Application
-
-### Development Mode
-```bash
-npm run dev
-```
-- App URL: `http://localhost:3000`
-- Admin CMS URL: `http://localhost:3000/app-config`
-
-### Production Mode (Standard Node.js)
-```bash
-npm start
-```
-
-### Production Mode with PM2 (24/7 Background Service)
-```bash
-# 1. Install PM2 globally
+# 1. Cài đặt Node.js 20 LTS, Nginx, Git, FFmpeg và PM2
+sudo apt update && sudo apt install -y curl git nginx build-essential ffmpeg
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
 sudo npm install -g pm2
 
-# 2. Start application
-pm2 start npm --name "namnghe-cms" -- start
+# 2. Tải mã nguồn & Tạo 3 thư mục lưu trữ bắt buộc
+git clone https://github.com/tuld2901/NAMNGHE-AUDIO.git /root/NAMNGHE-AUDIO
+cd /root/NAMNGHE-AUDIO
+mkdir -p data uploads/audio uploads/images backups
+chmod 755 /root 2>/dev/null || true
+chmod -R 777 data uploads backups
 
-# 3. Save process list & enable auto-start on server reboot
+# 3. Cài đặt thư viện & Build giao diện Production
+npm install --legacy-peer-deps
+npm run build
+
+# 4. Chạy dịch vụ ngầm 24/7 với PM2
+pm2 start npm --name "namnghe-cms" -- start
 pm2 save
 pm2 startup
 ```
 
-Useful PM2 commands:
-```bash
-pm2 status                # Check status
-pm2 logs namnghe-cms      # View real-time logs
-pm2 restart namnghe-cms   # Restart application
-pm2 stop namnghe-cms      # Stop application
-```
+* **Lệnh quản lý PM2**: `pm2 status` | `pm2 logs namnghe-cms` | `pm2 restart namnghe-cms`
+* **Cấu trúc thư mục dữ liệu**:
+  * `data/db.json`: Lưu toàn bộ truyện, tập truyện, cấu hình web, tài khoản admin, link affiliate.
+  * `uploads/audio/`: Lưu toàn bộ file `.mp3` (tự động chuẩn hóa tên file theo slug không dấu).
+  * `uploads/images/`: Lưu ảnh bìa, logo, banner, favicon.
+  * `backups/`: Lưu các bản sao lưu `.json` snapshot.
 
 ---
 
-## 4. Nginx Reverse Proxy & Rate Limit Configuration (5 Logins / 1 Minute)
+## 2. Cấu Hình Nginx Chịu Tải Cao (Đọc Phát Audio Trực Tiếp & Chống Nghẽn Băng Thông)
 
-Create file `/etc/nginx/sites-available/namnghe-cms` (or simply copy the included `nginx.conf` template):
+Trên giao diện web, thẻ `<audio preload="metadata">` đã được cấu hình để trình duyệt **chỉ tải vài KB đầu tiên** lấy số phút (không tải trước cả file 50MB). Khi người dùng bấm nghe hoặc kéo tua tới đâu, **Nginx trực tiếp cắt từng khúc nhỏ (`512KB`) từ ổ cứng gửi tới đó** mà không đi qua Node.js.
+
+Copy file cấu hình mẫu hoặc dán trực tiếp vào `/etc/nginx/sites-available/namnghe-cms`:
+
 ```bash
 sudo cp /root/NAMNGHE-AUDIO/nginx.conf /etc/nginx/sites-available/namnghe-cms
 ```
 
-Full configuration content (including **5 logins / 1 minute rate limiting** on `/api/admin/login`):
+Nội dung chuẩn của `/etc/nginx/sites-available/namnghe-cms`:
+
 ```nginx
-# Rate limit zone: 5 login requests per 1 minute per IP address
+# 1. Giới hạn đăng nhập Admin tối đa 5 lần / 1 phút theo IP
 limit_req_zone $binary_remote_addr zone=admin_login_limit:10m rate=5r/m;
+
+# 2. Pool kết nối Keep-Alive bền vững tới Node.js Port 3000
+upstream audio_node_backend {
+    server 127.0.0.1:3000;
+    keepalive 64;
+}
 
 server {
     listen 80;
     listen [::]:80;
-    server_name your-domain.com www.your-domain.com;
+    server_name your-domain.com www.your-domain.com; # Đổi thành tên miền của bạn
 
-    # Allow large MP3 & backup file uploads (up to 250MB)
+    # Cho phép upload MP3 & Backup lớn (tới 250MB)
     client_max_body_size 250M;
     client_body_timeout 600s;
     client_header_timeout 600s;
+    keepalive_timeout 65s;
+    keepalive_requests 10000;
     large_client_header_buffers 4 32k;
 
-    # Gzip: Compress text/code (NEVER compress audio/MP3)
+    # Cache File Descriptor trong RAM giúp hàng nghìn người mở cùng 1 file MP3 không phải quét lại đĩa
+    open_file_cache max=5000 inactive=60s;
+    open_file_cache_valid 120s;
+    open_file_cache_min_uses 2;
+    open_file_cache_errors on;
+
+    # Nén Gzip cho HTML/CSS/JS/JSON (Tuyệt đối KHÔNG nén file MP3)
     gzip on;
     gzip_vary on;
     gzip_proxied any;
     gzip_comp_level 6;
+    gzip_min_length 1024;
     gzip_types text/plain text/css text/xml application/json application/javascript application/rss+xml font/woff2 image/svg+xml;
 
-    # Serve static audio & image uploads directly (fast progressive streaming: load đến đâu nghe đến đó)
-    location /uploads/ {
-        alias /root/NAMNGHE-AUDIO/uploads/;
-        expires 30d;
+    # A. GIAO HOÀN TOÀN VIỆC ĐỌC, PHÁT & TUA AUDIO CHO NGINX (/uploads/)
+    location ^~ /uploads/ {
+        alias /root/NAMNGHE-AUDIO/uploads/; # Đổi đúng đường dẫn thư mục uploads trên VPS
+
+        # Đọc file trực tiếp từ nhân Linux (Zero-Copy + Đa luồng bất đồng bộ)
+        sendfile on;
+        sendfile_max_chunk 512k; # Cắt từng khúc 512KB để tránh 1 người chiếm hết băng thông
+        tcp_nopush on;
+        tcp_nodelay on;
+        aio threads;
+        directio 4m;             # File > 4MB đọc thẳng Direct I/O, không làm tràn RAM VPS
+        output_buffers 2 1m;
+
+        # Hỗ trợ tua nhanh (HTTP 206 Partial Content / Byte-Range)
         add_header Accept-Ranges bytes always;
         add_header Cache-Control "public, max-age=2592000, immutable, no-transform" always;
         add_header Access-Control-Allow-Origin * always;
         add_header Access-Control-Allow-Methods "GET, HEAD, OPTIONS" always;
         add_header Access-Control-Allow-Headers "Range, Origin, Content-Type, Accept" always;
         add_header Access-Control-Expose-Headers "Content-Range, Content-Length, Accept-Ranges" always;
-        client_max_body_size 250M;
-
-        # Linux direct chunk transmission (1MB chunks)
-        sendfile on;
-        sendfile_max_chunk 1m;
-        tcp_nopush on;
-        tcp_nodelay on;
-
-        # Disable buffering so first chunk plays immediately
-        proxy_buffering off;
-        proxy_request_buffering off;
+        expires 30d;
+        access_log off;
 
         location ~* \.(php|pl|py|jsp|asp|sh|cgi)$ {
             deny all;
         }
     }
 
-    # Limit Admin Login to 5 attempts / 1 minute per IP
+    # B. GIỚI HẠN 5 LẦN LOGIN / 1 PHÚT CHO TRANG QUẢN TRỊ (/app-config)
     location = /api/admin/login {
         limit_req zone=admin_login_limit burst=4 nodelay;
         limit_req_status 429;
         error_page 429 = @login_rate_limited;
 
-        proxy_pass http://127.0.0.1:3000;
+        proxy_pass http://audio_node_backend;
         proxy_http_version 1.1;
+        proxy_set_header Connection "";
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -183,10 +136,11 @@ server {
         return 429 '{"success":false,"error":"Bạn đã thử đăng nhập quá 5 lần trong 1 phút. Vui lòng đợi 1 phút rồi thử lại!"}';
     }
 
-    # High-priority proxy for all API routes (/api/gateway, /api/upload-audio, /api/stream-audio, /api/tracks)
+    # C. CỔNG API ĐỘNG (/api/bootstrap, /api/gateway, /api/tracks, /api/upload-audio)
     location ^~ /api/ {
-        proxy_pass http://127.0.0.1:3000;
+        proxy_pass http://audio_node_backend;
         proxy_http_version 1.1;
+        proxy_set_header Connection "";
         proxy_set_header Host $host;
         proxy_set_header Range $http_range;
         proxy_set_header If-Range $http_if_range;
@@ -204,12 +158,12 @@ server {
         proxy_send_timeout 600s;
     }
 
-    # Proxy all clean routes into Node.js (Port 3000)
+    # D. GIAO DIỆN WEB & SEO SSR (NODE.JS PORT 3000)
     location / {
-        proxy_pass http://127.0.0.1:3000;
+        proxy_pass http://audio_node_backend;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
+        proxy_set_header Connection "upgrade";
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -226,98 +180,38 @@ server {
 }
 ```
 
-Enable site and restart Nginx:
+Kích hoạt Nginx & Cài đặt SSL miễn phí (HTTPS):
 ```bash
 sudo ln -sf /etc/nginx/sites-available/namnghe-cms /etc/nginx/sites-enabled/
-sudo nginx -t && sudo systemctl restart nginx
-```
+sudo rm -f /etc/nginx/sites-enabled/default
+sudo nginx -t && sudo systemctl reload nginx
 
----
-
-### Cloudflare CDN Recommendation (If using Cloudflare Proxy)
-If your domain is proxied through Cloudflare (orange cloud):
-1. **Cache Rule**: In Cloudflare -> **Caching** -> **Cache Rules**, create a rule for `*your-domain.com/uploads/*` with **Cache Everything** and **Edge TTL = 1 month**. This caches audio chunks at Cloudflare edge nodes in Vietnam (VNPT, Viettel) so playback starts under 100ms.
-2. **Range Requests**: Cloudflare automatically respects `Accept-Ranges: bytes` and HTTP 206 delivered by Node.js.
-
-Free SSL (HTTPS) with Certbot:
-```bash
+# Cài SSL Let's Encrypt
 sudo apt install -y certbot python3-certbot-nginx
 sudo certbot --nginx -d your-domain.com -d www.your-domain.com
 ```
 
 ---
 
-## 5. Admin CMS Credentials & Google Authenticator (2FA)
+## 3. Quản Trị CMS (`/app-config`) & Bảo Mật 2 Lớp (2FA)
 
-The admin route is hidden from public view (`/admin` and `/quan-tri` automatically redirect to `/`). Access directly via `/app-config`:
-
-- **CMS URL**: `https://your-domain.com/app-config` (or `http://localhost:3000/app-config`)
-- **Email / Username**: `tuld2901@gmail.com` (or `admin`)
-- **Password**: `admin123`
-- **Google Authenticator (TOTP 2FA)**: Powered by `speakeasy` + `qrcode`. Can be enabled or disabled anytime inside **Admin CMS -> Tài Khoản Quản Trị**.
-
----
-
-## 6. Cấu Trúc Thư Mục Lưu Trữ & Cấu Hình Cổng API (`server-db.ts` & `server.ts`)
-
-### 6.1. Cấu trúc thư mục lưu trữ trên Server (`server-db.ts`)
-> **Lưu ý quan trọng:** Trên hệ thống **hoàn toàn không có thư mục `download` (hay `downloads`)**. Khi khởi chạy, Server tự động kiểm tra và tạo đúng **3 thư mục gốc** tại thư mục dự án:
-
-1. **`uploads/`** *(Thư mục chứa toàn bộ file tải lên và phát ra ngoài)*:
-   - `uploads/audio/`: Chứa toàn bộ file `.mp3`. Khi upload, file tự động được đổi tên chuẩn SEO không dấu (`ten-truyen-ten-tap.mp3`).
-   - `uploads/images/`: Chứa file ảnh bìa, banner, icon tải lên.
-2. **`data/`**:
-   - `data/db.json`: Cơ sở dữ liệu chính lưu danh sách truyện, tập truyện, cấu hình web, tài khoản admin, affiliate và khóa API.
-3. **`backups/`**:
-   - Chứa các bản sao lưu tự động và thủ công (snapshot `.json`) trên máy chủ.
+* **Đường dẫn Quản trị bí mật**: `https://your-domain.com/app-config` (Mọi truy cập vào `/admin` hoặc `/quan-tri` tự động đẩy về trang chủ `/`).
+* **Tài khoản mặc định**:
+  * **Email / Username**: `tuld2901@gmail.com` (hoặc `admin`)
+  * **Mật khẩu**: `admin123`
+* **Google Authenticator (2FA)**: Vào **Quản trị -> Tài Khoản Quản Trị** -> Nhấn **Bật Google Authenticator** -> Quét mã QR bằng điện thoại và nhập 6 số xác nhận.
 
 ---
 
-### 6.2. Kiểm tra cấu hình các cổng API (`server.ts`)
+## 4. Cổng API Gateway Tự Động Hóa (`POST /api/gateway`)
 
-#### A. API Upload File (Lưu thẳng vào `uploads/`)
-| Chức năng | Phương thức & Đường dẫn | Tên trường (`form-data`) | Giới hạn | Đường dẫn trả về (`url`) |
-| :--- | :--- | :--- | :--- | :--- |
-| **Upload Audio MP3** | `POST /api/upload-audio` | `audio` (hoặc `file`, `mp3`; kèm tùy chọn `storyTitle`, `chapterTitle`) | 150 MB | `/uploads/audio/<slug>.mp3` (kèm `duration` đo tự động bằng `ffprobe`) |
-| **Upload Hình ảnh** | `POST /api/upload-image` | `image` (hoặc `file`, `thumb`, `cover`) | 20 MB | `/uploads/images/<slug>.<ext>` |
+Hỗ trợ `application/json`, `multipart/form-data` cho n8n, Make, Python, cURL. Khi bật bảo mật API Key trong Admin, truyền header `x-api-key: <MÃ_KEY>`.
 
-#### B. API Phát & Tua Audio (Streaming & Byte-Range)
-- **Đường dẫn tĩnh chuẩn**: `GET /uploads/audio/:filename` (Hỗ trợ `HTTP 206 Partial Content`, `Accept-Ranges: bytes`).
-- **Đường dẫn Cắt luồng khi tua qua Cloudflare**: `GET /api/stream-audio?src=/uploads/audio/:filename&t=<giây>&dur=<tổng_thời_lượng>`
-  - Nếu người dùng kéo tua đến giây `t` khi file chưa tải xong, Server tự động tính vị trí byte và cắt luồng MP3 phát ngay từ điểm đó mà không bị nhảy về `0:00`.
-
-#### C. Cổng API Gateway 1-Port Đa Năng (Dành cho Tool / Auto Post / n8n / Make)
-- **Endpoint chính**: `POST /api/gateway` *(Bí danh tương thích: `POST /api/v1/stories/gateway` hoặc `GET /api/gateway`)*
-- **Định dạng dữ liệu nhận vào**: Hỗ trợ đồng thời `application/json`, `application/x-www-form-urlencoded`, và `multipart/form-data`.
-- **Tự động nhận diện linh hoạt**:
-  - Tìm truyện theo `id` (VD: `track-1`), theo **Slug không dấu** (VD: `bong-ma-ben-khung-cua-so`), hoặc theo **Tên truyện**.
-  - Chấp nhận các tên trường đồng nghĩa: `mp3_url` / `audio_url` / `url` / `mp3` và `thumb_url` / `cover_url` / `image_url`.
-- **Các hành động (`action`) hỗ trợ**:
-  - `list`: Lấy danh sách toàn bộ truyện.
-  - `get`: Lấy chi tiết 1 truyện theo `id` (hoặc slug / tên truyện).
-  - `create` (hoặc `dang`): Đăng truyện mới (hỗ trợ truyền mảng `chapters` hoặc `mp3_url`/`audio_url` tập đầu).
-  - `update` (hoặc `sua`): Cập nhật thông tin truyện / danh sách tập.
-  - `add_chapter` (hoặc `them_tap`): Thêm tập mới vào bộ truyện đã có (`id`, `title`, `mp3_url`/`audio_url`, `duration`).
-  - `delete_chapter` (hoặc `xoa_tap`): Xóa 1 tập trong truyện (theo `chapter_id` hoặc `chapter_index`).
-  - `delete` (hoặc `xoa`): Xóa truyện (tự động dọn luôn các file `.mp3` của truyện đó trong `uploads/audio/`).
-
-#### D. API RESTful Quản lý Truyện
-- `GET /api/tracks` (hoặc `/api/v1/stories`): Lấy danh sách truyện.
-- `GET /api/tracks/:id`: Lấy chi tiết 1 truyện.
-- `POST /api/tracks`: Tạo truyện mới.
-- `PUT /api/tracks/:id` hoặc `PATCH /api/tracks/:id`: Sửa truyện.
-- `POST /api/tracks/:id/chapters`: Thêm tập mới vào truyện.
-- `DELETE /api/tracks/:id/chapters/:chapterId`: Xóa 1 tập trong truyện.
-- `DELETE /api/tracks/:id`: Xóa truyện.
-
-#### E. Bảo mật Khóa API (`API Key`)
-- Quản lý trực tiếp trong **Admin -> Cổng API Truyện (Đăng/Sửa/Xóa)**.
-- Khi bật **Yêu cầu API Key**, các lệnh thêm/sửa/xóa/upload từ bên ngoài chỉ cần truyền khóa qua 1 trong 3 cách:
-  1. Header: `x-api-key: <MÃ_KEY>`
-  2. Header: `Authorization: Bearer <MÃ_KEY>`
-  3. Body / Query: `"api_key": "<MÃ_KEY>"`
-
-#### F. Lưu ý trên VPS / Nginx (`nginx.conf`)
-- Trong file `nginx.conf` trên VPS, bạn chỉ cần trỏ duy nhất `location /uploads/` về đúng thư mục `/đường_dẫn_code/uploads/;` và `location ^~ /api/` vào `http://127.0.0.1:3000`, hoàn toàn không cần tạo hay cấu hình bất kỳ thư mục `download` nào.
-
-
+* **Upload Audio MP3 (`<= 150MB`)**: `POST /api/upload-audio` (trường `audio`, trả về `url: "/uploads/audio/<slug>.mp3"` và `duration`).
+* **Upload Ảnh (`<= 20MB`)**: `POST /api/upload-image` (trường `image`, trả về `url: "/uploads/images/<slug>.<ext>"`).
+* **Đăng / Sửa / Xóa Truyện qua Gateway (`POST /api/gateway`)**:
+  * `action: "create"` (hoặc `"dang"`): Đăng truyện mới -> trả về `"id": "track-..."` để lưu lại dùng cho cập nhật/thêm tập.
+  * `action: "update"` (hoặc `"sua"`): Cập nhật truyện theo `id` (hoặc slug / tên truyện).
+  * `action: "add_chapter"` (hoặc `"them_tap"`): Thêm tập mới vào truyện.
+  * `action: "delete_chapter"` (hoặc `"xoa_tap"`): Xóa tập trong truyện.
+  * `action: "delete"` (hoặc `"xoa"`): Xóa truyện (tự động xóa luôn file MP3 và ảnh bìa không còn dùng trong `uploads/`).

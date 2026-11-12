@@ -22,7 +22,6 @@ import {
   DBHealthCheck 
 } from '../services/sqlEngine';
 import { 
-  supabase, 
   isSupabaseConfigured, 
   isAuthorizedAdminEmail, 
   createTrack, 
@@ -1169,14 +1168,6 @@ export const Admin: React.FC<AdminProps> = ({
         }
       }
     });
-
-    if (supabase) {
-      supabase.auth.getUser().then(({ data }) => {
-        if (data?.user?.email && isAuthorizedAdminEmail(data.user.email)) {
-          setCurrentUserEmail(data.user.email);
-        }
-      });
-    }
   }, []);
 
   const isAuthorized = Boolean(
@@ -1228,28 +1219,6 @@ export const Admin: React.FC<AdminProps> = ({
       return;
     }
 
-    // Fallback: If Supabase client configured, attempt sign in
-    if (supabase && cleanPassword) {
-      try {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: cleanIdentifier,
-          password: cleanPassword,
-        });
-
-        if (!error && data.user?.email && isAuthorizedAdminEmail(data.user.email)) {
-          sessionStorage.setItem('phuba_admin_authenticated', data.user.email);
-          setCurrentUserEmail(data.user.email);
-          setAuthSuccess('Đăng nhập Supabase Auth thành công!');
-          setLoginStep('credentials');
-          setTwoFactorTokenInput('');
-          setIsAuthLoading(false);
-          return;
-        }
-      } catch {
-        // Ignore fallback error
-      }
-    }
-
     setAuthError(loginRes.error || 'Tài khoản hoặc mật khẩu quản trị không đúng!');
     setIsAuthLoading(false);
   };
@@ -1265,9 +1234,6 @@ export const Admin: React.FC<AdminProps> = ({
     setCurrentUserEmail(null);
     setLoginStep('credentials');
     setTwoFactorTokenInput('');
-    if (supabase) {
-      await supabase.auth.signOut();
-    }
   };
 
   // --- GOOGLE AUTHENTICATOR (2FA) HANDLERS ---

@@ -31,23 +31,13 @@ export const parseDurationToSeconds = (durationStr: string | number | undefined)
   return 0;
 };
 
-const isTimeInBufferedAndSeekableRange = (audio: HTMLAudioElement, relativeSec: number): boolean => {
+const isTimeInSeekableRange = (audio: HTMLAudioElement, relativeSec: number): boolean => {
   if (relativeSec < 0) return false;
   try {
-    let inBuffered = false;
-    const buffered = audio.buffered;
-    for (let i = 0; i < buffered.length; i++) {
-      if (relativeSec >= buffered.start(i) - 0.25 && relativeSec <= buffered.end(i) - 0.25) {
-        inBuffered = true;
-        break;
-      }
-    }
-    if (!inBuffered) return false;
-
     const seekable = audio.seekable;
     if (!seekable || seekable.length === 0) return false;
     for (let i = 0; i < seekable.length; i++) {
-      if (relativeSec >= seekable.start(i) - 0.25 && relativeSec <= seekable.end(i) - 0.25) {
+      if (relativeSec >= seekable.start(i) - 0.5 && relativeSec <= seekable.end(i) + 0.5) {
         return true;
       }
     }
@@ -171,15 +161,16 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({
 
   const activeMp3Url = currentChapter?.mp3_url || currentTrack?.mp3_url || '';
 
+  // Giao trực tiếp đường dẫn /uploads/audio/... để Nginx đọc và phát file tĩnh (sendfile + HTTP 206 Range)
+  // hoàn toàn không đi vòng qua /api/stream-audio của Node.js
   const buildInitialPlaybackUrl = useCallback((rawUrl: string): string => {
     if (isLocalServerAudioUrl(rawUrl)) {
-      const cleanPath = extractCleanUploadPath(rawUrl);
-      return `/api/stream-audio?src=${encodeURIComponent(cleanPath)}&t=0`;
+      return extractCleanUploadPath(rawUrl);
     }
     return rawUrl;
   }, []);
 
-  // Helper to force server-side byte-sliced stream starting at exact target second
+  // Dự phòng: chỉ cắt byte trên Server nếu trình duyệt/proxy chặn HTTP Range của Nginx
   const triggerServerSlicedStream = useCallback(
     (targetSec: number, rawUrl: string) => {
       const audio = audioRef.current;
@@ -197,7 +188,7 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({
       if (targetSec <= 0.5) {
         streamOffsetRef.current = 0;
         lastTargetSeekRef.current = 0;
-        audio.src = `/api/stream-audio?src=${encodeURIComponent(cleanPath)}&t=0`;
+        audio.src = cleanPath;
       } else {
         streamOffsetRef.current = targetSec;
         lastTargetSeekRef.current = targetSec;
@@ -324,22 +315,22 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({
 
       const isLocalUpload = isLocalServerAudioUrl(activeMp3Url);
 
-      // TRƯỜNG HỢP 1: Nếu đoạn cần tua đã nằm sẵn trong bộ đệm (buffered & seekable) của trình duyệt -> Tua mượt tức thì 0ms
+      // TRƯỜNG HỢP 1: Ưu tiên giao hoàn toàn cho Nginx xử lý HTTP 206 Range Seek trực tiếp trên đường dẫn tĩnh /uploads/audio/...
       const relativeTarget = validTime - streamOffsetRef.current;
-      const canSeekNatively = isTimeInBufferedAndSeekableRange(audio, relativeTarget);
+      const canSeekNatively = isTimeInSeekableRange(audio, relativeTarget);
 
       if (canSeekNatively && audio.readyState >= 1) {
         try {
           audio.currentTime = Math.max(0, relativeTarget);
 
-          // Hậu kiểm sau 100ms: Nếu trình duyệt/Cloudflare ép reset currentTime về 0 thì lập tức chuyển sang cắt luồng từ Server!
+          // Hậu kiểm sau 150ms: Chỉ khi proxy/trình duyệt không hỗ trợ Range và ép reset currentTime về 0 thì mới dùng fallback cắt luồng từ Node.js
           if (isLocalUpload && relativeTarget > 2) {
             verifySeekTimerRef.current = setTimeout(() => {
               if (!audioRef.current) return;
               if (audioRef.current.currentTime < 1 && relativeTarget > 2) {
                 triggerServerSlicedStream(validTime, activeMp3Url);
               }
-            }, 100);
+            }, 150);
           }
           return;
         } catch {
@@ -347,7 +338,7 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({
         }
       }
 
-      // TRƯỜNG HỢP 2: File chưa tải đến điểm kéo -> Gửi request lên Server cắt MP3 bắt đầu ngay từ giây vừa kéo
+      // TRƯỜNG HỢP 2: Nếu đang ở luồng fallback (streamOffsetRef > 0) và người nghe tua ngược về trước điểm cắt -> trả lại đường dẫn tĩnh /uploads/audio/... cho Nginx nếu tua về đầu, hoặc cắt lại
       if (isLocalUpload) {
         triggerServerSlicedStream(validTime, activeMp3Url);
         return;
@@ -684,7 +675,7 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({
         {/* Global Audio Element */}
         <audio
           ref={audioRef}
-          preload="auto"
+          preload="metadata"
           playsInline
           onTimeUpdate={handleTimeUpdate}
           onProgress={updateBufferedProgress}
