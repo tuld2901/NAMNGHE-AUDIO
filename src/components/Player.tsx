@@ -56,8 +56,8 @@ export const Player: React.FC<PlayerProps> = React.memo(({ onOpenStoryDetail }) 
     : 1;
 
   return (
-    <div className="sticky bottom-0 left-0 right-0 z-30 w-full bg-white/95 dark:bg-[#000000] backdrop-blur-md border-t border-slate-200 dark:border-[#282828] shadow-[0_-4px_20px_rgba(0,0,0,0.06)] dark:shadow-none transition-colors duration-200">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 space-y-1.5">
+    <div className="sticky bottom-2.5 sm:bottom-3.5 left-0 right-0 z-30 w-full px-3 sm:px-6 pb-1 sm:pb-2 pointer-events-none">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 space-y-1.5 pointer-events-auto rounded-[24px] sm:rounded-[28px] bg-white/95 dark:bg-[#141414]/95 backdrop-blur-md border border-slate-200/90 dark:border-[#2e2e2e] shadow-[0_8px_30px_rgba(15,23,42,0.12)] dark:shadow-[0_10px_35px_rgba(0,0,0,0.7)] transition-colors duration-200">
         {/* Top row: Story info + Responsive Playback Controls */}
         <div className="flex items-center justify-between gap-3 sm:gap-6">
           {/* Left: Soundwave + Track Title & Episode Subtitle */}
