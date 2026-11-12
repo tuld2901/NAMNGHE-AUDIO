@@ -43,13 +43,13 @@ pm2 startup
 
 Trên giao diện web, thẻ `<audio preload="metadata">` đã được cấu hình để trình duyệt **chỉ tải vài KB đầu tiên** lấy số phút (không tải trước cả file 50MB). Khi người dùng bấm nghe hoặc kéo tua tới đâu, **Nginx trực tiếp cắt từng khúc nhỏ (`512KB`) từ ổ cứng gửi tới đó** mà không đi qua Node.js.
 
-Copy file cấu hình mẫu hoặc dán trực tiếp vào `/etc/nginx/sites-available/namnghe-cms`:
+Copy file cấu hình mẫu hoặc dán trực tiếp vào `/etc/nginx/sites-available/namnghe.com`:
 
 ```bash
-sudo cp /root/NAMNGHE-AUDIO/nginx.conf /etc/nginx/sites-available/namnghe-cms
+sudo cp /root/NAMNGHE-AUDIO/nginx.conf /etc/nginx/sites-available/namnghe.com
 ```
 
-Nội dung chuẩn của `/etc/nginx/sites-available/namnghe-cms`:
+Nội dung chuẩn của `/etc/nginx/sites-available/namnghe.com`:
 
 ```nginx
 # 1. Giới hạn đăng nhập Admin tối đa 5 lần / 1 phút theo IP
@@ -64,7 +64,7 @@ upstream audio_node_backend {
 server {
     listen 80;
     listen [::]:80;
-    server_name your-domain.com www.your-domain.com; # Đổi thành tên miền của bạn
+    server_name namnghe.com www.namnghe.com;
 
     # Cho phép upload MP3 & Backup lớn (tới 250MB)
     client_max_body_size 250M;
@@ -182,13 +182,13 @@ server {
 
 Kích hoạt Nginx & Cài đặt SSL miễn phí (HTTPS):
 ```bash
-sudo ln -sf /etc/nginx/sites-available/namnghe-cms /etc/nginx/sites-enabled/
-sudo rm -f /etc/nginx/sites-enabled/default
+sudo ln -sf /etc/nginx/sites-available/namnghe.com /etc/nginx/sites-enabled/
+sudo rm -f /etc/nginx/sites-enabled/default /etc/nginx/sites-enabled/namnghe-cms
 sudo nginx -t && sudo systemctl reload nginx
 
 # Cài SSL Let's Encrypt
 sudo apt install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d your-domain.com -d www.your-domain.com
+sudo certbot --nginx -d namnghe.com -d www.namnghe.com
 ```
 
 ---
