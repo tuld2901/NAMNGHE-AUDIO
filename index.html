@@ -4,8 +4,9 @@
     <meta charset="UTF-8" />
     <script>
       try {
+        var isAdminRoute = (window.location.pathname || '').toLowerCase().indexOf('app-config') !== -1;
         var savedTheme = localStorage.getItem('ui_theme_mode');
-        if (savedTheme === 'dark') {
+        if (isAdminRoute || savedTheme === 'dark') {
           document.documentElement.classList.add('dark');
         } else {
           document.documentElement.classList.remove('dark');

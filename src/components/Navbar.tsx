@@ -63,9 +63,9 @@ export const Navbar: React.FC<NavbarProps> = React.memo(({
           </a>
         </div>
 
-        {/* Right Actions: Nút đổi giao diện Sáng / Tối ở trên cùng bên phải & Nút Về trang chủ khi ở Quản trị */}
+        {/* Right Actions: Nút đổi giao diện Sáng / Tối (chỉ hiện ở trang người dùng) & Nút Về trang chủ khi ở Quản trị */}
         <div className="flex items-center gap-2 shrink-0">
-          {onToggleTheme && (
+          {!isAdminView && onToggleTheme && (
             <button
               type="button"
               onClick={onToggleTheme}

@@ -52,17 +52,23 @@ function AppContent({
     }
   });
 
+  const normalizedPath = currentPath.replace(/^\/+/, '').replace(/\/+$/, '').toLowerCase();
+  const isAdminView = normalizedPath === 'app-config';
+
   useEffect(() => {
     const root = document.documentElement;
-    if (theme === 'dark') {
+    const effectiveTheme = isAdminView ? 'dark' : theme;
+    if (effectiveTheme === 'dark') {
       root.classList.add('dark');
     } else {
       root.classList.remove('dark');
     }
-    try {
-      localStorage.setItem('ui_theme_mode', theme);
-    } catch {}
-  }, [theme]);
+    if (!isAdminView) {
+      try {
+        localStorage.setItem('ui_theme_mode', theme);
+      } catch {}
+    }
+  }, [theme, isAdminView]);
 
   const handleToggleTheme = useCallback(() => {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
@@ -163,9 +169,6 @@ function AppContent({
     };
   }, []);
 
-  // Determine current view - CHỈ áp dụng cho đường dẫn /app-config để bảo mật tuyệt đối
-  const normalizedPath = currentPath.replace(/^\/+/, '').replace(/\/+$/, '').toLowerCase();
-  const isAdminView = normalizedPath === 'app-config';
   const activeStaticPage = useMemo(() => getStaticPageByPath(normalizedPath), [normalizedPath]);
 
   // Find active track using selected track or clean SEO slug/ID (/ten-truyen)
